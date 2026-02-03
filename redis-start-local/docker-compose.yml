@@ -1,0 +1,11 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-start-dev
+    restart: always
+    ports:
+      - "6379:6379"
+    # 去掉了 --requirepass，仅开启持久化
+    command: redis-server --appendonly yes
+    volumes:
+      - ./data:/data

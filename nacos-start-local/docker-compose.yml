@@ -1,0 +1,30 @@
+services:
+  nacos:
+    image: nacos/nacos-server:v3.1.1
+    container_name: nacos-standalone
+    restart: always
+    networks:
+      - nacos-network
+    environment:
+      - MODE=standalone
+      - TIME_ZONE=Asia/Shanghai
+      - NACOS_AUTH_ENABLE=true
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
+      - NACOS_AUTH_IDENTITY_KEY=nacos
+      - NACOS_AUTH_IDENTITY_VALUE=nacos
+      - JVM_XMS=512m
+      - JVM_XMX=512m
+      - JVM_XMN=256m
+    volumes:
+      - ./nacos/logs:/home/nacos/logs
+      - ./nacos/data:/home/nacos/data
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+      - "9850:9850"
+      - "8081:8080"
+
+networks:
+  nacos-network:
+    driver: bridge

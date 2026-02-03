@@ -1,0 +1,21 @@
+# Environment variables with sensitive data
+**/.env
+.env
+
+# Data directories
+**/data/
+**/mysql-data/
+**/redis-data/
+**/rabbitmq-data/
+**/nacos/data/
+**/nacos/logs/
+**/.minio.sys/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Logs
+**/logs/
+*.log

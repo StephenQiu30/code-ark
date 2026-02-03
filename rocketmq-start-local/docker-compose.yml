@@ -1,0 +1,45 @@
+services:
+  namesrv:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqnamesrv
+    ports:
+      - "9876:9876"
+    volumes:
+      - ./data/namesrv/logs:/home/rocketmq/logs
+    command: sh mqnamesrv
+
+  broker:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqbroker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - NAMESRV_ADDR=rmqnamesrv:9876
+      - "JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn256M -Drocketmq.messageStoreType=localFile -Drocketmq.enableRocksDB=false"
+    volumes:
+      - ./data/broker/logs:/home/rocketmq/logs
+      - ./data/broker/store:/home/rocketmq/store
+      - ./data/broker/conf:/home/rocketmq/conf
+    # 核心修正：
+    # 1. 设置 messageStoreType=localFile 彻底停用 RocksDB
+    # 2. 设置 brokerIP1 确保 Mac 宿主机能访问
+    command: >
+      sh -c "mkdir -p /home/rocketmq/conf &&
+             echo 'brokerIP1 = host.docker.internal' > /home/rocketmq/conf/broker.conf &&
+             echo 'messageStoreType = localFile' >> /home/rocketmq/conf/broker.conf &&
+             echo 'enableRocksDB = false' >> /home/rocketmq/conf/broker.conf &&
+             sh mqbroker -n rmqnamesrv:9876 -c /home/rocketmq/conf/broker.conf autoCreateTopicEnable=true"
+    depends_on:
+      - namesrv
+
+  rmqdashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmqdashboard
+    ports:
+      - "9001:8080"
+    environment:
+      - NAMESRV_ADDR=rmqnamesrv:9876
+    depends_on:
+      - namesrv
