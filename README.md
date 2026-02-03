@@ -65,7 +65,7 @@ docker-compose up -d
 | 🐰 **RabbitMQ** | `rabbitmq-start-lcoal/` | 消息队列 | http://localhost:15672 |
 | 🚀 **RocketMQ** | `rocketmq-start-local/` | 分布式消息队列 | http://localhost:9001 |
 | 🔥 **Kafka** | `kafka-start-local/` | 分布式流处理平台 | http://localhost:9000 |
-| 🔧 **Nacos** | `nacos-start-local/` | 服务发现和配置中心 | http://localhost:8848/nacos |
+| 🔧 **Nacos** | `nacos-start-local/` | 服务发现和配置中心 | http://localhost:8081/nacos |
 | 📦 **MinIO** | `minio-start-local/` | 对象存储（S3 兼容） | http://localhost:9001 |
 | 🔴 **Redis** | `redis-start-local/` | 独立内存数据库 | - |
 | 🗄️ **MySQL** | `mysql-start-lcoal/` | 独立关系数据库 | - |
@@ -268,10 +268,10 @@ docker-compose up -d
 **功能**: 服务发现和配置中心（Spring Cloud Alibaba）
 
 **默认端口**:
-- Nacos: `http://localhost:8848`
+- **控制台**: `http://localhost:8081/nacos` （主要访问入口）
+- 主端口: `8848`
 - gRPC: `9848`, `9849`
 - Jraft: `9850`
-- HTTP: `8081`
 
 **默认账号**:
 - 用户名: `nacos`
@@ -284,7 +284,7 @@ docker-compose up -d
 ```
 
 **使用说明**:
-访问 `http://localhost:8848/nacos`，默认账号密码均为 `nacos`。
+访问控制台 `http://localhost:8081/nacos`，默认账号密码均为 `nacos`。
 
 **认证密钥**: 需在 `.env` 中配置 `NACOS_AUTH_TOKEN`（用于服务间认证）
 
