@@ -622,6 +622,7 @@ CodeArk/
 
 ## 📮 联系方式
 
+- **邮箱**: Popcornqhd@gmail.com
 - **GitHub Issues**: [提交问题](https://github.com/StephenQiu30/code-ark/issues)
 - **Pull Requests**: 欢迎提交 PR
 
