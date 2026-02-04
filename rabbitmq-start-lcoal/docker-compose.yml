@@ -1,8 +1,8 @@
 services:
   rabbitmq:
-    image: rabbitmq/rabbitmq:4.2.3-management-alpine
+    image: rabbitmq:4.2.3-management-alpine
     container_name: rabbitmq-start-dev
-    restart: always
+    # restart: always
     hostname: rabbitmq-local
     ports:
       - "5672:5672"    # AMQP 协议端口

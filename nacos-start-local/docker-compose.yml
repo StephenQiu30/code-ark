@@ -2,7 +2,7 @@ services:
   nacos:
     image: nacos/nacos-server:v3.1.1
     container_name: nacos-standalone
-    restart: always
+    # restart: always
     networks:
       - nacos-network
     environment:

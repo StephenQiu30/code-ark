@@ -2,7 +2,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: mysql-redis-start-dev
-    restart: always
+    # restart: always
     ports:
       - "3306:3306"
     environment:
