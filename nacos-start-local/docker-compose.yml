@@ -19,11 +19,11 @@ services:
       - ./nacos/logs:/home/nacos/logs
       - ./nacos/data:/home/nacos/data
     ports:
+      - "8840:8080"
       - "8848:8848"
       - "9848:9848"
       - "9849:9849"
       - "9850:9850"
-      - "8081:8080"
 
 networks:
   nacos-network:
