@@ -1,0 +1,33 @@
+services:
+  # XXL-Job Admin 调度中心
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.1
+    container_name: xxl-job-admin
+    ports:
+      - "18081:8080"
+    environment:
+      # 数据库配置
+      PARAMS: >-
+        --spring.datasource.url=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+        --spring.datasource.username=${MYSQL_USERNAME}
+        --spring.datasource.password=${MYSQL_PASSWORD}
+        --spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+        --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN}
+        --server.port=8080
+      TZ: Asia/Shanghai
+    volumes:
+      - ./logs/xxl-job:/data/applogs
+    networks:
+      - xxl-job-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/xxl-job-admin/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  xxl-job-network:
+    driver: bridge
