@@ -42,18 +42,18 @@ if ask_confirmation; then
   fi
   echo
   echo "Do you want to remove the following Docker images?"
-  echo "- docker.elastic.co/elasticsearch/elasticsearch:8.19.10-arm64"
-  echo "- docker.elastic.co/kibana/kibana:8.19.10-arm64"
+  echo "- docker.elastic.co/elasticsearch/elasticsearch:9.3.0-arm64"
+  echo "- docker.elastic.co/kibana/kibana:9.3.0-arm64"
   if ask_confirmation; then
-    if docker rmi "docker.elastic.co/elasticsearch/elasticsearch:8.19.10-arm64" >/dev/null 2>&1; then
-      echo "Image docker.elastic.co/elasticsearch/elasticsearch:8.19.10-arm64 removed successfully"
+    if docker rmi "docker.elastic.co/elasticsearch/elasticsearch:9.3.0-arm64" >/dev/null 2>&1; then
+      echo "Image docker.elastic.co/elasticsearch/elasticsearch:9.3.0-arm64 removed successfully"
     else
-      echo "Failed to remove image docker.elastic.co/elasticsearch/elasticsearch:8.19.10-arm64. It might be in use."
+      echo "Failed to remove image docker.elastic.co/elasticsearch/elasticsearch:9.3.0-arm64. It might be in use."
     fi
-    if docker rmi docker.elastic.co/kibana/kibana:8.19.10-arm64 >/dev/null 2>&1; then
-      echo "Image docker.elastic.co/kibana/kibana:8.19.10-arm64 removed successfully"
+    if docker rmi docker.elastic.co/kibana/kibana:9.3.0-arm64 >/dev/null 2>&1; then
+      echo "Image docker.elastic.co/kibana/kibana:9.3.0-arm64 removed successfully"
     else
-      echo "Failed to remove image docker.elastic.co/kibana/kibana:8.19.10-arm64. It might be in use."
+      echo "Failed to remove image docker.elastic.co/kibana/kibana:9.3.0-arm64. It might be in use."
     fi
   fi
   echo "Start-local successfully removed"
