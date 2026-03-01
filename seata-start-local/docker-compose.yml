@@ -1,0 +1,29 @@
+services:
+  seata-server:
+    image: seataio/seata-server:1.8.0
+    container_name: seata-server
+    networks:
+      - seata-network
+    ports:
+      - "7091:7091"
+      - "8091:8091"
+    environment:
+      # MySQL 配置
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USERNAME=${MYSQL_USERNAME}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      # JVM配置
+      - JVM_XMS=512m
+      - JVM_XMX=512m
+      - JVM_XMN=256m
+    volumes:
+      - ./seata/logs:/root/logs/seata
+      - ./seata-config/application.yml:/seata-server/resources/application.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  seata-network:
+    driver: bridge
