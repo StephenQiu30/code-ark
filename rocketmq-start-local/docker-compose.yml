@@ -1,0 +1,53 @@
+
+services:
+  # NameServer - RocketMQ 的服务注册发现中心
+  namesrv:
+    image: apache/rocketmq:5.3.1
+    container_name: rocketmq-namesrv
+    ports:
+      - "9876:9876"
+    environment:
+      - JAVA_OPT_EXT=-Xms512m -Xmx512m
+    command: sh mqnamesrv
+    networks:
+      - rocketmq-network
+
+  # Broker - RocketMQ 消息代理
+  broker:
+    image: apache/rocketmq:5.3.1
+    container_name: rocketmq-broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+      - JAVA_OPT_EXT=-Xms1g -Xmx1g
+      - BROKER_IP1=broker
+    command: sh -c "sleep 15 && sh mqbroker -c /home/rocketmq/conf/broker.conf"
+    depends_on:
+      - namesrv
+    volumes:
+      - ./data/broker/logs:/home/rocketmq/logs
+      - ./data/broker/store:/home/rocketmq/store
+      - ./conf/broker.conf:/home/rocketmq/conf/broker.conf
+    networks:
+      - rocketmq-network
+
+  # Console - RocketMQ 可视化管理控制台
+  console:
+    image: styletang/rocketmq-console-ng:latest
+    container_name: rocketmq-console
+    ports:
+      - "8180:8080"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+    depends_on:
+      - namesrv
+      - broker
+    networks:
+      - rocketmq-network
+
+networks:
+  rocketmq-network:
+    driver: bridge
