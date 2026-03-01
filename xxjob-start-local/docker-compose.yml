@@ -19,12 +19,13 @@ services:
       - ./logs/xxl-job:/data/applogs
     networks:
       - xxl-job-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/xxl-job-admin/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # healthcheck: 该镜像不包含 curl，暂时禁用健康检查
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8080/xxl-job-admin/"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
