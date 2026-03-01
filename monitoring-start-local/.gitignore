@@ -1,0 +1,25 @@
+# 数据持久化目录
+data/
+
+# Prometheus 数据
+prometheus-data/
+
+# Grafana 数据
+grafana-data/
+
+# 日志文件
+*.log
+
+# 环境变量（包含敏感信息）
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# 临时文件
+*.tmp
+*.swp
+*.swo
+*~

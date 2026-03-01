@@ -1,25 +1,24 @@
 #!/bin/sh
-# RocketMQ 启动脚本
+# 监控面板启动脚本
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "${SCRIPT_DIR}"
 
 echo "---------------------------------------"
-echo "  RocketMQ 启动中..."
+echo "  分布式监控面板启动中..."
 echo "---------------------------------------"
 echo ""
 echo "服务列表："
-echo "  - NameServer:  http://localhost:15876"
-echo "  - Broker:      http://localhost:15911"
-echo "  - Console:     http://localhost:18180"
+echo "  - Prometheus:  http://localhost:19090"
+echo "  - Grafana:     http://localhost:13000 (admin/admin)"
 echo ""
 echo "等待服务启动..."
 docker compose up -d
 
 echo ""
 echo "---------------------------------------"
-echo "  RocketMQ 启动完成！"
+echo "  监控面板启动完成！"
 echo "---------------------------------------"
 echo ""
 echo "查看日志: docker compose logs -f"

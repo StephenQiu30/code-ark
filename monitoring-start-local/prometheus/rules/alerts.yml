@@ -1,0 +1,81 @@
+# Prometheus 告警规则
+
+groups:
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # CPU 使用率告警
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Usage"
+          description: "CPU usage is above 80% for 5 minutes (current: {{ $value }}%)"
+
+      # 内存使用率告警
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Usage"
+          description: "Memory usage is above 80% for 5 minutes (current: {{ $value }}%)"
+
+      # 磁盘使用率告警
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.*"} / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Disk Usage"
+          description: "Disk usage is above 85% for 5 minutes (current: {{ $value }}%)"
+
+  - name: rocketmq_alerts
+    interval: 30s
+    rules:
+      # RocketMQ Broker 下线告警
+      - alert: RocketMQBrokerDown
+        expr: rocketmq_broker_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RocketMQ Broker Down"
+          description: "RocketMQ Broker {{ $labels.broker }} has been down for 2 minutes"
+
+      # RocketMQ 消息堆积告警
+      - alert: RocketMQMessageBacklog
+        expr: rocketmq_broker_message_backlog > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Message Backlog"
+          description: "Message backlog for topic {{ $labels.topic }} is {{ $value }}"
+
+  - name: container_alerts
+    interval: 30s
+    rules:
+      # 容器被停止告警
+      - alert: ContainerKilled
+        expr: time() - container_last_seen > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container Killed"
+          description: "Container {{ $labels.name }} has been killed"
+
+      # 容器高 CPU 使用告警
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container High CPU"
+          description: "Container {{ $labels.name }} CPU usage is above 80%"
