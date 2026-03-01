@@ -6,9 +6,9 @@
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| NameServer | 9876 | 服务注册发现中心 |
-| Broker | 10909, 10911, 10912 | 消息代理服务 |
-| Console | 8180 | 可视化管理控制台 |
+| NameServer | 15876 | 服务注册发现中心 |
+| Broker | 15909, 15911, 15912 | 消息代理服务 |
+| Console | 18180 | 可视化管理控制台 |
 
 ## 快速开始
 
@@ -44,8 +44,8 @@ docker compose down -v
 
 ## 访问地址
 
-- **Console 控制台**: http://localhost:8180
-- **NameServer**: localhost:9876
+- **Console 控制台**: http://localhost:18180
+- **NameServer**: localhost:15876
 
 ## 配置说明
 
@@ -74,7 +74,7 @@ docker compose down -v
 
 ```yaml
 rocketmq:
-  name-server: localhost:9876
+  name-server: localhost:15876
   producer:
     group: my-producer-group
 ```
@@ -83,7 +83,7 @@ rocketmq:
 
 ```java
 DefaultMQProducer producer = new DefaultMQProducer("my-producer-group");
-producer.setNamesrvAddr("localhost:9876");
+producer.setNamesrvAddr("localhost:15876");
 producer.start();
 ```
 
@@ -103,7 +103,7 @@ docker compose logs broker
 
 ```yaml
 ports:
-  - "9876:9876"  # 改为其他端口，如 "19876:9876"
+  - "15876:9876"  # 左侧端口可改为其他值
 ```
 
 ### 重置数据

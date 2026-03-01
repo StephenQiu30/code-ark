@@ -1,0 +1,49 @@
+# Prometheus 配置文件
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'monitoring-local'
+    environment: 'dev'
+
+# 告警规则文件
+rule_files:
+  - 'rules/*.yml'
+
+# 采集目标配置
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Node Exporter - 系统指标
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+
+  # RocketMQ Exporter - RocketMQ 指标
+  - job_name: 'rocketmq'
+    static_configs:
+      - targets: ['rocketmq-exporter:5557']
+        labels:
+          service: 'rocketmq'
+
+  # cAdvisor - 容器指标
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+
+  # Docker 容器监控
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          job: 'docker'

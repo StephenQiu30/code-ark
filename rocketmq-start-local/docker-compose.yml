@@ -1,11 +1,10 @@
-
 services:
   # NameServer - RocketMQ 的服务注册发现中心
   namesrv:
     image: apache/rocketmq:5.3.1
     container_name: rocketmq-namesrv
     ports:
-      - "9876:9876"
+      - "15876:9876"
     environment:
       - JAVA_OPT_EXT=-Xms512m -Xmx512m
     command: sh mqnamesrv
@@ -17,9 +16,9 @@ services:
     image: apache/rocketmq:5.3.1
     container_name: rocketmq-broker
     ports:
-      - "10909:10909"
-      - "10911:10911"
-      - "10912:10912"
+      - "15909:10909"
+      - "15911:10911"
+      - "15912:10912"
     environment:
       - NAMESRV_ADDR=namesrv:9876
       - JAVA_OPT_EXT=-Xms1g -Xmx1g
@@ -39,7 +38,7 @@ services:
     image: styletang/rocketmq-console-ng:latest
     container_name: rocketmq-console
     ports:
-      - "8180:8080"
+      - "18180:8080"
     environment:
       - JAVA_OPTS=-Xms256m -Xmx256m -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
     depends_on:
