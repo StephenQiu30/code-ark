@@ -90,7 +90,41 @@ services:
       timeout: 10s
       retries: 30
 
+  logstash:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/logstash/logstash:${LOGSTASH_LOCAL_VERSION}
+    container_name: ${LOGSTASH_LOCAL_CONTAINER_NAME}
+    volumes:
+      - dev-logstash:/usr/share/logstash/data
+      - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./config/logstash/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
+    ports:
+      - 127.0.0.1:${LOGSTASH_LOCAL_PORT}:5044
+      - 127.0.0.1:5000:5000/tcp
+      - 127.0.0.1:5000:5000/udp
+      - 127.0.0.1:9600:9600
+    extra_hosts:
+      - host.docker.internal:host-gateway
+      - model-runner.docker.internal:host-gateway
+    environment:
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ES_LOCAL_PASSWORD}
+      - ELASTIC_HOSTS=http://elasticsearch:9200
+      - XPACK_MONITORING_ENABLED=true
+      - XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_MONITORING_ELASTICSEARCH_USERNAME=elastic
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ES_LOCAL_PASSWORD}
+      - LS_JAVA_OPTS=${LOGSTASH_LOCAL_JAVA_OPTS}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s -I http://logstash:9600 | grep -q 'HTTP/1.1 200 OK'" ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
 volumes:
   dev-elasticsearch:
   dev-elasticsearch-plugins:
   dev-kibana:
+  dev-logstash:
