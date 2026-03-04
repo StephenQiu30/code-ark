@@ -17,7 +17,7 @@ services:
       - '--web.enable-lifecycle'
     networks:
       - monitoring-network
-    restart: unless-stopped
+    # restart: unless-stopped
 
   # Grafana - 可视化监控面板
   grafana:
@@ -38,7 +38,7 @@ services:
       - monitoring-network
     depends_on:
       - prometheus
-    restart: unless-stopped
+    # restart: unless-stopped
 
 networks:
   monitoring-network:
