@@ -11,7 +11,7 @@ services:
       bash -c '
         if [ ! -d /usr/share/elasticsearch/plugins/analysis-ik ]; then
           echo "Installing IK Analysis plugin...";
-          elasticsearch-plugin install --batch https://get.infini.cloud/elasticsearch/analysis-ik/${IK_VERSION};
+          elasticsearch-plugin install --batch https://get.infini.cloud/elasticsearch/analysis-ik/9.3.0;
         fi;
         /usr/local/bin/docker-entrypoint.sh eswrapper
       '
