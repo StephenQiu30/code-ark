@@ -68,6 +68,7 @@
 | 🚀 **RocketMQ** | `rocketmq-start-local/` | 分布式消息队列 | [端口说明](#-rocketmq) |
 | 🔥 **Kafka** | `kafka-start-local/` | 分布式流处理 | [端口说明](#-kafka) |
 | 🔧 **Nacos** | `nacos-start-local/` | 服务发现与配置中心 | [端口说明](#-nacos) |
+| 🛡️ **Sentinel** | `sentinel-start-local/` | 流量防卫与熔断降级 | [端口说明](#-sentinel) |
 | 📦 **MinIO** | `minio-start-local/` | 对象存储 | [端口说明](#-minio) |
 | 📈 **Prometheus + Grafana** | `monitoring-start-local/` | 监控系统 | [端口说明](#-prometheus--grafana) |
 | 🔗 **Seata** | `seata-start-local/` | 分布式事务 | - |
@@ -247,6 +248,34 @@ cd rocketmq-start-local
 **控制台**: http://localhost:8840/nacos
 
 **默认账号**: `nacos` / `nacos`
+
+---
+
+### 🛡️ Sentinel
+
+**功能**: 流量防卫组件（阿里开源）
+
+**端口**:
+| 服务 | 端口 |
+|------|:----:|
+| Dashboard | 8858 |
+| API | 8719 |
+
+**启动**:
+```bash
+cd sentinel-start-local
+./start.sh
+```
+
+**控制台**: http://localhost:8858
+
+**默认账号**: `sentinel` / `sentinel`
+
+**核心功能**:
+- 流量控制（QPS、并发线程数）
+- 熔断降级（慢调用、异常比例）
+- 系统保护（CPU、RT、线程数）
+- 授权规则（黑白名单）
 
 ---
 
