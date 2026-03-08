@@ -2,7 +2,6 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_LOCAL_VERSION}
     container_name: ${ES_LOCAL_CONTAINER_NAME}
-    restart: unless-stopped
     volumes:
       - dev-elasticsearch:/usr/share/elasticsearch/data
       - dev-elasticsearch-plugins:/usr/share/elasticsearch/plugins
@@ -48,7 +47,6 @@ services:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_LOCAL_VERSION}
     container_name: ${KIBANA_LOCAL_SETTINGS_CONTAINER_NAME}
-    restart: 'no'
     command: >
       bash -c '
         echo "Setup the kibana_system password";
@@ -69,7 +67,6 @@ services:
         condition: service_completed_successfully
     image: docker.elastic.co/kibana/kibana:${ES_LOCAL_VERSION}
     container_name: ${KIBANA_LOCAL_CONTAINER_NAME}
-    restart: unless-stopped
     volumes:
       - dev-kibana:/usr/share/kibana/data
       - ./config/telemetry.yml:/usr/share/kibana/config/telemetry.yml
@@ -98,7 +95,6 @@ services:
         condition: service_healthy
     image: docker.elastic.co/logstash/logstash:${LOGSTASH_LOCAL_VERSION}
     container_name: ${LOGSTASH_LOCAL_CONTAINER_NAME}
-    restart: unless-stopped
     volumes:
       - dev-logstash:/usr/share/logstash/data
       - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro

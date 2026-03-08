@@ -2,7 +2,6 @@ services:
   sentinel:
     image: bladex/sentinel-dashboard:1.8.8
     container_name: sentinel-standalone
-    restart: unless-stopped
     networks:
       - sentinel-network
     environment:
