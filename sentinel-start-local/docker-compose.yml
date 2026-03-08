@@ -1,0 +1,20 @@
+services:
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.8
+    container_name: sentinel-standalone
+    restart: unless-stopped
+    networks:
+      - sentinel-network
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858 -Dproject.name=sentinel-dashboard -Dcsp.sentinel.api.port=8719
+    volumes:
+      - ./sentinel/logs:/root/logs/csp
+      - ./sentinel/data:/tmp/sentinel-log
+    ports:
+      - "8858:8858"
+      - "8719:8719"
+
+networks:
+  sentinel-network:
+    driver: bridge
