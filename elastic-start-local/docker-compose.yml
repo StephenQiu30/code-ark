@@ -1,19 +1,14 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_LOCAL_VERSION}
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+      args:
+        - ES_VERSION=${ES_LOCAL_VERSION}
+        - IK_VERSION=${IK_VERSION}
     container_name: ${ES_LOCAL_CONTAINER_NAME}
     volumes:
       - dev-elasticsearch:/usr/share/elasticsearch/data
-      - dev-elasticsearch-plugins:/usr/share/elasticsearch/plugins
-    # 首次启动自动安装 IK 分词器插件，已安装则跳过
-    entrypoint: >
-      bash -c '
-        if [ ! -d /usr/share/elasticsearch/plugins/analysis-ik ]; then
-          echo "Installing IK Analysis plugin...";
-          elasticsearch-plugin install --batch https://get.infini.cloud/elasticsearch/analysis-ik/9.3.0;
-        fi;
-        /usr/local/bin/docker-entrypoint.sh eswrapper
-      '
     ports:
       - 127.0.0.1:${ES_LOCAL_PORT}:9200
     extra_hosts:
