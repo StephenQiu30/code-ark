@@ -44,6 +44,9 @@ services:
     container_name: ${KIBANA_LOCAL_SETTINGS_CONTAINER_NAME}
     command: >
       bash -c '
+        echo "Renewing Elasticsearch trial license...";
+        curl -s -u "elastic:${ES_LOCAL_PASSWORD}" -X POST "http://elasticsearch:9200/_license/start_trial?acknowledge=true" && echo "License renewed successfully" || echo "License renewal failed (may already be active)";
+
         echo "Setup the kibana_system password";
         start_time=$$(date +%s);
         timeout=60;
@@ -54,6 +57,7 @@ services:
           fi;
           sleep 2;
         done;
+        echo "Kibana setup completed successfully";
       '
 
   kibana:
