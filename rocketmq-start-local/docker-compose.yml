@@ -6,10 +6,16 @@ services:
     ports:
       - "15876:9876"
     environment:
-      - JAVA_OPT_EXT=-Xms512m -Xmx512m
+      - JAVA_OPT_EXT=-Xms256m -Xmx256m
     command: sh mqnamesrv
     networks:
       - rocketmq-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   # Broker - RocketMQ 消息代理
   broker:
@@ -21,7 +27,7 @@ services:
       - "15912:10912"
     environment:
       - NAMESRV_ADDR=namesrv:9876
-      - JAVA_OPT_EXT=-Xms1g -Xmx1g
+      - JAVA_OPT_EXT=-Xms512m -Xmx512m
       - BROKER_IP1=broker
     command: sh -c "sleep 15 && sh mqbroker -c /home/rocketmq/conf/broker.conf"
     depends_on:
@@ -32,6 +38,12 @@ services:
       - ./conf/broker.conf:/home/rocketmq/conf/broker.conf
     networks:
       - rocketmq-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
 
   # Console - RocketMQ 可视化管理控制台
   console:
@@ -40,12 +52,18 @@ services:
     ports:
       - "18180:8080"
     environment:
-      - JAVA_OPTS=-Xms256m -Xmx256m -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+      - JAVA_OPTS=-Xms128m -Xmx128m -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
     depends_on:
       - namesrv
       - broker
     networks:
       - rocketmq-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
 networks:
   rocketmq-network:

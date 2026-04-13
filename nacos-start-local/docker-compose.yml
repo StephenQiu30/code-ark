@@ -13,9 +13,9 @@ services:
       - NACOS_AUTH_IDENTITY_VALUE=nacos
       - NACOS_AUTH_USERNAME=nacos
       - NACOS_AUTH_PASSWORD=nacos
-      - JVM_XMS=512m
-      - JVM_XMX=512m
-      - JVM_XMN=256m
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+      - JVM_XMN=128m
     volumes:
       - ./nacos/logs:/home/nacos/logs
       - ./nacos/data:/home/nacos/data

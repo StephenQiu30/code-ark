@@ -82,6 +82,7 @@ services:
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY}
       - ELASTICSEARCH_PUBLICBASEURL=http://localhost:${ES_LOCAL_PORT}
       - XPACK_SPACES_DEFAULTSOLUTION=es
+      - NODE_OPTIONS=--max-old-space-size=512
     healthcheck:
       test: [ "CMD-SHELL", "curl -s -I http://kibana:5601 | grep -q 'HTTP/1.1 302 Found'" ]
       interval: 10s

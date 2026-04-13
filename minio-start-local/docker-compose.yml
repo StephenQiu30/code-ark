@@ -11,3 +11,9 @@ services:
     command: server /data --address ":9000" --console-address ":9001"
     volumes:
       - ./data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M

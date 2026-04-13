@@ -15,14 +15,20 @@ services:
       - MYSQL_USERNAME=${MYSQL_USERNAME}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       # JVM配置
-      - JVM_XMS=512m
-      - JVM_XMX=512m
-      - JVM_XMN=256m
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+      - JVM_XMN=128m
     volumes:
       - ./seata/logs:/root/logs/seata
       - ./seata-config/application.yml:/seata-server/resources/application.yml:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
 networks:
   seata-network:

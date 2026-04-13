@@ -6,13 +6,19 @@ services:
       - sentinel-network
     environment:
       - TZ=Asia/Shanghai
-      - JAVA_OPTS=-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858 -Dproject.name=sentinel-dashboard -Dcsp.sentinel.api.port=8719
+      - JAVA_OPTS=-Xms128m -Xmx128m -Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858 -Dproject.name=sentinel-dashboard -Dcsp.sentinel.api.port=8719
     volumes:
       - ./sentinel/logs:/root/logs/csp
       - ./sentinel/data:/tmp/sentinel-log
     ports:
       - "8858:8858"
       - "8719:8719"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
 networks:
   sentinel-network:
