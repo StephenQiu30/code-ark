@@ -5,6 +5,7 @@
 # Data directories
 **/data/
 **/mysql-data/
+**/pgsql-data/
 **/redis-data/
 **/rabbitmq-data/
 **/nacos/data/

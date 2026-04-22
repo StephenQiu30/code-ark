@@ -1,102 +1,90 @@
-# Sentinel 本地启动
+# Sentinel 本地开发环境
 
-> Sentinel 是阿里开源的流量防卫组件，用于流量控制、熔断降级、系统负载保护等
+> [返回项目首页](../README.md) | [Back to root](../README.md)
 
-## 服务说明
+## English Summary
 
-- **镜像**: bladex/sentinel-dashboard:1.8.8
-- **版本**: 1.8.8
-- **默认账号/密码**: sentinel / sentinel
+This directory starts a local Sentinel dashboard for traffic control and circuit breaking tests.
+It supports `.env` based port configuration and a simple one-command startup flow.
+Create `.env` from `.env.example` before startup.
 
-## 端口说明
+## 服务简介
 
-| 服务 | 端口 | 说明 |
-|------|:----:|------|
-| Dashboard | 8858 | Sentinel 控制台 |
-| API | 8719 | 客户端通信端口 |
+该目录提供单机模式 Sentinel Dashboard，适合本地验证：
+
+- 流量控制
+- 熔断降级
+- 系统保护
+- 规则配置演练
+
+## 端口与访问入口
+
+| 组件 | 端口 | 说明 |
+| --- | --- | --- |
+| Dashboard | `8858` | Web 控制台 |
+| API | `8719` | 客户端通信端口 |
+
+- 控制台：`http://localhost:8858`
+- 默认账号：`sentinel / sentinel`
+
+## 前置条件
+
+- 已安装 Docker 和 Docker Compose
+- 首次启动前准备 `.env`
 
 ## 快速启动
 
-### 使用启动脚本（推荐）
+```bash
+cd sentinel-start-local
+cp .env.example .env
+docker compose up -d
+```
+
+也可以使用目录内脚本：
 
 ```bash
 ./start.sh
 ```
 
-### 使用 Docker Compose
+## 配置说明
+
+请在 `.env` 中设置：
+
+- `SENTINEL_DASHBOARD_PORT`
+- `SENTINEL_API_PORT`
+- `TZ`
+
+注意：
+
+- 当前 `docker-compose.yml` 中端口参数写死为 `8858` 与 `8719`
+- 如果你调整了 `.env` 中的端口，记得同步修改 `docker-compose.yml` 或启动参数
+
+## 数据持久化与清理
+
+- 日志目录：`./sentinel/logs`
+- 运行目录：`./sentinel/data`
 
 ```bash
-docker compose up -d
+docker compose down
+docker compose down -v
+rm -rf ./sentinel
 ```
-
-## 访问控制台
-
-启动成功后，访问 http://localhost:8858
-
-默认账号密码：
-- 用户名: `sentinel`
-- 密码: `sentinel`
 
 ## 常用命令
 
 ```bash
-# 查看日志
+docker compose up -d
 docker compose logs -f
-
-# 停止服务
-docker compose down
-
-# 停止并删除数据
-docker compose down -v
-rm -rf ./sentinel
-
-# 重启服务
 docker compose restart
+docker compose down
+./start.sh
 ```
 
-## 客户端接入
+## 使用说明
 
-在 Spring Cloud/Boot 项目中添加依赖：
+- 当前配置为单机模式，Dashboard 规则默认不会持久化到外部存储
+- Spring Cloud Alibaba 客户端通常连接 `localhost:8858`
 
-```xml
-<dependency>
-    <groupId>com.alibaba.cloud</groupId>
-    <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
-</dependency>
-```
+## 返回导航
 
-配置文件：
-
-```yaml
-spring:
-  cloud:
-    sentinel:
-      transport:
-        dashboard: localhost:8858
-        port: 8719
-      eager: true
-```
-
-## 核心功能
-
-- **流量控制**: 限制 QPS、并发线程数
-- **熔断降级**: 慢调用比例、异常比例、异常数
-- **系统规则**: CPU、RT、线程数、入口 QPS
-- **授权规则**: 黑白名单控制
-- **流控规则**: 基于调用关系的流量控制
-
-## 数据持久化
-
-当前配置为 **单机模式**，规则仅保存在内存中，重启后丢失。
-
-如需规则持久化，可以使用以下方式：
-
-1. **推模式**: 结合 Nacos/Apollo 实现配置中心
-2. **拉模式**: 结合数据库/文件实现持久化
-3. **企业版**: Sentinel 企业版支持多种数据源
-
-## 相关链接
-
-- [官方文档](https://sentinelguard.io/zh-cn/)
-- [GitHub](https://github.com/alibaba/Sentinel)
-- [Spring Cloud Alibaba](https://github.com/alibaba/spring-cloud-alibaba/wiki/Sentinel)
+- 项目首页：[`../README.md`](../README.md)
