@@ -1,0 +1,25 @@
+services:
+  paddleocr:
+    build:
+      context: .
+    image: devforge/paddleocr-local:latest
+    container_name: ocr-start-dev
+    ports:
+      - "18868:8868"
+    environment:
+      TZ: Asia/Shanghai
+      HOME: /models
+    volumes:
+      - ./data:/data
+      - ./models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8868/health', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
+        reservations:
+          memory: 1024M

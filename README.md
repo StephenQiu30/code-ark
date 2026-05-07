@@ -35,10 +35,12 @@ These stacks are intended for development and integration testing, not productio
 | --- | --- | --- | --- |
 | Elasticsearch + Kibana + Logstash | [`elastic-start-local`](./elastic-start-local/README.md) | `9200`, `5601`, `5044` | 本地搜索与日志处理栈 |
 | Kafka + Kafka UI | [`kafka-start-local`](./kafka-start-local/README.md) | `9092`, `19000` | 本地消息流平台 |
+| LibreOffice | [`libreoffice-start-local`](./libreoffice-start-local/README.md) | 无 | 真实 LibreOffice headless 文档转换环境 |
 | MinIO | [`minio-start-local`](./minio-start-local/README.md) | `9000`, `9001` | S3 兼容对象存储 |
 | Prometheus + Grafana | [`monitoring-start-local`](./monitoring-start-local/README.md) | `19090`, `13000` | 本地监控与可视化 |
 | MySQL | [`mysql-start-lcoal`](./mysql-start-lcoal/README.md) | `3306` | 本地 MySQL 8 开发库 |
 | Nacos | [`nacos-start-local`](./nacos-start-local/README.md) | `8840`, `8848`, `9848-9850` | 服务发现与配置中心 |
+| PaddleOCR | [`ocr-start-local`](./ocr-start-local/README.md) | `18868` | 基于 PaddleOCR 的本地图片文字识别服务 |
 | PostgreSQL | [`pgsql-start-local`](./pgsql-start-local/README.md) | `5432` | 本地 PostgreSQL 16 |
 | RabbitMQ | [`rabbitmq-start-lcoal`](./rabbitmq-start-lcoal/README.md) | `5672`, `15672` | AMQP 队列与管理台 |
 | Redis | [`redis-start-local`](./redis-start-local/README.md) | `6379` | 开启 AOF 持久化的 Redis |
@@ -91,10 +93,12 @@ docker compose up -d
 ├── LICENSE
 ├── elastic-start-local/
 ├── kafka-start-local/
+├── libreoffice-start-local/
 ├── minio-start-local/
 ├── monitoring-start-local/
 ├── mysql-start-lcoal/
 ├── nacos-start-local/
+├── ocr-start-local/
 ├── pgsql-start-local/
 ├── rabbitmq-start-lcoal/
 ├── redis-start-local/
@@ -108,10 +112,12 @@ docker compose up -d
 
 - [Elastic Stack](./elastic-start-local/README.md)
 - [Kafka](./kafka-start-local/README.md)
+- [LibreOffice](./libreoffice-start-local/README.md)
 - [MinIO](./minio-start-local/README.md)
 - [Monitoring](./monitoring-start-local/README.md)
 - [MySQL](./mysql-start-lcoal/README.md)
 - [Nacos](./nacos-start-local/README.md)
+- [PaddleOCR](./ocr-start-local/README.md)
 - [PostgreSQL](./pgsql-start-local/README.md)
 - [RabbitMQ](./rabbitmq-start-lcoal/README.md)
 - [Redis](./redis-start-local/README.md)
