@@ -4,6 +4,8 @@
 
 # Data directories
 **/data/
+**/fonts/
+**/models/
 **/mysql-data/
 **/pgsql-data/
 **/redis-data/
@@ -20,3 +22,7 @@
 # Logs
 **/logs/
 *.log
+
+# Python cache
+**/__pycache__/
+*.pyc
