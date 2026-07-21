@@ -6,11 +6,11 @@ services:
       - nacos-network
     environment:
       - MODE=standalone
-      - TIME_ZONE=Asia/Shanghai
+      - TIME_ZONE=${NACOS_TIME_ZONE}
       - NACOS_AUTH_ENABLE=true
       - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
-      - NACOS_AUTH_IDENTITY_KEY=nacos
-      - NACOS_AUTH_IDENTITY_VALUE=nacos
+      - NACOS_AUTH_IDENTITY_KEY=${NACOS_AUTH_IDENTITY_KEY}
+      - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE}
       - NACOS_AUTH_USERNAME=nacos
       - NACOS_AUTH_PASSWORD=nacos
       - JVM_XMS=256m
