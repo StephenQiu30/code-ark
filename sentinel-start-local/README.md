@@ -56,8 +56,6 @@ docker compose up -d
 
 注意：
 
-- 当前 `docker-compose.yml` 中端口参数写死为 `8858` 与 `8719`
-- 如果你调整了 `.env` 中的端口，记得同步修改 `docker-compose.yml` 或启动参数
 
 ## 数据持久化与清理
 
