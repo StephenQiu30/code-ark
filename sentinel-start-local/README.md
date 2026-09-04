@@ -54,9 +54,6 @@ docker compose up -d
 - `SENTINEL_API_PORT`
 - `TZ`
 
-注意：
-
-
 ## 数据持久化与清理
 
 - 日志目录：`./sentinel/logs`
