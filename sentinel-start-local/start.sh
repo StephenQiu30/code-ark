@@ -5,14 +5,12 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "${SCRIPT_DIR}"
 
-if [ -f .env ]; then
-  set -a
+if [ -f ".env" ]; then
   . ./.env
-  set +a
 fi
 
-SENTINEL_DASHBOARD_PORT="${SENTINEL_DASHBOARD_PORT:-8858}"
-SENTINEL_API_PORT="${SENTINEL_API_PORT:-8719}"
+: "${SENTINEL_DASHBOARD_PORT:=8858}"
+: "${SENTINEL_API_PORT:=8719}"
 
 echo "---------------------------------------"
 echo "  Sentinel 启动中..."
