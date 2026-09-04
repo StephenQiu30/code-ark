@@ -7,6 +7,49 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "${SCRIPT_DIR}"
 today=$(date +%s)
 . ./.env
+
+force_build=false
+case "${1:-}" in
+  "") ;;
+  --build) force_build=true ;;
+  *)
+    echo "Usage: $0 [--build]" >&2
+    exit 2
+    ;;
+esac
+
+# Fail early instead of letting the Docker VM kill Elasticsearch halfway through
+# an image build. The complete development stack needs room beyond the JVM heaps
+# for native memory, filesystem cache, and BuildKit.
+docker_memory_bytes=$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)
+minimum_memory_gb=${ELASTIC_STACK_MIN_DOCKER_MEMORY_GB:-6}
+case "${docker_memory_bytes}:${minimum_memory_gb}" in
+  *[!0-9:]*|:*|*:)
+    echo "Error: unable to determine Docker memory or invalid ELASTIC_STACK_MIN_DOCKER_MEMORY_GB." >&2
+    exit 1
+    ;;
+esac
+minimum_memory_bytes=$((minimum_memory_gb * 1024 * 1024 * 1024))
+if [ "$docker_memory_bytes" -lt "$minimum_memory_bytes" ]; then
+  docker_memory_gb=$((docker_memory_bytes / 1024 / 1024 / 1024))
+  echo "Error: Docker has ${docker_memory_gb} GB of memory; this stack requires at least ${minimum_memory_gb} GB." >&2
+  echo "Increase Docker Desktop's memory limit, then run this script again." >&2
+  exit 1
+fi
+
+# Give the custom image a versioned name so a normal restart never triggers an
+# accidental rebuild. An explicit rebuild is performed with the stack stopped,
+# keeping Elasticsearch and BuildKit from competing for memory.
+elasticsearch_image="elastic-start-local-elasticsearch:${ES_LOCAL_VERSION}-${IK_VERSION}"
+if [ "$force_build" = true ] || ! docker image inspect "$elasticsearch_image" >/dev/null 2>&1; then
+  if [ -n "$(docker compose ps --services --status running)" ]; then
+    echo "Stopping the Elastic Stack before rebuilding to avoid memory contention..."
+    docker compose stop
+  fi
+  echo "Building ${elasticsearch_image}..."
+  COMPOSE_PARALLEL_LIMIT=1 docker compose build elasticsearch
+fi
+
 # Check disk space
 available_gb=$(($(df -k / | awk 'NR==2 {print $4}') / 1024 / 1024))
 required=$(echo "${ES_LOCAL_DISK_SPACE_REQUIRED}" | grep -Eo '[0-9]+')
@@ -29,7 +72,7 @@ if [ -z "${ES_LOCAL_LICENSE:-}" ] && [ "$today" -gt "$ES_LOCAL_LICENSE_EXPIRE_DA
   echo "For more info about the license: https://www.elastic.co/subscriptions"
   echo
   echo "Updating the license..."
-  docker compose up --wait elasticsearch >/dev/null 2>&1
+  docker compose up --wait --no-build elasticsearch >/dev/null 2>&1
   result=$(curl -s -X POST "${ES_LOCAL_URL}/_license/start_basic?acknowledge=true" -H "Authorization: ApiKey ${ES_LOCAL_API_KEY}" -o /dev/null -w '%{http_code}\n')
   if [ "$result" = "200" ]; then
     echo "✅ Basic license successfully installed"
@@ -44,4 +87,4 @@ if [ -z "${ES_LOCAL_LICENSE:-}" ] && [ "$today" -gt "$ES_LOCAL_LICENSE_EXPIRE_DA
   fi
   echo
 fi
-docker compose up --wait
+docker compose up --wait --no-build

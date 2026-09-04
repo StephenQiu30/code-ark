@@ -1,5 +1,6 @@
 services:
   elasticsearch:
+    image: elastic-start-local-elasticsearch:${ES_LOCAL_VERSION}-${IK_VERSION}
     build:
       context: ./elasticsearch
       dockerfile: Dockerfile
@@ -7,6 +8,9 @@ services:
         - ES_VERSION=${ES_LOCAL_VERSION}
         - IK_VERSION=${IK_VERSION}
     container_name: ${ES_LOCAL_CONTAINER_NAME}
+    restart: unless-stopped
+    mem_limit: ${ES_LOCAL_MEM_LIMIT:-2g}
+    mem_reservation: ${ES_LOCAL_MEM_RESERVATION:-1g}
     volumes:
       - dev-elasticsearch:/usr/share/elasticsearch/data
     ports:
@@ -42,6 +46,7 @@ services:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_LOCAL_VERSION}
     container_name: ${KIBANA_LOCAL_SETTINGS_CONTAINER_NAME}
+    mem_limit: ${KIBANA_SETTINGS_MEM_LIMIT:-256m}
     command: >
       bash -c '
         echo "Renewing Elasticsearch trial license...";
@@ -66,6 +71,9 @@ services:
         condition: service_completed_successfully
     image: docker.elastic.co/kibana/kibana:${ES_LOCAL_VERSION}
     container_name: ${KIBANA_LOCAL_CONTAINER_NAME}
+    restart: unless-stopped
+    mem_limit: ${KIBANA_LOCAL_MEM_LIMIT:-1536m}
+    mem_reservation: ${KIBANA_LOCAL_MEM_RESERVATION:-768m}
     volumes:
       - dev-kibana:/usr/share/kibana/data
       - ./config/telemetry.yml:/usr/share/kibana/config/telemetry.yml
@@ -82,7 +90,7 @@ services:
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY}
       - ELASTICSEARCH_PUBLICBASEURL=http://localhost:${ES_LOCAL_PORT}
       - XPACK_SPACES_DEFAULTSOLUTION=es
-      - NODE_OPTIONS=--max-old-space-size=2048
+      - NODE_OPTIONS=${KIBANA_LOCAL_NODE_OPTIONS:---max-old-space-size=768}
     healthcheck:
       test: [ "CMD-SHELL", "curl -s -I http://kibana:5601 | grep -q 'HTTP/1.1 302 Found'" ]
       interval: 10s
@@ -95,6 +103,9 @@ services:
         condition: service_healthy
     image: docker.elastic.co/logstash/logstash:${LOGSTASH_LOCAL_VERSION}
     container_name: ${LOGSTASH_LOCAL_CONTAINER_NAME}
+    restart: unless-stopped
+    mem_limit: ${LOGSTASH_LOCAL_MEM_LIMIT:-1g}
+    mem_reservation: ${LOGSTASH_LOCAL_MEM_RESERVATION:-512m}
     volumes:
       - dev-logstash:/usr/share/logstash/data
       - ./config/logstash/pipeline:/usr/share/logstash/pipeline:ro
