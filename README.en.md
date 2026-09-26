@@ -30,6 +30,8 @@ Grafana, and other infrastructure without installing each service manually.
 | Category | Service | Directory | Default ports |
 | --- | --- | --- | --- |
 | Search and logs | Elasticsearch, Kibana, Logstash | [`elastic-start-local`](./elastic-start-local/README.md) | `9200`, `5601`, `5044` |
+| Content collection | RSSHub | [`rsshub-start-local`](./rsshub-start-local/README.md) | `1200` |
+| Search | SearXNG | [`searxng-start-local`](./searxng-start-local/README.md) | `8888` |
 | Event streaming | Kafka and Kafka UI | [`kafka-start-local`](./kafka-start-local/README.md) | `9092`, `19000` |
 | Document processing | LibreOffice headless | [`libreoffice-start-local`](./libreoffice-start-local/README.md) | — |
 | Object storage | MinIO | [`minio-start-local`](./minio-start-local/README.md) | `9000`, `9001` |
@@ -80,6 +82,8 @@ cp .env.example .env
 
 Open the README inside a service directory for its ports, credentials, resource
 settings, and data persistence instructions.
+
+RSSHub and SearXNG each have their own `docker-compose.yml`; run `docker compose up -d` inside each service directory. Firecrawl and MediaCrawler are deployed from their own source directories, with MediaCrawler run on demand.
 
 ## Common commands
 

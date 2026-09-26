@@ -1,0 +1,26 @@
+name: rsshub
+
+services:
+  rsshub:
+    container_name: rsshub
+    image: diygod/rsshub:chromium-bundled-2026-09-24
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: memory
+      CACHE_EXPIRE: "300"
+      REQUEST_TIMEOUT: "20000"
+    ports:
+      - "127.0.0.1:${RSSHUB_PORT:-1200}:1200"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:1200/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    cpus: 1.0
+    mem_limit: 1024m
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"

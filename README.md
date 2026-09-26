@@ -32,6 +32,8 @@ Code Ark 覆盖数据库、消息队列、搜索与日志、对象存储、服�
 | 分类 | 服务 | 目录 | 默认端口 | 用途 |
 | --- | --- | --- | --- | --- |
 | 搜索与日志 | Elasticsearch + Kibana + Logstash | [`elastic-start-local`](./elastic-start-local/README.md) | `9200`, `5601`, `5044` | 全文搜索、日志采集与可视化 |
+| 内容采集 | RSSHub | [`rsshub-start-local`](./rsshub-start-local/README.md) | `1200` | 本地 RSS 路由与热榜 |
+| 搜索 | SearXNG | [`searxng-start-local`](./searxng-start-local/README.md) | `8888` | 本地聚合搜索与 JSON API |
 | 消息队列 | Kafka + Kafka UI | [`kafka-start-local`](./kafka-start-local/README.md) | `9092`, `19000` | 消息流与事件驱动开发 |
 | 文档处理 | LibreOffice | [`libreoffice-start-local`](./libreoffice-start-local/README.md) | 无 | Headless 文档格式转换 |
 | 对象存储 | MinIO | [`minio-start-local`](./minio-start-local/README.md) | `9000`, `9001` | S3 兼容对象存储 |
@@ -92,6 +94,8 @@ cp .env.example .env
 
 每个服务目录都包含独立 README，请在启动前查看相应的端口、密码、内存和数据卷说明。
 
+RSSHub 和 SearXNG 各有独立的 `docker-compose.yml`；进入相应服务目录后分别执行 `docker compose up -d`。Firecrawl 与 MediaCrawler 在各自源码目录独立部署，MediaCrawler 按需运行。
+
 ## 常用 Docker Compose 命令
 
 在目标服务目录中执行：
@@ -135,6 +139,8 @@ code-ark/
 ├── pgsql-start-local/          # PostgreSQL
 ├── rabbitmq-start-lcoal/       # RabbitMQ
 ├── redis-start-local/          # Redis
+├── rsshub-start-local/         # RSSHub
+├── searxng-start-local/        # SearXNG
 ├── rocketmq-start-local/       # RocketMQ
 ├── seata-start-local/          # Seata
 ├── sentinel-start-local/       # Sentinel

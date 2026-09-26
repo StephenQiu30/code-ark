@@ -1,0 +1,26 @@
+name: searxng
+
+services:
+  searxng:
+    container_name: searxng
+    image: searxng/searxng:2026.9.25-487f51922
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
+      SEARXNG_BASE_URL: http://127.0.0.1:${SEARXNG_PORT:-8888}/
+      TZ: UTC
+    volumes:
+      - type: bind
+        source: ./settings.yml
+        target: /etc/searxng/settings.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "127.0.0.1:${SEARXNG_PORT:-8888}:8080"
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 512m
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
