@@ -33,6 +33,7 @@ Code Ark 覆盖数据库、消息队列、搜索与日志、对象存储、服�
 | --- | --- | --- | --- | --- |
 | 搜索与日志 | Elasticsearch + Kibana + Logstash | [`elastic-start-local`](./elastic-start-local/README.md) | `9200`, `5601`, `5044` | 全文搜索、日志采集与可视化 |
 | 内容采集 | RSSHub | [`rsshub-start-local`](./rsshub-start-local/README.md) | `1200` | 本地 RSS 路由与热榜 |
+| 内容采集 | MediaCrawler | [`mediacrawler-start-local`](./mediacrawler-start-local/README.md) | 无（宿主机） | 宿主机运行；此处仅记录固定版本与补丁 |
 | 搜索 | SearXNG | [`searxng-start-local`](./searxng-start-local/README.md) | `8888` | 本地聚合搜索与 JSON API |
 | 消息队列 | Kafka + Kafka UI | [`kafka-start-local`](./kafka-start-local/README.md) | `9092`, `19000` | 消息流与事件驱动开发 |
 | 文档处理 | LibreOffice | [`libreoffice-start-local`](./libreoffice-start-local/README.md) | 无 | Headless 文档格式转换 |
