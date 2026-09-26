@@ -31,6 +31,7 @@ Grafana, and other infrastructure without installing each service manually.
 | --- | --- | --- | --- |
 | Search and logs | Elasticsearch, Kibana, Logstash | [`elastic-start-local`](./elastic-start-local/README.md) | `9200`, `5601`, `5044` |
 | Content collection | RSSHub | [`rsshub-start-local`](./rsshub-start-local/README.md) | `1200` |
+| Content collection | MediaCrawler (host process; version and patches recorded here only) | [`mediacrawler-start-local`](./mediacrawler-start-local/README.md) | — |
 | Search | SearXNG | [`searxng-start-local`](./searxng-start-local/README.md) | `8888` |
 | Event streaming | Kafka and Kafka UI | [`kafka-start-local`](./kafka-start-local/README.md) | `9092`, `19000` |
 | Document processing | LibreOffice headless | [`libreoffice-start-local`](./libreoffice-start-local/README.md) | — |
