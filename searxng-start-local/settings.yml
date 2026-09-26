@@ -1,0 +1,25 @@
+# Local SearXNG settings used by HotKey and Firecrawl.
+# Only overrides are listed; everything else comes from the image defaults.
+use_default_settings: true
+
+general:
+  instance_name: "local-searxng"
+
+server:
+  # The real secret comes from SEARXNG_SECRET in the environment.
+  secret_key: "overridden-by-SEARXNG_SECRET"
+  limiter: false
+  image_proxy: false
+  public_instance: false
+
+search:
+  safe_search: 0
+  default_lang: "all"
+  # HotKey and Firecrawl call /search?format=json.
+  formats:
+    - html
+    - json
+
+outgoing:
+  request_timeout: 6.0
+  max_request_timeout: 12.0
