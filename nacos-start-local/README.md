@@ -5,7 +5,7 @@
 ## English Summary
 
 This directory provides a standalone Nacos server for local service discovery and config testing.
-It uses `.env` for token-related configuration and stores data and logs in local directories.
+It uses `.env` for token-related configuration, a Docker named volume for database data, and a local directory for logs.
 Create `.env` from `.env.example` before startup.
 
 ## 服务简介
@@ -26,7 +26,7 @@ Create `.env` from `.env.example` before startup.
 | Nacos gRPC | `9849` | 客户端通信 |
 | Nacos gRPC | `9850` | 客户端通信 |
 
-- 控制台地址：`http://localhost:8840/nacos`
+- 控制台地址：`http://localhost:8840/`
 - 默认控制台账号：`nacos / nacos`
 
 ## 前置条件
@@ -56,13 +56,13 @@ docker compose up -d
 
 ## 数据持久化与清理
 
-- 数据目录：`./nacos/data`
+- 数据卷：`nacos-start-local-data`（Docker 管理，避免 Derby 数据库放在 Windows bind mount 上）
 - 日志目录：`./nacos/logs`
+
+`docker compose down` 不会删除数据卷。需要重置 Nacos 时，请先确认并备份该卷中的数据；删除数据卷会清空 Nacos 配置及注册数据。
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./nacos/data ./nacos/logs
 ```
 
 ## 常用命令
