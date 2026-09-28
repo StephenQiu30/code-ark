@@ -18,7 +18,7 @@ services:
       - JVM_XMN=128m
     volumes:
       - ./nacos/logs:/home/nacos/logs
-      - ./nacos/data:/home/nacos/data
+      - nacos-data:/home/nacos/data
     ports:
       - "8840:8080"
       - "8848:8848"
@@ -29,3 +29,8 @@ services:
 networks:
   nacos-network:
     driver: bridge
+
+volumes:
+  nacos-data:
+    name: nacos-start-local-data
+    external: true
