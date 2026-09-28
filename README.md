@@ -1,18 +1,13 @@
-# Code Ark（代码方舟）：Docker Compose 本地开发环境一键启动
+# Code Ark（代码方舟）：Docker Compose 本地开发环境与中间件模板
 
 [![GitHub stars](https://img.shields.io/github/stars/StephenQiu30/code-ark?style=flat-square&logo=github)](https://github.com/StephenQiu30/code-ark)
 [![GitHub last commit](https://img.shields.io/github/last-commit/StephenQiu30/code-ark?style=flat-square)](https://github.com/StephenQiu30/code-ark/commits/main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-**Code Ark（代码方舟，原 DevForge）** 是一个开源的 Docker Compose
-本地开发环境合集。无需手动安装中间件，即可按需启动 Elasticsearch、Kibana、
-Logstash、Kafka、MySQL、PostgreSQL、Redis、RabbitMQ、MinIO、Nacos、RocketMQ、
-Seata、Sentinel、Prometheus、Grafana 和 XXL-Job 等常用服务。
+**Code Ark（代码方舟）** 是面向 Java、Go、Python 和 Node.js 开发者的开源 Docker Compose 本地开发环境合集。仓库提供 17 个可独立启动的开发基础设施栈，包括 PostgreSQL、MySQL、Redis、Kafka、RabbitMQ、Elasticsearch、Nacos、MinIO 和 Prometheus/Grafana，并覆盖 OCR 与文档处理场景。进入目标服务目录运行 Compose，即可为本地开发、接口联调、集成测试或学习实验准备常用中间件。
 
-适用于 Java、Go、Python、Node.js 等项目的本地开发、接口联调、集成测试和团队环境初始化。
-
-[English README](./README.en.md) · [服务列表](#支持的-docker-服务) · [快速开始](#快速开始) · [贡献指南](./CONTRIBUTING.md)
+[English README](./README.en.md) · [服务列表](#docker-compose-服务目录本地开发中间件) · [快速开始](#快速开始) · [贡献指南](./CONTRIBUTING.md)
 
 ## 为什么选择 Code Ark
 
@@ -23,9 +18,9 @@ Seata、Sentinel、Prometheus、Grafana 和 XXL-Job 等常用服务。
 - **跨平台**：适用于 Linux、macOS Docker Desktop 和 Windows WSL 2。
 - **适合协作**：统一的目录和文档结构可帮助团队快速搭建开发环境。
 
-> 本仓库面向本地开发与测试，不建议直接作为生产环境配置使用。
+> 建议用于本地开发、学习和集成测试。正式部署前，请根据实际环境完善密钥管理、备份、高可用、TLS、访问控制和容量规划。
 
-## 支持的 Docker 服务
+## Docker Compose 服务目录（本地开发中间件）
 
 Code Ark 覆盖数据库、消息队列、搜索与日志、对象存储、服务治理、分布式事务、任务调度、监控和文档处理等常见开发基础设施。
 
@@ -76,7 +71,7 @@ cd code-ark
 
 ### 启动一个本地服务
 
-以 PostgreSQL 为例：
+在克隆后的仓库目录中，以启动 PostgreSQL 数据库为例：
 
 ```bash
 cd pgsql-start-local
@@ -95,7 +90,7 @@ cp .env.example .env
 
 每个服务目录都包含独立 README，请在启动前查看相应的端口、密码、内存和数据卷说明。
 
-RSSHub 和 SearXNG 各有独立的 `docker-compose.yml`；进入相应服务目录后分别执行 `docker compose up -d`。Firecrawl 与 MediaCrawler 在各自源码目录独立部署，MediaCrawler 按需运行。
+RSSHub 和 SearXNG 同样提供独立的 Compose 配置。启动前请查看对应服务 README，确认端口、凭据、资源需求和持久化设置。
 
 ## 常用 Docker Compose 命令
 
@@ -133,19 +128,21 @@ code-ark/
 ├── CONTRIBUTING.md             # 贡献指南
 ├── elastic-start-local/        # Elasticsearch、Kibana、Logstash
 ├── kafka-start-local/          # Kafka 与 Kafka UI
+├── libreoffice-start-local/    # Headless 文档转换
 ├── minio-start-local/          # MinIO 对象存储
 ├── monitoring-start-local/     # Prometheus 与 Grafana
 ├── mysql-start-lcoal/          # MySQL
-├── nacos-start-local/          # Nacos
+├── nacos-start-local/          # Nacos 服务发现与配置管理
+├── ocr-start-local/            # PaddleOCR API
 ├── pgsql-start-local/          # PostgreSQL
 ├── rabbitmq-start-lcoal/       # RabbitMQ
 ├── redis-start-local/          # Redis
 ├── rsshub-start-local/         # RSSHub
-├── searxng-start-local/        # SearXNG
+├── searxng-start-local/        # SearXNG 聚合搜索
 ├── rocketmq-start-local/       # RocketMQ
-├── seata-start-local/          # Seata
-├── sentinel-start-local/       # Sentinel
-└── xxjob-start-local/          # XXL-Job
+├── seata-start-local/          # Seata 分布式事务
+├── sentinel-start-local/       # Sentinel 流量治理
+└── xxjob-start-local/          # XXL-Job 任务调度
 ```
 
 ## 常见问题
@@ -172,7 +169,7 @@ code-ark/
 
 欢迎提交新的 Docker Compose 开发环境、文档改进和问题修复。开始前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
-如果 Code Ark 对你有帮助，欢迎为仓库点一个 Star，方便更多开发者找到它。
+如果 Code Ark 帮你更快搭建了本地开发环境，欢迎给仓库点一个 Star，或通过 Issue 分享你希望加入的服务和改进建议。更多开发者因此找到并改进这些模板，项目也会持续完善。
 
 ## License
 
