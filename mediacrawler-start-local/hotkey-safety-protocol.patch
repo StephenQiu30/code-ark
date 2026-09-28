@@ -1,0 +1,287 @@
+From 17ebf359a08fff8c1d202c4fb18d694d7a71bbe8 Mon Sep 17 00:00:00 2001
+From: StephenQiu30 <popcornqhd@gmail.com>
+Date: Sat, 26 Sep 2026 13:54:32 +0800
+Subject: [PATCH 1/2] =?UTF-8?q?feat(docker):=E6=96=B0=E5=A2=9E=20MediaCraw?=
+ =?UTF-8?q?ler=20=E6=8C=89=E9=9C=80=E5=AE=B9=E5=99=A8=E5=85=A5=E5=8F=A3?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .dockerignore      | 12 ++++++++++++
+ Dockerfile.local   | 21 +++++++++++++++++++++
+ LOCAL-DOCKER.md    | 13 +++++++++++++
+ docker-compose.yml | 22 ++++++++++++++++++++++
+ 4 files changed, 68 insertions(+)
+ create mode 100644 .dockerignore
+ create mode 100644 Dockerfile.local
+ create mode 100644 LOCAL-DOCKER.md
+ create mode 100644 docker-compose.yml
+
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 0000000..e5474b9
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,12 @@
++.git
++.venv
++__pycache__
++*.pyc
++.env*
++data
++browser_data
++node_modules
++webui/node_modules
++webui/dist
++tests
++test
+diff --git a/Dockerfile.local b/Dockerfile.local
+new file mode 100644
+index 0000000..bac649c
+--- /dev/null
++++ b/Dockerfile.local
+@@ -0,0 +1,21 @@
++FROM python:3.11-bookworm
++
++ENV DEBIAN_FRONTEND=noninteractive \
++    UV_LINK_MODE=copy \
++    UV_PYTHON_DOWNLOADS=never \
++    UV_NO_DEV=1 \
++    MEDIACRAWLER_CONTAINER=1 \
++    PYTHONUNBUFFERED=1
++
++RUN apt-get update \
++    && apt-get install -y --no-install-recommends nodejs ffmpeg libgl1 \
++    && rm -rf /var/lib/apt/lists/* \
++    && python -m pip install --no-cache-dir uv
++
++WORKDIR /app
++COPY pyproject.toml uv.lock ./
++RUN uv sync --frozen --no-dev
++RUN uv run --no-sync playwright install --with-deps chromium
++COPY . .
++
++CMD ["uv", "run", "--no-sync", "main.py", "--help"]
+diff --git a/LOCAL-DOCKER.md b/LOCAL-DOCKER.md
+new file mode 100644
+index 0000000..720b0fb
+--- /dev/null
++++ b/LOCAL-DOCKER.md
+@@ -0,0 +1,13 @@
++# MediaCrawler 本地容器入口
++
++`docker-compose.yml` 的 `crawler` 服务只按需运行，不配置开机自动采集。镜像安装与 `uv.lock` 对应的 Python 依赖和 Chromium，容器模式禁用宿主机 Chrome CDP，使用无头浏览器。
++
++```bash
++docker compose build crawler
++docker compose run --rm crawler uv run --no-sync main.py --help
++# 在获授权且已处理登录方式后，传入项目 main.py 的参数执行具体任务。
++```
++
++任务数据保存在原项目 `data/`；容器浏览器状态保存在独立的 `browser_data/docker/`，不会覆盖 macOS 上已有的 Chrome 或 MediaCrawler 浏览器目录。二维码、短信、验证码登录和具体平台采集尚需单独验收。HotKey 当前的 MediaCrawler 适配器仍使用宿主机子进程，本容器入口不代表 HotKey 已改为容器调用。
++
++本项目许可证为非商业学习研究用途，使用时仍需遵守许可证及目标平台条款。
+diff --git a/docker-compose.yml b/docker-compose.yml
+new file mode 100644
+index 0000000..66f5618
+--- /dev/null
++++ b/docker-compose.yml
+@@ -0,0 +1,22 @@
++name: mediacrawler
++
++services:
++  crawler:
++    container_name: mediacrawler
++    profiles: [manual]
++    build:
++      context: .
++      dockerfile: Dockerfile.local
++    image: mediacrawler:local
++    init: true
++    environment:
++      MEDIACRAWLER_CONTAINER: "1"
++    working_dir: /app
++    volumes:
++      - ./data:/app/data
++      - ./browser_data/docker:/app/browser_data
++    shm_size: 1gb
++    cpus: 2.0
++    mem_limit: 3g
++    restart: "no"
++    command: ["uv", "run", "--no-sync", "main.py", "--help"]
+-- 
+2.54.0 (Apple Git-157)
+
+
+From 1bd07bc783963acef092ff00771207b7792b8cb6 Mon Sep 17 00:00:00 2001
+From: StephenQiu30 <popcornqhd@gmail.com>
+Date: Mon, 28 Sep 2026 21:14:21 +0800
+Subject: [PATCH 2/2] =?UTF-8?q?fix(bilibili):=E4=B8=BAHotKey=E5=AD=90?=
+ =?UTF-8?q?=E8=BF=9B=E7=A8=8B=E5=A2=9E=E5=8A=A0=E5=8F=97=E6=8E=A7=E9=A3=8E?=
+ =?UTF-8?q?=E6=8E=A7=E9=80=80=E5=87=BA=E7=A0=81?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+仅显式 HotKey 安全模式下，将需要本人重新登录、HTTP 429 和未登录数值码转为固定退出码；普通错误保留原分类，避免根据日志文本推断风控。
+
+验证：B站与参数相关测试 22 passed；main.py --help 显示安全模式参数。未执行真实账号请求。
+---
+ cmd_arg/arg.py                       | 11 +++++
+ config/base_config.py                |  1 +
+ media_platform/bilibili/client.py    |  4 ++
+ media_platform/bilibili/login.py     |  4 ++
+ tests/test_bilibili_hotkey_safety.py | 64 ++++++++++++++++++++++++++++
+ 5 files changed, 84 insertions(+)
+ create mode 100644 tests/test_bilibili_hotkey_safety.py
+
+diff --git a/cmd_arg/arg.py b/cmd_arg/arg.py
+index 8ea133d..459b113 100644
+--- a/cmd_arg/arg.py
++++ b/cmd_arg/arg.py
+@@ -308,6 +308,14 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
+                 rich_help_panel="Storage Configuration",
+             ),
+         ] = config.SAVE_DATA_PATH,
++        hotkey_safety_mode: Annotated[
++            str,
++            typer.Option(
++                "--hotkey_safety_mode",
++                help="Emit bounded Bilibili safety exit codes for the HotKey subprocess",
++                rich_help_panel="Runtime Configuration",
++            ),
++        ] = str(config.HOTKEY_SAFETY_MODE),
+         enable_ip_proxy: Annotated[
+             str,
+             typer.Option(
+@@ -372,6 +380,9 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
+         config.CRAWLER_MAX_NOTES_COUNT = crawler_max_notes_count
+         config.MAX_CONCURRENCY_NUM = max_concurrency_num
+         config.SAVE_DATA_PATH = save_data_path
++        config.HOTKEY_SAFETY_MODE = _to_bool(hotkey_safety_mode)
++        if config.HOTKEY_SAFETY_MODE and platform != PlatformEnum.BILIBILI:
++            raise typer.BadParameter("HotKey safety mode is only supported for Bilibili")
+         config.ENABLE_IP_PROXY = enable_ip_proxy_value
+         config.IP_PROXY_POOL_COUNT = ip_proxy_pool_count
+         config.IP_PROXY_PROVIDER_NAME = ip_proxy_provider_name
+diff --git a/config/base_config.py b/config/base_config.py
+index 6661646..4ac27b5 100644
+--- a/config/base_config.py
++++ b/config/base_config.py
+@@ -31,6 +31,7 @@ XHS_INTERNATIONAL = False
+ 
+ KEYWORDS = "编程副业,编程兼职"  # Keyword search configuration, separated by English commas
+ LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
++HOTKEY_SAFETY_MODE = False  # Explicit exit codes for the reviewed Bilibili subprocess bridge.
+ COOKIES = ""
+ CRAWLER_TYPE = (
+     "search"  # Crawling type, search (keyword search) | detail (post details) | creator (creator homepage data)
+diff --git a/media_platform/bilibili/client.py b/media_platform/bilibili/client.py
+index 4ff7948..003417a 100644
+--- a/media_platform/bilibili/client.py
++++ b/media_platform/bilibili/client.py
+@@ -83,11 +83,15 @@ class BilibiliClient(AbstractApiClient, ProxyRefreshMixin):
+ 
+         async with make_async_client(proxy=self.proxy) as client:
+             response = await client.request(method, url, timeout=self.timeout, **kwargs)
++        if config.HOTKEY_SAFETY_MODE and response.status_code == 429:
++            raise SystemExit(71)
+         try:
+             data: Dict = response.json()
+         except json.JSONDecodeError:
+             utils.logger.error(f"[BilibiliClient.request] Failed to decode JSON from response. status_code: {response.status_code}, response_text: {response.text}")
+             raise DataFetchError(f"Failed to decode JSON, content: {response.text}")
++        if config.HOTKEY_SAFETY_MODE and data.get("code") == -101:
++            raise SystemExit(70)
+         if data.get("code") != 0:
+             raise DataFetchError(data.get("message", "unkonw error"))
+         else:
+diff --git a/media_platform/bilibili/login.py b/media_platform/bilibili/login.py
+index 13e31a1..8b068b5 100644
+--- a/media_platform/bilibili/login.py
++++ b/media_platform/bilibili/login.py
+@@ -79,6 +79,10 @@ class BilibiliLogin(AbstractLogin):
+     async def begin(self):
+         """Start login bilibili"""
+         utils.logger.info("[BilibiliLogin.begin] Begin login Bilibili ...")
++        if config.HOTKEY_SAFETY_MODE:
++            # The operator checks the dedicated profile outside this collection job.
++            # A missing/expired session must never start QR or slider interaction.
++            raise SystemExit(70)
+         if config.LOGIN_TYPE == "qrcode":
+             await self.login_by_qrcode()
+         elif config.LOGIN_TYPE == "phone":
+diff --git a/tests/test_bilibili_hotkey_safety.py b/tests/test_bilibili_hotkey_safety.py
+new file mode 100644
+index 0000000..0b4d603
+--- /dev/null
++++ b/tests/test_bilibili_hotkey_safety.py
+@@ -0,0 +1,64 @@
++"""HotKey's Bilibili child uses typed exits, never log text as a risk signal."""
++
++from types import SimpleNamespace
++from unittest.mock import AsyncMock
++
++import pytest
++
++import config
++from media_platform.bilibili.client import BilibiliClient
++from media_platform.bilibili.exception import DataFetchError
++from media_platform.bilibili.login import BilibiliLogin
++
++
++@pytest.mark.asyncio
++async def test_missing_login_stops_before_qr_interaction(monkeypatch):
++    monkeypatch.setattr(config, "HOTKEY_SAFETY_MODE", True)
++    login = BilibiliLogin(login_type="qrcode", browser_context=None, context_page=None)
++    with pytest.raises(SystemExit) as failure:
++        await login.begin()
++    assert failure.value.code == 70
++
++
++@pytest.mark.asyncio
++@pytest.mark.parametrize(
++    ("status", "payload", "exit_code"),
++    [
++        (429, {"code": 0}, 71),
++        (200, {"code": -101, "message": "arbitrary upstream text"}, 70),
++    ],
++)
++async def test_numeric_upstream_risk_has_typed_exit(
++    monkeypatch, status, payload, exit_code
++):
++    monkeypatch.setattr(config, "HOTKEY_SAFETY_MODE", True)
++    response = SimpleNamespace(status_code=status, json=lambda: payload)
++    client_context = AsyncMock()
++    client_context.__aenter__.return_value.request.return_value = response
++    monkeypatch.setattr(
++        "media_platform.bilibili.client.make_async_client",
++        lambda **_kwargs: client_context,
++    )
++    client = BilibiliClient(headers={}, playwright_page=None, cookie_dict={})
++    monkeypatch.setattr(client, "_refresh_proxy_if_expired", AsyncMock())
++
++    with pytest.raises(SystemExit) as failure:
++        await client.request("GET", "https://api.bilibili.com/test")
++    assert failure.value.code == exit_code
++
++
++@pytest.mark.asyncio
++async def test_unclassified_error_keeps_ordinary_failure(monkeypatch):
++    monkeypatch.setattr(config, "HOTKEY_SAFETY_MODE", True)
++    response = SimpleNamespace(status_code=200, json=lambda: {"code": -500, "message": "captcha"})
++    client_context = AsyncMock()
++    client_context.__aenter__.return_value.request.return_value = response
++    monkeypatch.setattr(
++        "media_platform.bilibili.client.make_async_client",
++        lambda **_kwargs: client_context,
++    )
++    client = BilibiliClient(headers={}, playwright_page=None, cookie_dict={})
++    monkeypatch.setattr(client, "_refresh_proxy_if_expired", AsyncMock())
++
++    with pytest.raises(DataFetchError):
++        await client.request("GET", "https://api.bilibili.com/test")
+-- 
+2.54.0 (Apple Git-157)
+
