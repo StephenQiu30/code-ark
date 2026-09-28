@@ -1,16 +1,13 @@
-# Code Ark: Ready-to-Run Docker Compose Development Environments
+# Code Ark: Docker Compose Templates for Local Development
 
 [![GitHub stars](https://img.shields.io/github/stars/StephenQiu30/code-ark?style=flat-square&logo=github)](https://github.com/StephenQiu30/code-ark)
 [![GitHub last commit](https://img.shields.io/github/last-commit/StephenQiu30/code-ark?style=flat-square)](https://github.com/StephenQiu30/code-ark/commits/main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-**Code Ark** is an open-source collection of ready-to-run Docker Compose
-environments for local development and integration testing. Start Elasticsearch,
-Kafka, MySQL, PostgreSQL, Redis, RabbitMQ, MinIO, Nacos, RocketMQ, Prometheus,
-Grafana, and other infrastructure without installing each service manually.
+**Code Ark** is an open-source collection of Docker Compose templates for local development. It provides 17 independently startable infrastructure stacks, including PostgreSQL, MySQL, Redis, Kafka, RabbitMQ, Elasticsearch, Nacos, MinIO, and Prometheus/Grafana, plus OCR and document processing. Java, Go, Python, and Node.js developers can start only the middleware they need for local development, API integration, testing, or learning.
 
-[中文文档](./README.md) · [Service catalog](#docker-service-catalog) ·
+[中文文档](./README.md) · [Service catalog](#docker-compose-service-catalog-for-local-development) ·
 [Quick start](#quick-start) · [Contributing](./CONTRIBUTING.md)
 
 ## Why Code Ark?
@@ -22,10 +19,9 @@ Grafana, and other infrastructure without installing each service manually.
 - **Cross-platform:** works with Linux, macOS Docker Desktop, and Windows WSL 2.
 - **Team friendly:** consistent commands make developer onboarding reproducible.
 
-> Code Ark is designed for local development and testing. The default
-> configurations are not production-ready.
+> Use these stacks for local development, learning, and integration testing. Before production deployment, add environment-specific secret management, backups, high availability, TLS, access controls, and capacity planning.
 
-## Docker service catalog
+## Docker Compose service catalog for local development
 
 | Category | Service | Directory | Default ports |
 | --- | --- | --- | --- |
@@ -63,7 +59,7 @@ git clone https://github.com/StephenQiu30/code-ark.git
 cd code-ark
 ```
 
-Start PostgreSQL locally:
+From the cloned repository, start a local PostgreSQL database:
 
 ```bash
 cd pgsql-start-local
@@ -83,7 +79,7 @@ cp .env.example .env
 Open the README inside a service directory for its ports, credentials, resource
 settings, and data persistence instructions.
 
-RSSHub and SearXNG each have their own `docker-compose.yml`; run `docker compose up -d` inside each service directory. Firecrawl and MediaCrawler are deployed from their own source directories, with MediaCrawler run on demand.
+RSSHub and SearXNG also provide independent Compose configurations. Read the service README before startup for ports, credentials, resource requirements, and persistence details.
 
 ## Common commands
 
@@ -135,8 +131,9 @@ backups, access controls, monitoring, high availability, and capacity planning.
 Contributions for new development stacks, documentation, and fixes are welcome.
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
 
-If Code Ark helps your workflow, consider starring the repository so other
-developers can discover it.
+If Code Ark helps you set up a local development environment faster, star the
+repository or open an issue with a service you'd like to see added. Your feedback
+helps other developers discover and improve these templates.
 
 ## License
 
