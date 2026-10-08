@@ -5,14 +5,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-**Code Ark（代码方舟）** 是面向 Java、Go、Python 和 Node.js 开发者的开源 Docker Compose 本地开发环境合集。仓库提供 17 个可独立启动的开发基础设施栈，包括 PostgreSQL、MySQL、Redis、Kafka、RabbitMQ、Elasticsearch、Nacos、MinIO 和 Prometheus/Grafana，并覆盖 OCR 与文档处理场景。进入目标服务目录运行 Compose，即可为本地开发、接口联调、集成测试或学习实验准备常用中间件。
+**Code Ark（代码方舟）** 是面向 Java、Go、Python 和 Node.js 开发者的开源 Docker Compose 本地开发环境合集。仓库提供 18 个按服务目录组织的开发基础设施栈，包括 PostgreSQL、MySQL、Redis、Kafka、RabbitMQ、Elasticsearch、Nacos、MinIO、Temporal 和 Prometheus/Grafana，并覆盖 OCR 与文档处理场景。进入目标服务目录运行 Compose，即可为本地开发、接口联调、集成测试或学习实验准备常用中间件。
 
 [English README](./README.en.md) · [服务列表](#docker-compose-服务目录本地开发中间件) · [快速开始](#快速开始) · [贡献指南](./CONTRIBUTING.md)
 
 ## 为什么选择 Code Ark
 
 - **开箱即用**：每个服务都提供可直接运行的 `docker-compose.yml`。
-- **按需启动**：中间件彼此独立，不必一次运行整套基础设施。
+- **按需启动**：按服务目录选择需要的中间件，依赖关系见对应 README，不必一次运行整套基础设施。
 - **配置清晰**：通过 `.env.example` 管理版本、端口、凭据和资源参数。
 - **数据可控**：每个目录都说明数据持久化、停止和清理方式。
 - **跨平台**：适用于 Linux、macOS Docker Desktop 和 Windows WSL 2。
@@ -43,9 +43,12 @@ Code Ark 覆盖数据库、消息队列、搜索与日志、对象存储、服�
 | 消息队列 | RocketMQ | [`rocketmq-start-local`](./rocketmq-start-local/README.md) | `15876`, `15911`, `18180` | NameServer、Broker 与 Console |
 | 分布式事务 | Seata | [`seata-start-local`](./seata-start-local/README.md) | `7091`, `8091` | 分布式事务协调 |
 | 服务治理 | Sentinel | [`sentinel-start-local`](./sentinel-start-local/README.md) | `8858`, `8719` | 流量控制、熔断和限流 |
+| 工作流编排 | Temporal + Temporal UI | [`temporal-start-local`](./temporal-start-local/README.md) | `7233`, `18080` | 持久化工作流、任务重试与执行查询 |
 | 任务调度 | XXL-Job | [`xxjob-start-local`](./xxjob-start-local/README.md) | `18081` | 分布式任务调度中心 |
 
 > 为保持兼容性，`mysql-start-lcoal` 和 `rabbitmq-start-lcoal` 暂时保留了历史目录拼写。
+
+Temporal 复用 `pgsql-start-local` 的 PostgreSQL 和网络，启动前请先启动该数据库并配置实际可用凭据。
 
 ## 快速开始
 
@@ -126,6 +129,7 @@ code-ark/
 ├── README.md                   # 中文项目首页与服务导航
 ├── README.en.md                # English documentation
 ├── CONTRIBUTING.md             # 贡献指南
+├── AGENTS.md                   # 自动化协作与 Docker Compose 规范
 ├── elastic-start-local/        # Elasticsearch、Kibana、Logstash
 ├── kafka-start-local/          # Kafka 与 Kafka UI
 ├── libreoffice-start-local/    # Headless 文档转换
@@ -142,6 +146,7 @@ code-ark/
 ├── rocketmq-start-local/       # RocketMQ
 ├── seata-start-local/          # Seata 分布式事务
 ├── sentinel-start-local/       # Sentinel 流量治理
+├── temporal-start-local/       # Temporal 工作流与 Web UI
 └── xxjob-start-local/          # XXL-Job 任务调度
 ```
 

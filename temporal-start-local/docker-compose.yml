@@ -1,0 +1,120 @@
+name: temporal-start-local
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+x-database-environment: &database-environment
+  POSTGRES_SEEDS: ${TEMPORAL_POSTGRES_HOST:-pgsql-start-dev}
+  DB_PORT: "5432"
+  POSTGRES_USER: ${PGSQL_USER:?set PGSQL_USER to the existing PostgreSQL user}
+  POSTGRES_PWD: ${PGSQL_PASSWORD:?set PGSQL_PASSWORD to the existing PostgreSQL password}
+  TZ: ${TZ:-Asia/Shanghai}
+
+services:
+  temporal-schema-setup:
+    image: temporalio/admin-tools:${TEMPORAL_VERSION:-1.31.0}
+    container_name: temporal-schema-setup-start-dev
+    environment:
+      <<: *database-environment
+      SQL_PASSWORD: ${PGSQL_PASSWORD:?set PGSQL_PASSWORD to the existing PostgreSQL password}
+    volumes:
+      - type: bind
+        source: ./scripts/setup-postgres.sh
+        target: /scripts/setup-postgres.sh
+        read_only: true
+        bind:
+          create_host_path: false
+    entrypoint: ["/bin/sh", "/scripts/setup-postgres.sh"]
+    restart: "on-failure:3"
+    cpus: 1.0
+    mem_limit: 256m
+    logging: *default-logging
+
+  temporal:
+    image: temporalio/server:${TEMPORAL_VERSION:-1.31.0}
+    container_name: temporal-start-dev
+    depends_on:
+      temporal-schema-setup:
+        condition: service_completed_successfully
+    environment:
+      <<: *database-environment
+      DB: postgres12
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+      BIND_ON_IP: 0.0.0.0
+      NUM_HISTORY_SHARDS: "4"
+      LOG_LEVEL: info
+      DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/config/dynamicconfig/development-sql.yaml
+    ports:
+      - "${TEMPORAL_BIND_ADDRESS:-127.0.0.1}:${TEMPORAL_PORT:-7233}:7233"
+    volumes:
+      - type: bind
+        source: ./dynamicconfig/development-sql.yaml
+        target: /etc/temporal/config/dynamicconfig/development-sql.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "7233"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+    cpus: 2.0
+    mem_limit: 1g
+    logging: *default-logging
+
+  temporal-namespace-setup:
+    image: temporalio/admin-tools:${TEMPORAL_VERSION:-1.31.0}
+    container_name: temporal-namespace-setup-start-dev
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - type: bind
+        source: ./scripts/create-namespace.sh
+        target: /scripts/create-namespace.sh
+        read_only: true
+        bind:
+          create_host_path: false
+    entrypoint: ["/bin/sh", "/scripts/create-namespace.sh"]
+    restart: "on-failure:3"
+    cpus: 0.5
+    mem_limit: 256m
+    logging: *default-logging
+
+  temporal-ui:
+    image: temporalio/ui:${TEMPORAL_UI_VERSION:-2.49.1}
+    container_name: temporal-ui-start-dev
+    depends_on:
+      temporal-namespace-setup:
+        condition: service_completed_successfully
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_DEFAULT_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${TEMPORAL_BIND_ADDRESS:-127.0.0.1}:${TEMPORAL_UI_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 256m
+    logging: *default-logging
+
+networks:
+  default:
+    external: true
+    name: ${PGSQL_DOCKER_NETWORK:-pgsql-start-local_default}
