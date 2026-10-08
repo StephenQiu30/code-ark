@@ -1,12 +1,17 @@
 # PostgreSQL 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动 PostgreSQL 18，联调 SQL、应用接口与初始化脚本；也可作为本仓库 Temporal 的共享数据库。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
 
-This directory starts a local PostgreSQL 16 instance for development and testing.
+<details>
+<summary>English summary</summary>
+
+This directory starts a local PostgreSQL 18 instance for development and testing.
 It uses `.env` based configuration and supports optional initialization scripts.
 Create `.env` from `.env.example` before startup.
+
+</details>
 
 ## 服务简介
 
@@ -45,7 +50,7 @@ docker compose up -d
 
 其他说明：
 
-- 镜像版本固定为 `postgres:16`
+- 镜像版本固定为 `postgres:18`
 - 初始化脚本目录：`./pgsql-init`
 - 健康检查会使用 `.env` 中的用户名和数据库名
 
@@ -56,9 +61,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./pgsql-data
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./pgsql-data` 中的对应数据。
 
 ## 常用命令
 
@@ -72,9 +77,6 @@ docker compose down
 
 ## 使用说明
 
+- 数据目录已初始化后，修改 `.env` 中的用户名、密码或数据库名不会自动修改已有数据库；连接时使用实际已存在的账号，不要通过清空共享数据来修复凭据问题。
 - 宿主机连接地址：`localhost:5432`
-- 如果你需要重新执行初始化 SQL，通常需要先清空 `./pgsql-data`
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)
+- 入口初始化 SQL 仅在空数据目录首次启动时执行；已有数据库需按实际变更执行 SQL，重置整个数据目录会影响其全部数据库。

@@ -1,12 +1,17 @@
 # XXL-Job 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动 XXL-Job 2.4.1 调度中心，验证执行器注册与任务调度；启动前需准备 MySQL 和初始化 SQL。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory starts an XXL-Job admin server for local scheduling tests.
 It depends on an external MySQL instance and includes the initialization SQL file.
 Create `.env` from `.env.example` and import the SQL before startup.
+
+</details>
 
 ## 服务简介
 
@@ -62,8 +67,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-rm -rf ./logs/xxl-job
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./logs/xxl-job` 中的对应数据。
 
 ## 常用命令
 
@@ -78,7 +84,3 @@ docker compose down
 
 - `host.docker.internal` 适合容器访问宿主机 MySQL
 - 如果管理台无法启动，请优先检查数据库连通性和初始化 SQL 是否已执行
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

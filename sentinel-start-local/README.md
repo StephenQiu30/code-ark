@@ -1,12 +1,17 @@
 # Sentinel 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动 Sentinel 1.8.8 Dashboard，在本地验证流控、熔断降级与客户端规则配置。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory starts a local Sentinel dashboard for traffic control and circuit breaking tests.
 It supports `.env` based port configuration and a simple one-command startup flow.
 Create `.env` from `.env.example` before startup.
+
+</details>
 
 ## 服务简介
 
@@ -61,9 +66,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./sentinel
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./sentinel` 中的对应数据。
 
 ## 常用命令
 
@@ -79,7 +84,3 @@ docker compose down
 
 - 当前配置为单机模式，Dashboard 规则默认不会持久化到外部存储
 - Spring Cloud Alibaba 客户端通常连接 `localhost:8858`
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

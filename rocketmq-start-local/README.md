@@ -1,12 +1,17 @@
 # RocketMQ 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+一起启动 RocketMQ NameServer、Broker 和 Console，联调消息收发并查看 Topic。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory provides a local RocketMQ stack with NameServer, Broker, and Console.
 It is suitable for local messaging tests and integration debugging.
 The current setup does not require a `.env` file.
+
+</details>
 
 ## 服务简介
 
@@ -67,9 +72,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./data/broker
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./data/broker` 中的对应数据。
 
 ## 常用命令
 
@@ -87,7 +92,3 @@ docker compose down
 - 宿主机应用连接 NameServer 时使用 `localhost:15876`
 - Docker 网络内的容器应使用 `namesrv:9876`
 - 如果你要调整 Broker 参数，请修改 `conf/broker.conf`
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

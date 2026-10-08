@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="title description">
+  <title id="title">Code Ark — local infrastructure, ready when you are</title>
+  <desc id="description">An illustrated ark carries modular containers beside the Code Ark title and a real Docker Compose startup command. This is a conceptual illustration of choosing infrastructure for local development.</desc>
+  <rect width="1200" height="440" rx="24" fill="#101a24"/>
+  <g id="project-title" font-family="Segoe UI, Arial, sans-serif">
+    <text x="56" y="68" font-size="20" letter-spacing="3" fill="#9aaebb">DOCKER COMPOSE / LOCAL DEVELOPMENT</text>
+    <text x="52" y="170" font-size="86" font-weight="700" letter-spacing="-3" fill="#f3f7fa">Code Ark<tspan fill="#ffa36b">.</tspan></text>
+    <text x="56" y="223" font-size="32" fill="#d2dee7">Pick a service.</text>
+    <text x="56" y="265" font-size="32" fill="#d2dee7">Start building.</text>
+  </g>
+  <g id="compose-command" font-family="Consolas, Menlo, monospace" font-size="26">
+    <path d="M56 315H540" stroke="#31404c" stroke-width="1"/>
+    <text x="56" y="360" fill="#ffa36b">$<tspan dx="14" fill="#f3f7fa">docker compose up -d</tspan></text>
+  </g>
+  <g id="generated-ark-subject">
+    <image xlink:href="hero-subject.png" x="565" y="25" width="610" height="390" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+</svg>

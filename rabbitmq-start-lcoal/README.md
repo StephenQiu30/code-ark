@@ -1,12 +1,17 @@
 # RabbitMQ 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动带 Web 管理界面的 RabbitMQ 4.2.3，在本地验证交换机、队列、路由与生产者 / 消费者。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory starts RabbitMQ with the management console enabled.
 It uses `.env` based credentials and persists broker data locally.
 Create `.env` from `.env.example` before startup.
+
+</details>
 
 ## 服务简介
 
@@ -53,9 +58,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./rabbitmq-data
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./rabbitmq-data` 中的对应数据。
 
 ## 常用命令
 
@@ -71,7 +76,3 @@ docker compose down
 - 宿主机应用连接 RabbitMQ 时使用 `localhost:5672`
 - 浏览器登录管理界面时使用 `.env` 中的账号密码
 - 当前目录名保留历史拼写 `rabbitmq-start-lcoal`
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

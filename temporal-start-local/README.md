@@ -1,14 +1,19 @@
 # Temporal 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+复用现有 PostgreSQL，启动 Temporal Server 与 UI，在本地接入持久化工作流并查看执行状态。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#组件与端口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This Compose project runs Temporal Server 1.31.0 and UI 2.49.1 using the existing
 PostgreSQL service in `pgsql-start-local`. Start PostgreSQL first, copy
 `.env.example` to `.env`, set its existing database credentials, then run
 `docker compose up -d`. The gRPC endpoint is `127.0.0.1:7233`, the UI is
 `http://127.0.0.1:18080`, and the namespace is `default`.
+
+</details>
 
 ## 服务简介
 

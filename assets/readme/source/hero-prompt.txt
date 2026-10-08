@@ -1,0 +1,9 @@
+Use case: stylized-concept
+Asset type: transparent subject layer for Code Ark's GitHub README hero, composed later with exact SVG typography.
+Communication job: Code Ark collects local Docker Compose infrastructure. A compact ark carrying separate service containers makes the repository name and its modular infrastructure purpose visible.
+Subject: one carefully designed miniature cargo ark, a low boat-shaped steel platform carrying six tidy modular shipping containers arranged in three staggered tiers. One module has subtle rack ventilation, another a small cylindrical storage unit, another a simple branching pipe detail; these are abstract physical cues for databases, messaging and workflows, not labeled products. Distinct modules look individually selectable but form one practical toolkit. Bow faces right, seen from above at a three-quarter view; clear silhouette.
+Style: high-quality tactile 3D product illustration; precise industrial engineering, matte powder-coated metal, restrained realistic edge highlights and surface detail. Sophisticated and approachable, no fantasy, no cartoon mascot.
+Palette: midnight navy hull (#101a24), muted steel blue (#407898), warm off-white containers (#e5e6df), one restrained burnt-copper container (#d78958). Soft studio lighting from upper left; clean edges suitable for a dark navy composition.
+Composition: entire object centered as a single isolated cutout, horizontal approximately 3:2 proportion, generous transparent margins, no cropped parts. It must remain recognizable at a small README size.
+Background: genuinely transparent alpha. No sea, water, ground plane, cast shadow outside the subject, scenery or background elements. Contact shading within the object is allowed.
+Constraints: no letters, numbers, text, logos, brand marks, UI, badges, arrows, cables sticking out of frame, watermark, people or animals. Do not add a whale. Typography and commands will be added separately as SVG.

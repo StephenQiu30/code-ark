@@ -1,12 +1,17 @@
 # Redis 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+无需 `.env`，直接启动开启 AOF 持久化的 Redis，为本地缓存、锁和消息实验提供服务。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory starts a local Redis instance with append-only persistence enabled.
 It is suitable for local caching, message tests, and lightweight development scenarios.
 The current setup does not require a `.env` file.
+
+</details>
 
 ## 服务简介
 
@@ -51,9 +56,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./data
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./data` 中的对应数据。
 
 ## 常用命令
 
@@ -68,7 +73,3 @@ docker compose down
 
 - 宿主机连接地址：`localhost:6379`
 - 当前配置更适合本地开发，不适合直接暴露到不受信任网络
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

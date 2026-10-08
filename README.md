@@ -1,181 +1,130 @@
-# Code Ark（代码方舟）：Docker Compose 本地开发环境与中间件模板
+# Code Ark · 代码方舟
 
-[![GitHub stars](https://img.shields.io/github/stars/StephenQiu30/code-ark?style=flat-square&logo=github)](https://github.com/StephenQiu30/code-ark)
-[![GitHub last commit](https://img.shields.io/github/last-commit/StephenQiu30/code-ark?style=flat-square)](https://github.com/StephenQiu30/code-ark/commits/main)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
-[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+<p align="center">
+  <img src="./assets/readme/hero.png" width="100%" alt="Code Ark：按需选择本地基础服务，通过 Docker Compose 启动。方舟承载模块化容器的概念插画。">
+</p>
 
-**Code Ark（代码方舟）** 是面向 Java、Go、Python 和 Node.js 开发者的开源 Docker Compose 本地开发环境合集。仓库提供 18 个按服务目录组织的开发基础设施栈，包括 PostgreSQL、MySQL、Redis、Kafka、RabbitMQ、Elasticsearch、Nacos、MinIO、Temporal 和 Prometheus/Grafana，并覆盖 OCR 与文档处理场景。进入目标服务目录运行 Compose，即可为本地开发、接口联调、集成测试或学习实验准备常用中间件。
+<p align="center">
+  <a href="https://github.com/StephenQiu30/code-ark/stargazers"><img src="https://img.shields.io/github/stars/StephenQiu30/code-ark?style=flat-square&amp;color=407898" alt="GitHub Stars"></a>
+  <a href="https://github.com/StephenQiu30/code-ark/commits/main"><img src="https://img.shields.io/github/last-commit/StephenQiu30/code-ark?style=flat-square&amp;color=407898" alt="最近提交"></a>
+  <a href="https://docs.docker.com/compose/"><img src="https://img.shields.io/badge/Docker-Compose-407898?style=flat-square&amp;logo=docker&amp;logoColor=white" alt="Docker Compose"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-d78958?style=flat-square" alt="MIT License"></a>
+</p>
 
-[English README](./README.en.md) · [服务列表](#docker-compose-服务目录本地开发中间件) · [快速开始](#快速开始) · [贡献指南](./CONTRIBUTING.md)
+**把搭建中间件的时间，留给写代码。**
 
-## 为什么选择 Code Ark
+Code Ark（代码方舟）收集了 **16 套 Docker Compose 配置**，覆盖数据库、缓存、消息队列、工作流、搜索、对象存储和监控。适合 Java、Go、Python、Node.js 开发者进行本地开发、接口联调和集成测试：选择需要的服务目录，按对应说明启动。
 
-- **开箱即用**：每个服务都提供可直接运行的 `docker-compose.yml`。
-- **按需启动**：按服务目录选择需要的中间件，依赖关系见对应 README，不必一次运行整套基础设施。
-- **配置清晰**：通过 `.env.example` 管理版本、端口、凭据和资源参数。
-- **数据可控**：每个目录都说明数据持久化、停止和清理方式。
-- **跨平台**：适用于 Linux、macOS Docker Desktop 和 Windows WSL 2。
-- **适合协作**：统一的目录和文档结构可帮助团队快速搭建开发环境。
-
-> 建议用于本地开发、学习和集成测试。正式部署前，请根据实际环境完善密钥管理、备份、高可用、TLS、访问控制和容量规划。
-
-## Docker Compose 服务目录（本地开发中间件）
-
-Code Ark 覆盖数据库、消息队列、搜索与日志、对象存储、服务治理、分布式事务、任务调度、监控和文档处理等常见开发基础设施。
-
-| 分类 | 服务 | 目录 | 默认端口 | 用途 |
-| --- | --- | --- | --- | --- |
-| 搜索与日志 | Elasticsearch + Kibana + Logstash | [`elastic-start-local`](./elastic-start-local/README.md) | `9200`, `5601`, `5044` | 全文搜索、日志采集与可视化 |
-| 内容采集 | RSSHub | [`rsshub-start-local`](./rsshub-start-local/README.md) | `1200` | 本地 RSS 路由与热榜 |
-| 内容采集 | MediaCrawler | [`mediacrawler-start-local`](./mediacrawler-start-local/README.md) | 无（宿主机） | 宿主机运行；此处仅记录固定版本与补丁 |
-| 搜索 | SearXNG | [`searxng-start-local`](./searxng-start-local/README.md) | `8888` | 本地聚合搜索与 JSON API |
-| 消息队列 | Kafka + Kafka UI | [`kafka-start-local`](./kafka-start-local/README.md) | `9092`, `19000` | 消息流与事件驱动开发 |
-| 文档处理 | LibreOffice | [`libreoffice-start-local`](./libreoffice-start-local/README.md) | 无 | Headless 文档格式转换 |
-| 对象存储 | MinIO | [`minio-start-local`](./minio-start-local/README.md) | `9000`, `9001` | S3 兼容对象存储 |
-| 可观测性 | Prometheus + Grafana | [`monitoring-start-local`](./monitoring-start-local/README.md) | `19090`, `13000` | 指标采集、告警与仪表盘 |
-| 数据库 | MySQL 8 | [`mysql-start-lcoal`](./mysql-start-lcoal/README.md) | `3306` | 关系型数据库 |
-| 服务治理 | Nacos | [`nacos-start-local`](./nacos-start-local/README.md) | `8840`, `8848`, `9848-9850` | 注册中心与配置中心 |
-| AI / OCR | PaddleOCR | [`ocr-start-local`](./ocr-start-local/README.md) | `18868` | 本地图片文字识别 API |
-| 数据库 | PostgreSQL | [`pgsql-start-local`](./pgsql-start-local/README.md) | `5432` | 关系型数据库 |
-| 消息队列 | RabbitMQ | [`rabbitmq-start-lcoal`](./rabbitmq-start-lcoal/README.md) | `5672`, `15672` | AMQP 消息队列与管理台 |
-| 缓存 | Redis | [`redis-start-local`](./redis-start-local/README.md) | `6379` | 缓存、分布式锁与消息 |
-| 消息队列 | RocketMQ | [`rocketmq-start-local`](./rocketmq-start-local/README.md) | `15876`, `15911`, `18180` | NameServer、Broker 与 Console |
-| 分布式事务 | Seata | [`seata-start-local`](./seata-start-local/README.md) | `7091`, `8091` | 分布式事务协调 |
-| 服务治理 | Sentinel | [`sentinel-start-local`](./sentinel-start-local/README.md) | `8858`, `8719` | 流量控制、熔断和限流 |
-| 工作流编排 | Temporal + Temporal UI | [`temporal-start-local`](./temporal-start-local/README.md) | `7233`, `18080` | 持久化工作流、任务重试与执行查询 |
-| 任务调度 | XXL-Job | [`xxjob-start-local`](./xxjob-start-local/README.md) | `18081` | 分布式任务调度中心 |
-
-> 为保持兼容性，`mysql-start-lcoal` 和 `rabbitmq-start-lcoal` 暂时保留了历史目录拼写。
-
-Temporal 复用 `pgsql-start-local` 的 PostgreSQL 和网络，启动前请先启动该数据库并配置实际可用凭据。
+[English](./README.en.md) · [快速开始](#快速开始) · [服务目录](#服务目录) · [日常使用](#日常使用) · [参与贡献](#参与贡献)
 
 ## 快速开始
 
-### 环境要求
-
-- Docker Engine 或 Docker Desktop
-- Docker Compose v2（使用 `docker compose` 命令）
-- Git
-
-检查环境：
-
-```bash
-docker --version
-docker compose version
-```
-
-### 克隆 Code Ark
+先运行一个不需要 `.env` 的 Redis 示例。需要 **Docker Engine / Docker Desktop、Docker Compose v2 及以上版本，以及 Git**。
 
 ```bash
 git clone https://github.com/StephenQiu30/code-ark.git
-cd code-ark
-```
-
-### 启动一个本地服务
-
-在克隆后的仓库目录中，以启动 PostgreSQL 数据库为例：
-
-```bash
-cd pgsql-start-local
-cp .env.example .env
+cd code-ark/redis-start-local
 docker compose up -d
-docker compose ps
+docker compose exec redis redis-cli ping
 ```
 
-启动带有 Elasticsearch、Kibana 和 Logstash 的 Elastic Stack：
+看到 `PONG`，就可以让本机应用连接 `localhost:6379`。用完运行 `docker compose stop`；Redis 的 AOF 数据保存在当前目录的 `data/` 中。
+
+> 其他服务可能需要 `.env`、初始化 SQL 或已有数据库。每个目录的 README 都说明了自己的启动条件；无需同时启动整套环境。
+
+## 选一个适合你的入口
+
+- **后端接口开发** → [PostgreSQL](./pgsql-start-local/README.md)、[MySQL](./mysql-start-lcoal/README.md)、[Redis](./redis-start-local/README.md)、[MinIO](./minio-start-local/README.md)。
+- **消息与异步任务** → [Kafka](./kafka-start-local/README.md)、[RabbitMQ](./rabbitmq-start-lcoal/README.md)、[Temporal](./temporal-start-local/README.md)。
+- **服务发现与分布式应用** → [Nacos](./nacos-start-local/README.md)、[Sentinel](./sentinel-start-local/README.md)、[Seata](./seata-start-local/README.md)。
+- **搜索、日志与指标** → [Elastic Stack](./elastic-start-local/README.md)、[Prometheus / Grafana](./monitoring-start-local/README.md)。
+- **RSS 与搜索 API** → [RSSHub](./rsshub-start-local/README.md)、[SearXNG](./searxng-start-local/README.md)。
+
+## 为什么放在同一个仓库
+
+**按目录选择服务。** 每个服务有自己的 Compose 和说明文件，方便按应用需求组合；需要复用数据库的服务会明确列出依赖。
+
+**配置与数据位置可见。** 需要环境变量的目录提供 `.env.example`，文档说明连接端口、初始化、数据目录或命名卷，便于团队复用。
+
+**沿用熟悉的 Docker 命令。** 多数服务使用 `docker compose up -d` 启动；Elastic Stack 提供构建和内存预检脚本，复杂服务的步骤留在各自文档中。
+
+## 服务目录
+
+下面列出默认宿主机端口；点击服务名查看凭据、资源需求和启动步骤。端口有冲突时，按对应服务配置调整。
+
+### 数据与存储
+
+| 服务 | 默认端口 | 用途 |
+| --- | --- | --- |
+| [PostgreSQL 18](./pgsql-start-local/README.md) | `5432` | SQL、关系型数据、初始化脚本 |
+| [MySQL 8.0](./mysql-start-lcoal/README.md) | `3306` | 关系型数据与应用联调 |
+| [Redis](./redis-start-local/README.md) | `6379` | 缓存、锁与消息实验；AOF 持久化 |
+| [MinIO](./minio-start-local/README.md) | `9000` / `9001` | S3 兼容接口与管理控制台 |
+
+### 消息、工作流与调度
+
+| 服务 | 默认端口 | 用途 |
+| --- | --- | --- |
+| [Kafka + Kafka UI](./kafka-start-local/README.md) | `9092` / `19000` | 事件流、主题与消费者组观察 |
+| [RabbitMQ](./rabbitmq-start-lcoal/README.md) | `5672` / `15672` | AMQP 消息与管理控制台 |
+| [RocketMQ](./rocketmq-start-local/README.md) | `15876` / `15909` / `15911` / `15912` / `18180` | NameServer、Broker 与 Console |
+| [Temporal + UI](./temporal-start-local/README.md) | `7233` / `18080` | 持久化工作流；复用本仓库 PostgreSQL |
+| [XXL-Job](./xxjob-start-local/README.md) | `18081` | 调度中心；需 MySQL 与初始化 SQL |
+
+### 治理、搜索与观测
+
+| 服务 | 默认端口 | 用途 |
+| --- | --- | --- |
+| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | 注册与配置中心；先创建外部数据卷 |
+| [Sentinel](./sentinel-start-local/README.md) | `8858` / `8719` | 流控、熔断与规则实验 |
+| [Seata](./seata-start-local/README.md) | `7091` / `8091` | 分布式事务；需 MySQL 元数据表 |
+| [Elastic Stack](./elastic-start-local/README.md) | `9200` / `5601` / `5044` | 搜索、IK 分词、日志与 Kibana |
+| [Prometheus + Grafana](./monitoring-start-local/README.md) | `19090` / `13000` | 指标采集、告警与仪表盘 |
+
+Logstash 还发布 `5000`（TCP / UDP）和 `9600`，详见服务文档。
+
+### 内容与搜索 API
+
+| 服务 | 默认端口 | 用途 |
+| --- | --- | --- |
+| [RSSHub](./rsshub-start-local/README.md) | `1200` | RSS 路由；Chromium bundled 镜像 |
+| [SearXNG](./searxng-start-local/README.md) | `8888` | 聚合搜索与 JSON API |
+
+另有 [MediaCrawler 固定版本与补丁说明](./mediacrawler-start-local/README.md)，用于宿主机运行的采集工具，不提供 Compose 服务。历史目录名 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 保留以兼容已有使用方式。
+
+## 日常使用
+
+在选定的服务目录中运行：
 
 ```bash
-cd elastic-start-local
-cp .env.example .env
-./start.sh
+docker compose ps -a           # 容器状态，包括一次性初始化任务
+docker compose logs -f        # 查看日志
+docker compose stop           # 停止容器
+docker compose up -d          # 再次启动
+docker compose down           # 移除当前项目容器和网络
 ```
 
-每个服务目录都包含独立 README，请在启动前查看相应的端口、密码、内存和数据卷说明。
+需要 `.env` 的服务，**首次**复制 `.env.example` 并填写自己的配置；已有 `.env` 时保留它。PowerShell 可使用 `Copy-Item .env.example .env`。密码、Token、API Key 不应提交到 Git。
 
-RSSHub 和 SearXNG 同样提供独立的 Compose 配置。启动前请查看对应服务 README，确认端口、凭据、资源需求和持久化设置。
+<details>
+<summary><strong>数据会保留吗？容器里的应用连接哪个地址？</strong></summary>
 
-## 常用 Docker Compose 命令
+- `stop` 和普通 `down` 不删除持久化目录或命名卷。`down -v` 会删除本项目命名卷，不会删除宿主机绑定目录，也不会清空外部数据库。
+- 宿主机应用使用发布端口；容器里的 `localhost` 指向容器自己，应按服务 README 使用服务名、容器端口或宿主机入口。
+- Temporal 复用 `pgsql-start-local`，先启动 PostgreSQL。Seata、XXL-Job 需要可访问的 MySQL 和对应表结构。
+- Nacos 使用外部命名卷，首次运行 `docker volume create nacos-start-local-data`；详情见其 README。
+- Elastic Stack 建议通过 `./start.sh` 启动。脚本要求 Docker 虚拟机至少有 6 GB 内存，Windows 下使用 WSL / 兼容 Shell。
 
-在目标服务目录中执行：
+</details>
 
-```bash
-# 后台启动
-docker compose up -d
-
-# 查看容器状态和日志
-docker compose ps
-docker compose logs -f
-
-# 停止或移除容器
-docker compose stop
-docker compose down
-
-# 同时删除命名数据卷（会丢失本地数据）
-docker compose down -v
-```
-
-## 配置与安全
-
-1. 将服务目录中的 `.env.example` 复制为 `.env`。
-2. 按需修改镜像版本、端口、用户名、密码和内存限制。
-3. 不要把包含真实密码、Token 或 API Key 的 `.env` 提交到版本控制。
-4. 如果修改了默认端口，请同步修改应用程序的连接地址。
-
-## 项目结构
-
-```text
-code-ark/
-├── README.md                   # 中文项目首页与服务导航
-├── README.en.md                # English documentation
-├── CONTRIBUTING.md             # 贡献指南
-├── AGENTS.md                   # 自动化协作与 Docker Compose 规范
-├── elastic-start-local/        # Elasticsearch、Kibana、Logstash
-├── kafka-start-local/          # Kafka 与 Kafka UI
-├── libreoffice-start-local/    # Headless 文档转换
-├── minio-start-local/          # MinIO 对象存储
-├── monitoring-start-local/     # Prometheus 与 Grafana
-├── mysql-start-lcoal/          # MySQL
-├── nacos-start-local/          # Nacos 服务发现与配置管理
-├── ocr-start-local/            # PaddleOCR API
-├── pgsql-start-local/          # PostgreSQL
-├── rabbitmq-start-lcoal/       # RabbitMQ
-├── redis-start-local/          # Redis
-├── rsshub-start-local/         # RSSHub
-├── searxng-start-local/        # SearXNG 聚合搜索
-├── rocketmq-start-local/       # RocketMQ
-├── seata-start-local/          # Seata 分布式事务
-├── sentinel-start-local/       # Sentinel 流量治理
-├── temporal-start-local/       # Temporal 工作流与 Web UI
-└── xxjob-start-local/          # XXL-Job 任务调度
-```
-
-## 常见问题
-
-### 可以只启动一个中间件吗？
-
-可以。每个目录都是独立的 Docker Compose 项目，只会启动当前目录定义的服务。
-
-### 如何快速搭建本地 Elasticsearch 和 Kibana？
-
-进入 `elastic-start-local`，复制 `.env.example` 后执行 `./start.sh`。
-脚本会检查 Docker 内存、构建 IK 分词插件并等待服务健康。
-
-### 数据在容器停止后会丢失吗？
-
-普通的 `docker compose stop` 或 `docker compose down` 不会删除命名卷。
-执行 `docker compose down -v` 会删除对应数据卷，请谨慎使用。
-
-### 这些配置可以直接用于生产环境吗？
-
-不建议。本仓库优先考虑本地开发的易用性。生产环境还需要完善的密钥管理、备份、高可用、TLS、访问控制、监控和容量规划。
+这些配置面向本地开发与学习。生产部署需结合实际环境补充认证、TLS、备份、高可用与容量规划；部分目录使用 `latest`，团队复现前可自行固定兼容版本。
 
 ## 参与贡献
 
-欢迎提交新的 Docker Compose 开发环境、文档改进和问题修复。开始前请阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+缺一个你常用的服务？欢迎 [提交需求](https://github.com/StephenQiu30/code-ark/issues/new) 或按 [贡献指南](./CONTRIBUTING.md) 添加模板。修复启动问题、校准文档和分享使用反馈同样有帮助；自动化协作约定见 [AGENTS.md](./AGENTS.md)。
 
-如果 Code Ark 帮你更快搭建了本地开发环境，欢迎给仓库点一个 Star，或通过 Issue 分享你希望加入的服务和改进建议。更多开发者因此找到并改进这些模板，项目也会持续完善。
+**如果 Code Ark 帮你省下了搭建环境的时间，欢迎 [给项目一个 Star](https://github.com/StephenQiu30/code-ark)。** 收藏这份工具箱，下次搭建新项目时可以直接回来找需要的服务。
 
 ## License
 
-Code Ark 使用 [MIT License](./LICENSE) 开源。
+仓库配置与文档采用 [MIT License](./LICENSE)。第三方软件、镜像及 MediaCrawler 的使用需分别遵循各自上游许可。

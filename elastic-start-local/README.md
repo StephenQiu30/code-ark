@@ -1,13 +1,18 @@
 # Elastic Stack 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+把搜索、IK 分词、日志采集与 Kibana 放在同一套本地环境中，适合搜索联调和日志可视化实验。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory provides a local Elastic Stack for development with
 Elasticsearch, Kibana, and Logstash.
 Use it for local search, log ingestion, and dashboard validation.
 Create your own `.env` from `.env.example` before the first run.
+
+</details>
 
 ## 服务简介
 
@@ -75,6 +80,8 @@ BuildKit 与正在运行的 Elasticsearch 争抢内存。Docker 虚拟机默认�
 
 ## 数据持久化与清理
 
+普通 `down` 保留命名卷；只有明确需要清空本项目数据时，备份后执行 `docker compose down -v`。
+
 该目录使用 Docker named volumes 持久化数据：
 
 - `dev-elasticsearch`
@@ -85,7 +92,6 @@ BuildKit 与正在运行的 Elasticsearch 争抢内存。Docker 虚拟机默认�
 
 ```bash
 docker compose down
-docker compose down -v
 ```
 
 ## 常用命令
@@ -96,7 +102,6 @@ docker compose down -v
 docker compose logs -f
 docker compose stop
 docker compose down
-docker compose down -v
 ./stop.sh
 ```
 
@@ -105,7 +110,3 @@ docker compose down -v
 - 应用连接 Elasticsearch 时，宿主机地址使用 `http://localhost:9200`
 - Kibana 入口为 `http://localhost:5601`
 - 如果修改了密码，请确保 Kibana 与 Elasticsearch 使用的密码保持一致
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

@@ -1,12 +1,17 @@
 # MySQL 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动 MySQL 8.0，使用独立数据目录和可选初始化 SQL 联调关系型数据与应用接口。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory starts a local MySQL 8 instance for development.
 It supports `.env` based configuration and optional initialization scripts.
 Create `.env` from `.env.example` before startup.
+
+</details>
 
 ## 服务简介
 
@@ -47,7 +52,7 @@ docker compose up -d
 其他说明：
 
 - 镜像版本固定为 `mysql:8.0`
-- 时区固定为 `Asia/Shanghai`
+- 时区通过 `.env` 中的 `TZ` 设置，示例为 `Asia/Shanghai`
 - 启动参数中已启用 `mysql_native_password`
 - 初始化 SQL 可以放到 `./mysql-init`
 
@@ -58,9 +63,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./mysql-data
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./mysql-data` 中的对应数据。
 
 ## 常用命令
 
@@ -76,7 +81,3 @@ docker compose down
 - 宿主机连接地址：`localhost:3306`
 - 如果需要重新执行初始化脚本，通常需要先停止容器并清空 `./mysql-data`
 - 当前目录名保留历史拼写 `mysql-start-lcoal`
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)
