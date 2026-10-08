@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-**Code Ark** is an open-source collection of Docker Compose templates for local development. It provides 17 independently startable infrastructure stacks, including PostgreSQL, MySQL, Redis, Kafka, RabbitMQ, Elasticsearch, Nacos, MinIO, and Prometheus/Grafana, plus OCR and document processing. Java, Go, Python, and Node.js developers can start only the middleware they need for local development, API integration, testing, or learning.
+**Code Ark** is an open-source collection of Docker Compose templates for local development. It provides 18 infrastructure stacks organized by service directory, including PostgreSQL, MySQL, Redis, Kafka, RabbitMQ, Elasticsearch, Nacos, MinIO, Temporal, and Prometheus/Grafana, plus OCR and document processing. Java, Go, Python, and Node.js developers can start only the middleware they need for local development, API integration, testing, or learning.
 
 [中文文档](./README.md) · [Service catalog](#docker-compose-service-catalog-for-local-development) ·
 [Quick start](#quick-start) · [Contributing](./CONTRIBUTING.md)
@@ -42,10 +42,13 @@
 | Message queue | RocketMQ | [`rocketmq-start-local`](./rocketmq-start-local/README.md) | `15876`, `15911`, `18180` |
 | Distributed transaction | Seata | [`seata-start-local`](./seata-start-local/README.md) | `7091`, `8091` |
 | Traffic protection | Sentinel | [`sentinel-start-local`](./sentinel-start-local/README.md) | `8858`, `8719` |
+| Workflow orchestration | Temporal and Temporal UI | [`temporal-start-local`](./temporal-start-local/README.md) | `7233`, `18080` |
 | Job scheduling | XXL-Job | [`xxjob-start-local`](./xxjob-start-local/README.md) | `18081` |
 
 The historical directory names `mysql-start-lcoal` and `rabbitmq-start-lcoal`
 are retained for compatibility.
+
+Temporal reuses PostgreSQL and its network from `pgsql-start-local`. Start that database first and configure working database credentials.
 
 ## Quick start
 
