@@ -1,12 +1,17 @@
 # MinIO 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+为应用准备本地 S3 兼容存储，通过 Web 控制台管理文件并联调上传、下载流程。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory provides a local MinIO server with the web console enabled.
 Use it for S3-compatible object storage testing during development.
 Create `.env` from `.env.example` before startup.
+
+</details>
 
 ## 服务简介
 
@@ -50,9 +55,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
-rm -rf ./data
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./data` 中的对应数据。
 
 ## 常用命令
 
@@ -67,7 +72,3 @@ docker compose down
 
 - S3 SDK 可直接连接 `http://localhost:9000`
 - 浏览器访问控制台时使用 `.env` 中的账号密码登录
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

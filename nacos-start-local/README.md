@@ -1,12 +1,17 @@
 # Nacos 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动单机 Nacos 3.1.1，在本地验证服务注册、配置管理和客户端接入。首次运行需准备外部数据卷。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory provides a standalone Nacos server for local service discovery and config testing.
 It uses `.env` for token-related configuration, a Docker named volume for database data, and a local directory for logs.
 Create `.env` from `.env.example` before startup.
+
+</details>
 
 ## 服务简介
 
@@ -32,13 +37,16 @@ Create `.env` from `.env.example` before startup.
 ## 前置条件
 
 - 已安装 Docker 和 Docker Compose
-- 首次启动前准备 `.env`
+- 首次启动前准备 `.env`，使用有效的 Base64 编码认证密钥
+- 数据卷 `nacos-start-local-data` 是外部卷，首次运行需先创建
 
 ## 快速启动
 
 ```bash
 cd nacos-start-local
 cp .env.example .env
+# 编辑 .env，设置 NACOS_AUTH_TOKEN
+docker volume create nacos-start-local-data
 docker compose up -d
 ```
 
@@ -79,7 +87,3 @@ docker compose down
 - 宿主机应用通常连接 `localhost:8848`
 - 控制台登录与客户端 token 是两类配置，请分别处理
 - 不要把实际 token 提交到仓库
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

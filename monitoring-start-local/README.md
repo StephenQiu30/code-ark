@@ -1,12 +1,17 @@
 # Monitoring 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+使用 Prometheus 采集指标、Grafana 查看仪表盘，在开发环境中验证采集目标和告警规则。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory provides a lightweight monitoring stack based on Prometheus and Grafana.
 It is intended for local dashboards, metric collection, and alert rule validation.
 The current setup does not require a `.env` file.
+
+</details>
 
 ## 服务简介
 
@@ -63,6 +68,8 @@ docker compose up -d
 
 ## 数据持久化与清理
 
+普通 `down` 保留命名卷；只有明确需要清空本项目数据时，备份后执行 `docker compose down -v`。
+
 该目录使用 Docker named volumes：
 
 - `prometheus-data`
@@ -70,7 +77,6 @@ docker compose up -d
 
 ```bash
 docker compose down
-docker compose down -v
 ```
 
 ## 常用命令
@@ -89,7 +95,3 @@ docker compose down
 - 如果要接入新的 Prometheus 采集目标，请修改 `prometheus/prometheus.yml`
 - 如果要新增告警规则，请修改 `prometheus/rules/alerts.yml`
 - 如果需要预置 Grafana 数据源或面板，请在 `grafana/provisioning` 目录下扩展
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)

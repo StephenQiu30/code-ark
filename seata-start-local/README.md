@@ -1,12 +1,17 @@
 # Seata 本地开发环境
 
-> [返回项目首页](../README.md) | [Back to root](../README.md)
+启动 Seata 1.8.0，验证分布式事务协调；启动前需准备可访问的 MySQL 与元数据表。
 
-## English Summary
+[项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
 
 This directory provides a local Seata server for distributed transaction testing.
 It depends on an external MySQL instance for metadata storage.
 Create `.env` from `.env.example` and prepare the required database tables before startup.
+
+</details>
 
 ## 服务简介
 
@@ -70,8 +75,9 @@ docker compose up -d
 
 ```bash
 docker compose down
-rm -rf ./seata/logs
 ```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./seata/logs` 中的对应数据。
 
 ## 常用命令
 
@@ -87,7 +93,3 @@ docker compose down
 - `MYSQL_HOST` 默认可使用 `host.docker.internal` 连接宿主机数据库
 - 如果 Seata 无法启动，请优先检查 MySQL 连通性和元数据表是否已初始化
 - 不要把真实数据库密码写进 README 或提交到仓库
-
-## 返回导航
-
-- 项目首页：[`../README.md`](../README.md)
