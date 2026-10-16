@@ -1,2 +1,10 @@
 - pipeline.id: main
-  path.config: "/usr/share/logstash/pipeline/logstash.conf"
+  path.config: /usr/share/logstash/pipeline/logstash.conf
+- pipeline.id: lucky-logs
+  path.config: /usr/share/logstash/pipeline/lucky-logs.conf
+  pipeline.workers: 1
+  queue.type: persisted
+  queue.max_bytes: 134217728b
+  queue.checkpoint.writes: 1
+  dead_letter_queue.enable: true
+  dead_letter_queue.max_bytes: 67108864b
