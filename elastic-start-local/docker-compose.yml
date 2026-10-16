@@ -123,6 +123,15 @@ services:
     - XPACK_MONITORING_ELASTICSEARCH_USERNAME=elastic
     - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ES_LOCAL_PASSWORD}
     - LS_JAVA_OPTS=${LOGSTASH_LOCAL_JAVA_OPTS}
+    - LUCKY_LOG_KAFKA_BROKER=${LUCKY_LOG_KAFKA_BROKER:-kafka:29092}
+    - LUCKY_LOG_KAFKA_TOPIC=${LUCKY_LOG_KAFKA_TOPIC:-lucky-logs}
+    - LUCKY_LOG_KAFKA_GROUP=${LUCKY_LOG_KAFKA_GROUP:-lucky-logstash}
+    - LUCKY_LOG_KAFKA_CLIENT=${LUCKY_LOG_KAFKA_CLIENT:-logstash-lucky-logs}
+    - LUCKY_LOG_KAFKA_MAX_POLL=${LUCKY_LOG_KAFKA_MAX_POLL:-500}
+    - LUCKY_LOG_KAFKA_THREADS=${LUCKY_LOG_KAFKA_THREADS:-1}
+    - LUCKY_ELASTIC_HOSTS=http://elasticsearch:9200
+    - LUCKY_ELASTIC_USER=elastic
+    - LUCKY_ELASTIC_PASSWORD=${ES_LOCAL_PASSWORD}
     healthcheck:
       test:
       - CMD-SHELL
@@ -131,18 +140,15 @@ services:
       interval: 10s
       timeout: 10s
       retries: 30
-    env_file:
-    - path: C:/Users/Administrator/.lucky/lucky-local/observability/config/logstash.env
-      format: raw
     networks:
-    - default
-    - lucky-kafka
+      - default
+      - kafka
 volumes:
   dev-elasticsearch: null
   dev-elasticsearch-plugins: null
   dev-kibana: null
   dev-logstash: null
 networks:
-  lucky-kafka:
+  kafka:
     external: true
-    name: kafka-start-local_default
+    name: ${KAFKA_DOCKER_NETWORK:-kafka-start-local_default}

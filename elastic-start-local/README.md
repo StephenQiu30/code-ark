@@ -38,11 +38,15 @@ Create your own `.env` from `.env.example` before the first run.
 
 - 已安装 Docker 和 Docker Compose
 - 首次启动前准备 `.env`
+- 此编排启用 Kafka 日志管道，启动前先运行 `kafka-start-local`；Logstash 通过 Docker 网络 `kafka-start-local_default` 连接 `kafka:29092`
 
 ## 快速启动
 
 ```bash
-cd elastic-start-local
+# From the repository root
+cd kafka-start-local
+docker compose up -d
+cd ../elastic-start-local
 cp .env.example .env
 ./start.sh
 ```
@@ -74,6 +78,7 @@ BuildKit 与正在运行的 Elasticsearch 争抢内存。Docker 虚拟机默认�
 补充说明：
 
 - `start.sh` 会读取 `.env`，并在特定条件下尝试处理 Elastic 许可证逻辑。
+- Lucky 日志消费参数可在 `.env` 中通过 `LUCKY_LOG_KAFKA_*` 配置；Kafka Compose 项目名改变时同步设置 `KAFKA_DOCKER_NETWORK`。
 - 建议使用 `./start.sh` 启动；它会执行内存预检，并确保构建与运行阶段分离。
 - Elasticsearch、Kibana 和 Logstash 设置了内存边界及 `unless-stopped` 重启策略。
 - 请不要把真实密码或 API key 提交到仓库。
