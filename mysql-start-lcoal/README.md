@@ -54,6 +54,7 @@ docker compose up -d
 - 镜像版本固定为 `mysql:8.0`
 - 时区通过 `.env` 中的 `TZ` 设置，示例为 `Asia/Shanghai`
 - 启动参数中已启用 `mysql_native_password`
+- 已启用 `server-id=1`、ROW 格式 binlog 和 FULL 行镜像，供 Canal 等本地订阅服务使用；需重建 MySQL 容器以应用配置，现有数据目录会保留
 - 初始化 SQL 可以放到 `./mysql-init`
 
 ## 数据持久化与清理

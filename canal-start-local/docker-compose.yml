@@ -1,0 +1,41 @@
+services:
+  canal-server:
+    image: canal/canal-server:v1.1.7
+    container_name: canal-start-local
+    restart: unless-stopped
+    networks:
+      - mysql
+    ports:
+      - "127.0.0.1:11111:11111"
+    environment:
+      canal.auto.scan: "false"
+      canal.destinations: example
+      canal.instance.master.address: ${CANAL_MYSQL_ADDRESS:?Set CANAL_MYSQL_ADDRESS in .env}
+      canal.instance.dbUsername: ${CANAL_MYSQL_USER:?Set CANAL_MYSQL_USER in .env}
+      canal.instance.dbPassword: ${CANAL_MYSQL_PASSWORD:?Set CANAL_MYSQL_PASSWORD in .env}
+      canal.instance.connectionCharset: UTF-8
+      canal.instance.gtidon: "false"
+      canal.instance.tsdb.enable: "true"
+      canal.instance.filter.regex: ${CANAL_FILTER_REGEX:-.*\\..*}
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z -w 2 127.0.0.1 11111"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+networks:
+  mysql:
+    external: true
+    name: mysql-start-lcoal_default

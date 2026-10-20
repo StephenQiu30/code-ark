@@ -13,7 +13,7 @@
 
 **把搭建中间件的时间，留给写代码。**
 
-Code Ark（代码方舟）收集了 **16 套 Docker Compose 配置**，覆盖数据库、缓存、消息队列、工作流、搜索、对象存储和监控。适合 Java、Go、Python、Node.js 开发者进行本地开发、接口联调和集成测试：选择需要的服务目录，按对应说明启动。
+Code Ark（代码方舟）收集了 **17 套 Docker Compose 配置**，覆盖数据库、缓存、消息队列、工作流、搜索、对象存储和监控。适合 Java、Go、Python、Node.js 开发者进行本地开发、接口联调和集成测试：选择需要的服务目录，按对应说明启动。
 
 [English](./README.en.md) · [快速开始](#快速开始) · [服务目录](#服务目录) · [日常使用](#日常使用) · [参与贡献](#参与贡献)
 
@@ -35,7 +35,7 @@ docker compose exec redis redis-cli ping
 ## 选一个适合你的入口
 
 - **后端接口开发** → [PostgreSQL](./pgsql-start-local/README.md)、[MySQL](./mysql-start-lcoal/README.md)、[Redis](./redis-start-local/README.md)、[MinIO](./minio-start-local/README.md)。
-- **消息与异步任务** → [Kafka](./kafka-start-local/README.md)、[RabbitMQ](./rabbitmq-start-lcoal/README.md)、[Temporal](./temporal-start-local/README.md)。
+- **消息、数据变更与异步任务** → [Kafka](./kafka-start-local/README.md)、[RabbitMQ](./rabbitmq-start-lcoal/README.md)、[Canal](./canal-start-local/README.md)、[Temporal](./temporal-start-local/README.md)。
 - **服务发现与分布式应用** → [Nacos](./nacos-start-local/README.md)、[Sentinel](./sentinel-start-local/README.md)、[Seata](./seata-start-local/README.md)。
 - **搜索、日志与指标** → [Elastic Stack](./elastic-start-local/README.md)、[Prometheus / Grafana](./monitoring-start-local/README.md)。
 - **RSS 与搜索 API** → [RSSHub](./rsshub-start-local/README.md)、[SearXNG](./searxng-start-local/README.md)。
@@ -66,6 +66,7 @@ docker compose exec redis redis-cli ping
 | 服务 | 默认端口 | 用途 |
 | --- | --- | --- |
 | [Kafka + Kafka UI](./kafka-start-local/README.md) | `9092` / `19000` | 事件流、主题与消费者组观察 |
+| [Canal Server](./canal-start-local/README.md) | `11111` | 复用 MySQL，订阅 ROW binlog 变更 |
 | [RabbitMQ](./rabbitmq-start-lcoal/README.md) | `5672` / `15672` | AMQP 消息与管理控制台 |
 | [RocketMQ](./rocketmq-start-local/README.md) | `15876` / `15909` / `15911` / `15912` / `18180` | NameServer、Broker 与 Console |
 | [Temporal + UI](./temporal-start-local/README.md) | `7233` / `18080` | 持久化工作流；复用本仓库 PostgreSQL |
@@ -111,7 +112,7 @@ docker compose down           # 移除当前项目容器和网络
 
 - `stop` 和普通 `down` 不删除持久化目录或命名卷。`down -v` 会删除本项目命名卷，不会删除宿主机绑定目录，也不会清空外部数据库。
 - 宿主机应用使用发布端口；容器里的 `localhost` 指向容器自己，应按服务 README 使用服务名、容器端口或宿主机入口。
-- Temporal 复用 `pgsql-start-local`，先启动 PostgreSQL。Seata、XXL-Job 需要可访问的 MySQL 和对应表结构。
+- Temporal 复用 `pgsql-start-local`，先启动 PostgreSQL。Canal 复用 MySQL，需启用 ROW binlog 并配置复制账号；Seata、XXL-Job 需要可访问的 MySQL 和对应表结构。
 - Nacos 使用外部命名卷，首次运行 `docker volume create nacos-start-local-data`；详情见其 README。
 - Elastic Stack 建议通过 `./start.sh` 启动。脚本要求 Docker 虚拟机至少有 6 GB 内存，Windows 下使用 WSL / 兼容 Shell。
 

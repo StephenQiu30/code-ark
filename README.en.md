@@ -13,7 +13,7 @@
 
 **Spend your setup time building your application.**
 
-Code Ark brings together **16 Docker Compose configurations** for databases, caching, messaging, workflows, search, object storage, and monitoring. Choose a service directory and follow its setup instructions for local development, integration testing, or learning with Java, Go, Python, or Node.js.
+Code Ark brings together **17 Docker Compose configurations** for databases, caching, messaging, workflows, search, object storage, and monitoring. Choose a service directory and follow its setup instructions for local development, integration testing, or learning with Java, Go, Python, or Node.js.
 
 [中文](./README.md) · [Quick start](#quick-start) · [Service catalog](#service-catalog) · [Daily use](#daily-use) · [Contribute](#contribute)
 
@@ -35,7 +35,7 @@ A `PONG` response means your host application can connect to `localhost:6379`. R
 ## Find your starting point
 
 - **Backend development** → [PostgreSQL](./pgsql-start-local/README.md), [MySQL](./mysql-start-lcoal/README.md), [Redis](./redis-start-local/README.md), [MinIO](./minio-start-local/README.md).
-- **Messaging and background work** → [Kafka](./kafka-start-local/README.md), [RabbitMQ](./rabbitmq-start-lcoal/README.md), [Temporal](./temporal-start-local/README.md).
+- **Messaging, data changes, and background work** → [Kafka](./kafka-start-local/README.md), [RabbitMQ](./rabbitmq-start-lcoal/README.md), [Canal](./canal-start-local/README.md), [Temporal](./temporal-start-local/README.md).
 - **Service discovery and distributed apps** → [Nacos](./nacos-start-local/README.md), [Sentinel](./sentinel-start-local/README.md), [Seata](./seata-start-local/README.md).
 - **Search, logs, and metrics** → [Elastic Stack](./elastic-start-local/README.md), [Prometheus / Grafana](./monitoring-start-local/README.md).
 - **RSS and search APIs** → [RSSHub](./rsshub-start-local/README.md), [SearXNG](./searxng-start-local/README.md).
@@ -66,6 +66,7 @@ These are default host ports. Follow each service link for credentials, resource
 | Service | Default ports | Use |
 | --- | --- | --- |
 | [Kafka + Kafka UI](./kafka-start-local/README.md) | `9092` / `19000` | Event streams, topics, and consumer groups |
+| [Canal Server](./canal-start-local/README.md) | `11111` | Reuses MySQL and subscribes to ROW binlog changes |
 | [RabbitMQ](./rabbitmq-start-lcoal/README.md) | `5672` / `15672` | AMQP messaging and web console |
 | [RocketMQ](./rocketmq-start-local/README.md) | `15876` / `15909` / `15911` / `15912` / `18180` | NameServer, Broker, and Console |
 | [Temporal + UI](./temporal-start-local/README.md) | `7233` / `18080` | Durable workflows; reuses this repo's PostgreSQL |
@@ -111,7 +112,7 @@ For services that need `.env`, copy `.env.example` **on the first run** and set 
 
 - `stop` and ordinary `down` preserve persistent directories and named volumes. `down -v` deletes this project's named volumes, not host bind mounts or external databases.
 - Host applications use published ports. Inside a container, `localhost` means that container; follow its service guide for service names, container ports, or host access.
-- Start `pgsql-start-local` before Temporal. Seata and XXL-Job need accessible MySQL databases and their metadata tables.
+- Start `pgsql-start-local` before Temporal. Canal reuses MySQL and requires ROW binlogging plus a replication account. Seata and XXL-Job need accessible MySQL databases and their metadata tables.
 - Nacos needs an external named volume: run `docker volume create nacos-start-local-data` before its first startup.
 - Start Elastic Stack with `./start.sh`. Its precheck requires at least 6 GB of Docker VM memory; use WSL or a compatible shell on Windows.
 
