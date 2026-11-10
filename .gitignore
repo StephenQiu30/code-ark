@@ -23,6 +23,9 @@
 **/logs/
 *.log
 
+# Firecrawl research cache
+.firecrawl/
+
 # Python cache
 **/__pycache__/
 *.pyc

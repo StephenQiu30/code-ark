@@ -6,16 +6,16 @@ services:
       - nacos-network
     environment:
       - MODE=standalone
-      - TIME_ZONE=${NACOS_TIME_ZONE}
+      - TIME_ZONE=${NACOS_TIME_ZONE:-Asia/Shanghai}
       - NACOS_AUTH_ENABLE=true
-      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN:-U2VjcmV0S2V5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5}
       - NACOS_AUTH_IDENTITY_KEY=nacos
       - NACOS_AUTH_IDENTITY_VALUE=nacos
       - NACOS_AUTH_USERNAME=nacos
       - NACOS_AUTH_PASSWORD=nacos
-      - JVM_XMS=256m
-      - JVM_XMX=256m
-      - JVM_XMN=128m
+      - JVM_XMS=${NACOS_JVM_XMS:-512m}
+      - JVM_XMX=${NACOS_JVM_XMX:-512m}
+      - JVM_XMN=${NACOS_JVM_XMN:-256m}
     volumes:
       - ./nacos/logs:/home/nacos/logs
       - nacos-data:/home/nacos/data
@@ -33,4 +33,3 @@ networks:
 volumes:
   nacos-data:
     name: nacos-start-local-data
-    external: true
