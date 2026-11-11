@@ -7,7 +7,7 @@
 <details>
 <summary>English summary</summary>
 
-This Compose project runs Temporal Server 1.31.0 and UI 2.49.1 using the existing
+This Compose project runs Temporal Server 1.32.2 and UI 2.58.1 using the existing
 PostgreSQL service in `pgsql-start-local`. Start PostgreSQL first, copy
 `.env.example` to `.env`, set its existing database credentials, then run
 `docker compose up -d`. The gRPC endpoint is `127.0.0.1:7233`, the UI is
@@ -63,8 +63,8 @@ PowerShell 使用 `Copy-Item .env.example .env` 代替 `cp`；已有 `.env` 时�
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `TEMPORAL_VERSION` | `1.31.0` | Server 与 admin-tools 共用版本 |
-| `TEMPORAL_UI_VERSION` | `2.49.1` | UI 版本 |
+| `TEMPORAL_VERSION` | `1.32.2` | Server 与 admin-tools 共用版本 |
+| `TEMPORAL_UI_VERSION` | `2.58.1` | UI 版本 |
 | `PGSQL_DOCKER_NETWORK` | `pgsql-start-local_default` | 现有 PostgreSQL 网络 |
 | `TEMPORAL_POSTGRES_HOST` | `pgsql-start-dev` | 现有 PostgreSQL 容器名 |
 | `PGSQL_USER` / `PGSQL_PASSWORD` | 示例 / 占位值 | 必须填写现有 PostgreSQL 凭据 |

@@ -1,6 +1,6 @@
 # RabbitMQ 本地开发环境
 
-启动带 Web 管理界面的 RabbitMQ 4.2.3，在本地验证交换机、队列、路由与生产者 / 消费者。
+启动带 Web 管理界面的 RabbitMQ 4.4.0，在本地验证交换机、队列、路由与生产者 / 消费者。
 
 [项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
 
@@ -50,7 +50,7 @@ docker compose up -d
 - `RABBITMQ_DEFAULT_USER`
 - `RABBITMQ_DEFAULT_PASS`
 
-镜像版本固定为 `rabbitmq:4.2.3-management-alpine`。
+镜像版本固定为 `rabbitmq:4.4.0-management-alpine`。
 
 ## 数据持久化与清理
 

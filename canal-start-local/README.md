@@ -1,13 +1,13 @@
 # Canal 本地增量订阅
 
-Canal Server 复用仓库中的 MySQL 8.0，通过 MySQL binlog 提供增量订阅 TCP 服务。启动前需启用 MySQL ROW binlog 并创建具有复制权限的专用账号。
+Canal Server 复用仓库中的 MySQL 8.4，通过 MySQL binlog 提供增量订阅 TCP 服务。启动前需启用 MySQL ROW binlog 并创建具有复制权限的专用账号。
 
 [项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
 
 <details>
 <summary>English Summary</summary>
 
-This directory runs Canal Server v1.1.7 and reuses the repository's MySQL service. It reads MySQL row-based binlogs and exposes Canal's TCP subscription endpoint. Configure MySQL binlogging and a dedicated replication user before startup.
+This directory runs Canal Server v1.1.8 and reuses the repository's MySQL service. It reads MySQL row-based binlogs and exposes Canal's TCP subscription endpoint. Configure MySQL binlogging and a dedicated replication user before startup.
 
 </details>
 

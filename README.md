@@ -57,7 +57,7 @@ docker compose exec redis redis-cli ping
 | 服务 | 默认端口 | 用途 |
 | --- | --- | --- |
 | [PostgreSQL 18](./pgsql-start-local/README.md) | `5432` | SQL、关系型数据、初始化脚本 |
-| [MySQL 8.0](./mysql-start-lcoal/README.md) | `3306` | 关系型数据与应用联调 |
+| [MySQL 8.4](./mysql-start-lcoal/README.md) | `3306` | 关系型数据与应用联调 |
 | [Redis](./redis-start-local/README.md) | `6379` | 缓存、锁与消息实验；AOF 持久化 |
 | [MinIO](./minio-start-local/README.md) | `9000` / `9001` | S3 兼容接口与管理控制台 |
 

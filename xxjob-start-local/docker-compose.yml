@@ -1,7 +1,7 @@
 services:
   # XXL-Job Admin 调度中心
   xxl-job-admin:
-    image: xuxueli/xxl-job-admin:2.4.1
+    image: xuxueli/xxl-job-admin:3.5.0
     container_name: xxl-job-admin
     restart: unless-stopped
     ports:

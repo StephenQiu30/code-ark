@@ -1,6 +1,6 @@
 services:
   rabbitmq:
-    image: rabbitmq:4.2.3-management-alpine
+    image: rabbitmq:4.4.0-management-alpine
     container_name: rabbitmq-start-dev
     restart: unless-stopped
     hostname: rabbitmq-local

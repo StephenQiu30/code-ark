@@ -1,6 +1,6 @@
 services:
   canal-server:
-    image: canal/canal-server:v1.1.7
+    image: canal/canal-server:v1.1.8
     container_name: canal-start-local
     restart: unless-stopped
     networks:

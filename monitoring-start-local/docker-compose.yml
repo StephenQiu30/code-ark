@@ -1,7 +1,7 @@
 services:
   # Prometheus - 指标采集与存储
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.16.0
     container_name: prometheus
     restart: unless-stopped
     ports:
@@ -38,7 +38,7 @@ services:
 
   # Grafana - 可视化监控面板
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.1
     container_name: grafana
     restart: unless-stopped
     ports:

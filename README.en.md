@@ -57,7 +57,7 @@ These are default host ports. Follow each service link for credentials, resource
 | Service | Default ports | Use |
 | --- | --- | --- |
 | [PostgreSQL 18](./pgsql-start-local/README.md) | `5432` | SQL, relational data, and initialization scripts |
-| [MySQL 8.0](./mysql-start-lcoal/README.md) | `3306` | Relational data and application integration |
+| [MySQL 8.4](./mysql-start-lcoal/README.md) | `3306` | Relational data and application integration |
 | [Redis](./redis-start-local/README.md) | `6379` | Caching, locks, and messaging experiments; AOF persistence |
 | [MinIO](./minio-start-local/README.md) | `9000` / `9001` | S3-compatible API and web console |
 
