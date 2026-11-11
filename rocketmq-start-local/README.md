@@ -64,6 +64,7 @@ docker compose up -d
 - Broker 通过 `namesrv:9876` 连接 NameServer
 - 数据挂载到 `./data/broker`
 - Console 默认连接同一网络中的 NameServer
+- Broker 在 `conf/broker.conf` 中注册为 `brokerIP1 = broker`，只在 Compose 网络内可解析；宿主机应用直接接入前需改为宿主机可达 IP，并同步调整端口映射
 
 ## 数据持久化与清理
 

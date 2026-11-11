@@ -3,8 +3,14 @@ services:
   xxl-job-admin:
     image: xuxueli/xxl-job-admin:2.4.1
     container_name: xxl-job-admin
+    restart: unless-stopped
     ports:
-      - "18081:8080"
+      - "127.0.0.1:18081:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     environment:
       # 数据库配置
       PARAMS: >-

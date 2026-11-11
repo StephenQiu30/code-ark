@@ -2,10 +2,16 @@ services:
   rabbitmq:
     image: rabbitmq:4.2.3-management-alpine
     container_name: rabbitmq-start-dev
+    restart: unless-stopped
     hostname: rabbitmq-local
     ports:
-      - "5672:5672"    # AMQP 协议端口
-      - "15672:15672"  # 管理界面端口
+      - "127.0.0.1:5672:5672"    # AMQP 协议端口
+      - "127.0.0.1:15672:15672"  # 管理界面端口
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}

@@ -62,9 +62,10 @@ docker compose up -d
 
 说明：
 
-- Prometheus 规则目录已经挂载到容器内
-- Grafana provision 目录已经预留，可继续扩展数据源和仪表板
-- 如果你不希望使用默认 `admin / admin`，请在 `docker-compose.yml` 中调整 Grafana 环境变量
+- Prometheus 配置与规则目录以只读方式挂载到容器内
+- Grafana 已通过 provision 预置 Prometheus 数据源，可继续扩展仪表板
+- Grafana 默认账号为 `admin / admin`；复制 `.env.example` 为 `.env` 并设置 `GRAFANA_ADMIN_PASSWORD` 可覆盖
+- `prometheus/prometheus.yml` 当前只采集 Prometheus 自身；部署 node-exporter、cAdvisor 等组件后再启用对应 job
 
 ## 数据持久化与清理
 

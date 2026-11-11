@@ -20,30 +20,17 @@ scrape_configs:
         labels:
           service: 'prometheus'
 
-  # Node Exporter - 系统指标
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-        labels:
-          service: 'node-exporter'
-
-  # RocketMQ Exporter - RocketMQ 指标
-  - job_name: 'rocketmq'
-    static_configs:
-      - targets: ['rocketmq-exporter:5557']
-        labels:
-          service: 'rocketmq'
-
-  # cAdvisor - 容器指标
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: ['cadvisor:8080']
-        labels:
-          service: 'cadvisor'
-
-  # Docker 容器监控
-  - job_name: 'docker'
-    static_configs:
-      - targets: ['cadvisor:8080']
-        labels:
-          job: 'docker'
+  # 其他采集目标按需启用。当前 Compose 只启动 Prometheus 与 Grafana，
+  # 未部署的 exporter 不写入配置，避免出现永久 down 的目标。
+  #
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #
+  # - job_name: 'rocketmq'
+  #   static_configs:
+  #     - targets: ['rocketmq-exporter:5557']
+  #
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']

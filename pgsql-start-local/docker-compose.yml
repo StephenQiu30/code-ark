@@ -2,8 +2,14 @@ services:
   postgres:
     image: postgres:18
     container_name: pgsql-start-dev
+    restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     environment:
       POSTGRES_DB: ${PGSQL_DATABASE}
       POSTGRES_USER: ${PGSQL_USER}
@@ -11,7 +17,7 @@ services:
       TZ: ${TZ}
     volumes:
       - ./pgsql-data:/var/lib/postgresql
-      - ./pgsql-init:/docker-entrypoint-initdb.d
+      - ./pgsql-init:/docker-entrypoint-initdb.d:ro
     command:
       - -c
       - max_connections=200

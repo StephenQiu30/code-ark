@@ -3,8 +3,14 @@ services:
   namesrv:
     image: apache/rocketmq:5.3.1
     container_name: rocketmq-namesrv
+    restart: unless-stopped
     ports:
-      - "15876:9876"
+      - "127.0.0.1:15876:9876"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     environment:
       - JAVA_OPT_EXT=-Xms256m -Xmx256m
     command: sh mqnamesrv
@@ -21,14 +27,19 @@ services:
   broker:
     image: apache/rocketmq:5.3.1
     container_name: rocketmq-broker
+    restart: unless-stopped
     ports:
-      - "15909:10909"
-      - "15911:10911"
-      - "15912:10912"
+      - "127.0.0.1:15909:10909"
+      - "127.0.0.1:15911:10911"
+      - "127.0.0.1:15912:10912"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     environment:
       - NAMESRV_ADDR=namesrv:9876
       - JAVA_OPT_EXT=-Xms512m -Xmx512m
-      - BROKER_IP1=broker
     command: sh -c "sleep 15 && sh mqbroker -c /home/rocketmq/conf/broker.conf"
     depends_on:
       - namesrv
@@ -49,8 +60,14 @@ services:
   console:
     image: styletang/rocketmq-console-ng:latest
     container_name: rocketmq-console
+    restart: unless-stopped
     ports:
-      - "18180:8080"
+      - "127.0.0.1:18180:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     environment:
       - JAVA_OPTS=-Xms128m -Xmx128m -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
     depends_on:

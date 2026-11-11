@@ -2,6 +2,7 @@ services:
   nacos:
     image: nacos/nacos-server:v3.1.1
     container_name: nacos-standalone
+    restart: unless-stopped
     networks:
       - nacos-network
     environment:
@@ -20,11 +21,16 @@ services:
       - ./nacos/logs:/home/nacos/logs
       - nacos-data:/home/nacos/data
     ports:
-      - "8840:8080"
-      - "8848:8848"
-      - "9848:9848"
-      - "9849:9849"
-      - "9850:9850"
+      - "127.0.0.1:8840:8080"
+      - "127.0.0.1:8848:8848"
+      - "127.0.0.1:9848:9848"
+      - "127.0.0.1:9849:9849"
+      - "127.0.0.1:9850:9850"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
 networks:
   nacos-network:

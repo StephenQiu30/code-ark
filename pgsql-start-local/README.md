@@ -51,8 +51,9 @@ docker compose up -d
 其他说明：
 
 - 镜像版本固定为 `postgres:18`
-- 初始化脚本目录：`./pgsql-init`
+- 初始化脚本目录：`./pgsql-init`，以只读方式挂载
 - 健康检查会使用 `.env` 中的用户名和数据库名
+- 容器带 `restart: unless-stopped`；首次初始化失败后自动重启会因 `PG_VERSION` 已存在而跳过初始化脚本，首次启动请查看日志，失败时删除 `./pgsql-data` 后重建
 
 ## 数据持久化与清理
 

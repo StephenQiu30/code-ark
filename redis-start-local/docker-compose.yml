@@ -2,9 +2,20 @@ services:
   redis:
     image: redis:latest
     container_name: redis-start-dev
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     # 去掉了 --requirepass，仅开启持久化
     command: redis-server --appendonly yes
     volumes:
       - ./data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

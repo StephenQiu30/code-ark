@@ -2,6 +2,7 @@ services:
   sentinel:
     image: bladex/sentinel-dashboard:1.8.8
     container_name: sentinel-standalone
+    restart: unless-stopped
     networks:
       - sentinel-network
     environment:
@@ -11,8 +12,13 @@ services:
       - ./sentinel/logs:/root/logs/csp
       - ./sentinel/data:/tmp/sentinel-log
     ports:
-      - "${SENTINEL_DASHBOARD_PORT}:${SENTINEL_DASHBOARD_PORT}"
-      - "${SENTINEL_API_PORT}:${SENTINEL_API_PORT}"
+      - "127.0.0.1:${SENTINEL_DASHBOARD_PORT}:${SENTINEL_DASHBOARD_PORT}"
+      - "127.0.0.1:${SENTINEL_API_PORT}:${SENTINEL_API_PORT}"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     deploy:
       resources:
         limits:
