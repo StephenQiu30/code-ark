@@ -126,6 +126,8 @@ These configurations target local development and learning. Production deploymen
 
 Missing a service you use? [Request it](https://github.com/StephenQiu30/code-ark/issues/new) or add a template using the [contribution guide](./CONTRIBUTING.md). Startup fixes, documentation corrections, and practical feedback are welcome. Automation conventions live in [AGENTS.md](./AGENTS.md).
 
+New commits and PR titles use `type(scope): description`, with a required scope, for example `docs(project): define repository structure`. See [PROJECT.md](./PROJECT.md) for directory responsibilities, [SHARING.md](./SHARING.md) for reuse and third-party licensing, [SECURITY.md](./SECURITY.md) for security reporting, and the [code of conduct](./CODE_OF_CONDUCT.md).
+
 **If Code Ark saves you setup time, [give it a Star](https://github.com/StephenQiu30/code-ark).** Keep this toolbox handy for your next project.
 
 ## License

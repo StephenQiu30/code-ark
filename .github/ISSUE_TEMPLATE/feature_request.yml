@@ -1,0 +1,28 @@
+name: 功能建议
+description: 提出服务模板、文档、新手体验或工作箱设计建议。
+body:
+  - type: input
+    id: area
+    attributes:
+      label: 相关服务或模块
+      placeholder: temporal、文档、新手引导等
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景与当前障碍
+      description: 说明谁在什么情况下需要什么结果。
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 期望行为与验收方式
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: 依赖、替代方案与影响
+      description: 如有新增服务、端口、数据库、数据迁移或第三方许可要求，请说明；不要填写秘密。

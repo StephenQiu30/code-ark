@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 安全问题报告政策
+    url: https://github.com/StephenQiu30/code-ark/blob/main/SECURITY.md
+    about: 涉及凭据、未授权操作或数据安全时，先阅读私密报告说明。

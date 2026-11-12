@@ -126,6 +126,8 @@ docker compose down           # 移除当前项目容器和网络
 
 缺一个你常用的服务？欢迎 [提交需求](https://github.com/StephenQiu30/code-ark/issues/new) 或按 [贡献指南](./CONTRIBUTING.md) 添加模板。修复启动问题、校准文档和分享使用反馈同样有帮助；自动化协作约定见 [AGENTS.md](./AGENTS.md)。
 
+新提交与 PR 标题统一使用 `type(scope): 描述`，scope 必填，例如 `docs(project): 完善项目结构规范`。目录职责见 [PROJECT.md](./PROJECT.md)，公开复用与第三方许可边界见 [SHARING.md](./SHARING.md)；另提供 [安全报告政策](./SECURITY.md) 和 [社区行为准则](./CODE_OF_CONDUCT.md)。
+
 **如果 Code Ark 帮你省下了搭建环境的时间，欢迎 [给项目一个 Star](https://github.com/StephenQiu30/code-ark)。** 收藏这份工具箱，下次搭建新项目时可以直接回来找需要的服务。
 
 ## License

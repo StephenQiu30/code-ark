@@ -1,0 +1,38 @@
+name: 问题报告
+description: 报告服务启动、配置或文档问题；安全漏洞请使用安全政策入口。
+body:
+  - type: markdown
+    attributes:
+      value: 请勿粘贴真实 .env、密码、Token、业务数据或原始诊断包。桌面工作箱尚未实现；请说明当前使用方式。
+  - type: input
+    id: service
+    attributes:
+      label: 服务目录或文档路径
+      placeholder: redis-start-local 或 docs/design/...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境与版本
+      description: 操作系统、CPU、Docker、docker compose 版本及仓库提交号；不要粘贴含凭据的完整配置。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 最小复现步骤
+      description: 使用公开模板和合成数据，说明前置依赖及实际命令。
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 预期与实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏错误摘要与已做检查
+      description: 提供必要状态、退出码或客户端结果；先检查日志与截图中的秘密及个人信息。

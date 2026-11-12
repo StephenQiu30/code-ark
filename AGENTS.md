@@ -1,11 +1,20 @@
 # Code Ark 工作规范
 
+## 适用范围与协作
+
+- 本文件适用于整个仓库，人工与自动化协作共同遵守。目录职责以 [PROJECT.md](PROJECT.md) 为准，贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，公开复用见 [SHARING.md](SHARING.md)。
+- 当前交付是 17 套 Compose 配置及 1 份宿主机工具指南；`docs/` 中的桌面工作箱尚未实现。没有开发授权时，不创建 `toolbox/` 骨架、不安装产品依赖、不启停环境。
+- 开始任务先检查分支、远端和工作区，保留其他任务的修改。仅暂存本次相关文件，不强推或擅自重写历史。
+- 新提交与 PR 标题统一使用 `type(scope): 描述`，scope 必填；类型、范围、破坏性变更和验证要求遵循贡献指南。历史提交不为符合新规范而重写。
+- 未被要求时不提交、推送、部署或发送外部消息；用户已明确授权的动作按授权执行。创建代理工作分支时使用 `codex/` 前缀。
+
 ## 仓库与目录
 
 - 本仓库是本地 Docker Compose 中间件配置集合。修改前阅读根目录 `README.md`、`CONTRIBUTING.md` 和目标服务的 README、Compose、`.env.example`。
 - 新服务使用 `<service>-start-local/`，提供 `docker-compose.yml`、`README.md`，使用环境变量时提供 `.env.example`。保留 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 的历史名称。
 - 优先复用已有数据库及网络，满足需求即可；不要为新服务重复启动已有中间件或引入不必要的脚本、可配置项。必要的初始化任务放在当前服务目录内。
 - 使用 Compose v2 命令 `docker compose`，在目标目录执行。新增配置不写废弃的顶层 `version`；项目与容器名称避免冲突。
+- 运行数据、缓存、安装包和本机凭据不属于源码结构。新增或移动目录时同步 `PROJECT.md`；未来工作箱结构变化先同步对应 design、PRD、plan，不能把计划路径写成已实现。
 
 ## 配置与数据
 
@@ -23,6 +32,7 @@
 - 保留用户原有修改，验证只操作任务相关服务。在目标目录运行 `docker compose config --quiet`，避免输出展开后的密码。
 - 用户要求启动时实际执行 `docker compose up -d`，检查 `ps -a`、健康状态、初始化退出码和客户端/API；网页首页 200 不代表后台连接正常。
 - 初始化流程验证重复启动和保留数据的重建，检查 `git diff --check`、文档一致性和 `.env` 未跟踪，交付时报告实际入口和验证结果。
+- 纯文档变更检查 UTF-8、相对链接、目录和来源关系，不为验证文档启动 Docker。提交前检查暂存差异与秘密泄露；交付区分静态检查、真实服务验证及未执行项。
 
 ## Temporal
 
