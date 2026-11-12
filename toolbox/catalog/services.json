@@ -85,7 +85,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "pgsql-18"
     },
     {
       "id": "mysql",
@@ -179,7 +180,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "mysql-8.4"
     },
     {
       "id": "redis",
@@ -230,7 +232,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "redis-8"
     },
     {
       "id": "minio",
@@ -306,7 +309,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "minio-2026-source"
     },
     {
       "id": "kafka",
@@ -370,7 +374,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "kafka-4"
     },
     {
       "id": "canal",
@@ -455,7 +460,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "canal-1.1"
     },
     {
       "id": "rabbitmq",
@@ -531,7 +537,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "rabbitmq-4"
     },
     {
       "id": "rocketmq",
@@ -626,7 +633,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "rocketmq-5"
     },
     {
       "id": "temporal",
@@ -795,7 +803,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "temporal-1.32-pg18"
     },
     {
       "id": "xxjob",
@@ -899,7 +908,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "xxjob-3.5"
     },
     {
       "id": "nacos",
@@ -1012,7 +1022,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "nacos-3"
     },
     {
       "id": "sentinel",
@@ -1098,7 +1109,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "sentinel-1"
     },
     {
       "id": "seata",
@@ -1201,7 +1213,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "seata-1.8"
     },
     {
       "id": "elastic",
@@ -1545,7 +1558,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "elastic-9.3"
     },
     {
       "id": "monitoring",
@@ -1614,7 +1628,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "prometheus-3-grafana-13"
     },
     {
       "id": "rsshub",
@@ -1673,7 +1688,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "rsshub-2026"
     },
     {
       "id": "searxng",
@@ -1741,7 +1757,8 @@
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
-      "capacityStatus": "pending"
+      "capacityStatus": "pending",
+      "dataCompatibility": "searxng-2026"
     }
   ],
   "scenes": [

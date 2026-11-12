@@ -10,6 +10,8 @@ English Summary: The desktop toolbox is under active implementation, not a relea
 - 只提取 Git 跟踪白名单，拒绝秘密文件、未跟踪资产、越界路径和符号链接；验证挂载引用、脚本 LF 和文件哈希。
 - development / candidate / release 分级；未解析镜像不进入候选或发行，未验收的制品不标为通过。
 - Rust 公共 DTO 自动生成 TypeScript、带锁工作区身份与实例登记、独立资源前缀、按已选数据库绑定去重的依赖顺序。
+- 无损 `.env` 候选和系统随机秘密，保留已有凭据；独立覆盖全部容器/网络/卷/端口，生成最终依赖参数。
+- 蓝图物化、用户编辑冲突与数据格式升级门禁；不自动覆盖已有文件。
 - Tauri/React 最小入口。编排与业务界面继续按计划实施。
 
 ## 开发环境

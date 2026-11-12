@@ -274,6 +274,19 @@ mod tests {
         assert_eq!(a.root, path.canonicalize().unwrap().to_str().unwrap());
         assert!(open_workspace(&path.join("nested")).is_err());
     }
+    #[cfg(unix)]
+    #[test]
+    fn atomic_write_preserves_old_file() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("config");
+        std::fs::write(&file, b"old bytes").unwrap();
+        std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o500)).unwrap();
+        let result = atomic_write(&file, b"new bytes");
+        std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(result.is_err());
+        assert_eq!(std::fs::read(&file).unwrap(), b"old bytes");
+    }
     #[test]
     fn collision_extends_prefix() {
         let dir = tempfile::tempdir().unwrap();

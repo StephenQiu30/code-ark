@@ -4,4 +4,4 @@ import type { EnvFieldSpec } from "./EnvFieldSpec";
 import type { PortMapping } from "./PortMapping";
 import type { ProbeSpec } from "./ProbeSpec";
 
-export type ServiceSpec = { id: string, name: string, category: string, sourceDir: string, sourceProject: string, assets: Array<string>, dataPaths: Array<string>, imageRefs: Array<string>, components: Array<ComponentSpec>, ports: Array<PortMapping>, dependencies: Array<string>, envSchema: Array<EnvFieldSpec>, probes: Array<ProbeSpec>, minMemoryBytes: number, minWorkspaceFreeBytes: number | null, minDaemonFreeBytes: number | null, estimatedPullBytes: number | null, capacityStatus: string, };
+export type ServiceSpec = { id: string, name: string, category: string, sourceDir: string, sourceProject: string, assets: Array<string>, dataPaths: Array<string>, imageRefs: Array<string>, components: Array<ComponentSpec>, ports: Array<PortMapping>, dependencies: Array<string>, envSchema: Array<EnvFieldSpec>, probes: Array<ProbeSpec>, minMemoryBytes: number, minWorkspaceFreeBytes: number | null, minDaemonFreeBytes: number | null, estimatedPullBytes: number | null, capacityStatus: string, dataCompatibility: string, };

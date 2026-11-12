@@ -17,3 +17,5 @@ pub fn run() {
 }
 
 pub mod env_store;
+
+pub mod blueprint;

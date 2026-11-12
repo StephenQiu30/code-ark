@@ -60,7 +60,7 @@ toolbox/
 
 当前源码入口统一为仓库相对路径 `services/<原服务目录名>/`，由 C09 更新原根级布局。`sourceDir` 必须据此填写，例如 `services/redis-start-local`；`sourceProject` 仍是原 Compose 项目标识，不添加 `services` 前缀。服务表唯一入口为 `services/README.md`，工作箱同步从该目录下受控资产提取，不能递归打包本机忽略文件。现有克隆迁移按索引说明处理，工作箱运行资源命名和已有数据库授权不随源码路径改变。
 
-`ServiceSpec` 至少包含 `id/sourceDir/sourceProject/components/ports/dependencies/envSchema/storage/imageRefs/probes/snippets`；`sourceProject` 仅用于识别原 CLI 资源，不得直接作为托管运行项目名。组件记录 `role=daemon|job`、源 Compose service key 和网络别名。字段记录公开默认值、敏感性、校验器、依赖来源和 `secretPolicy`；探针与生命周期见设计 02，前端协议及安装矩阵见设计 03。
+`ServiceSpec` 至少包含 `id/sourceDir/sourceProject/dataCompatibility/components/ports/dependencies/envSchema/storage/imageRefs/probes/snippets`；`sourceProject` 仅用于识别原 CLI 资源，不得直接作为托管运行项目名。组件记录 `role=daemon|job`、源 Compose service key 和网络别名。字段记录公开默认值、敏感性、校验器、依赖来源和 `secretPolicy`；探针与生命周期见设计 02，前端协议及安装矩阵见设计 03。
 
 同步严格按**受版本控制的运行资产白名单**复制：Compose、公开样例、只读配置、Dockerfile、SQL、容器内脚本、补丁和内置指南；拒绝软链接越界及 `.env`、数据、日志、备份、密钥、下载缓存。所有 bind/config/build 引用必须在包内可解析；空初始化目录由元数据明确创建，不从用户运行目录复制。根 `.gitattributes` 已规定 `*.sh text eol=lf`；未来同步与校验继续保证容器脚本 LF，不改已有服务内容。
 
@@ -98,7 +98,7 @@ toolbox/
 
 ### 7.3 非破坏性物化、升级与工作区切换
 
-首次物化只创建不存在的资产；记录已分发文件哈希。刷新时当前哈希等于旧哈希才允许生成升级候选；用户手改文件时保持原文件，提供差异和显式合并/保留入口，`.bak` 不是自动覆盖的许可。数据/日志/`.env` 不属于蓝图覆盖集合。
+首次物化只创建不存在的资产；记录已分发文件哈希和 `dataCompatibility` 数据格式基线。该基线变化进入 SchemaIncompatible 门禁，不能仅按镜像可下载推断可原地升级；维护者改变核心存储主版本时必须同步该值。刷新时当前哈希等于旧哈希才允许生成升级候选；用户手改文件时保持原文件，提供差异和显式合并/保留入口，`.bak` 不是自动覆盖的许可。数据/日志/`.env` 不属于蓝图覆盖集合。
 
 更新先完成 schema/镜像兼容检查、备份指引、候选 `config --quiet`；需要迁移的数据库禁止自动降级或以换镜像恢复。活动部署和最近就绪部署分别记录，失败后显示实际部分成功状态，不伪装已回滚。原实例继续使用旧蓝图，直到用户应用更新。
 
