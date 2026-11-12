@@ -94,7 +94,7 @@ v1已有数据库自动绑定仅支持同一已固定本地Docker daemon内的My
 | PRD02-R02 | §7.2 | TCP/UDP与端口耦合、Elastic6GiB、工作区/daemon双存储预检、架构/权限；未知容量和bind竞态明确反馈 |
 | PRD02-R03 | §7.3/7.8 | Managed多重核验、ExternalObserve只读、ExternalConnected显式授权；无默认外部替换/生命周期接管 |
 | PRD02-R04 | §7.6–7.7 | 动态DAG、跨进程锁、持久步骤及超时/取消/失败保留、重开快照一致 |
-| PRD02-R05 | §7.4 | Nacos专属卷、PG→Temporal、MySQL→Canal/Seata/XXL、Elastic串行构建及Basic状态；部分初始化可恢复且保留原数据 |
+| PRD02-R05 | §7.4/7.9 | Nacos专属卷、PG→Temporal、MySQL→Canal/Seata/XXL、Elastic原生归档加载及Basic状态；部分初始化可恢复且保留原数据，桌面无隐式build |
 | PRD02-R06 | §7.8 | 场景共享依赖保留、stop/down/reset分级、不可变ResetPlan和执行复核、外部/未知库及路径保护 |
 | PRD02-R07 | §7.5–7.6 | 17服务逐组件job/daemon及协议探针，Ready撤销/降级/等待客户端，非首页200验收 |
 | PRD02-R08 | §7.6–7.7 | Draft/Validated/Applying与实际generation区分，配置应用必要重建、探针、非数据升级的可控恢复 |
@@ -193,6 +193,8 @@ v1已有数据库自动绑定仅支持同一已固定本地Docker daemon内的My
 ### 7.5 假设与边界
 
 同一服务器Temporal固定双库只允许一个所有者；已有外部Schema复用需明确授权与版本检查，不能自动迁移。没有任何开发/容器操作在本轮执行，真实环境覆盖由对应计划及发行门禁完成。
+
+技术选型按来源design §7.9执行：SQLx/Reqwest/TLS/系统锁/分协议Java17工具为待联合验证组合，不能复制旧库特性名或合并冲突classpath。TS-05/16验证Rust标准锁及目标运行时，TS-07/17/19必须含Temporal1.32.2与PG18.6实际Schema/集群/Namespace、SDK认证及归档加载ID/架构校验；不为通过降级PG。TS-17还覆盖Kafbat与Dashboard候选的后台API及新端口。编译不要求业务库，用户运行不要求宿主JDK/Maven/Go。
 
 ## 8. Plan与交付
 

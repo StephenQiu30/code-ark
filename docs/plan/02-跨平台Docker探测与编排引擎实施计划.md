@@ -10,6 +10,8 @@
 
 **技术栈**：Rust/Tokio、类型化Docker CLI、原生协议/HTTP/SQL客户端及锁定的一次性探针工具；全部依赖锁定，Windows无窗，Docker Linux containers、Compose>=2.24.4。
 
+采用来源design §7.9候选：Rust1.99.1、Tokio1.54.1、SQLx0.9.0、Reqwest0.13.5、sysinfo0.40.3等；HTTP/SQL使用一致rustls AWS-LC路线，编译不连接业务库，显式验证本地MySQL RSA认证/CA/依赖树。锁采用标准File API，不再默认加fs2/fs4；复杂协议按SDK分模块的Java17工具，不用一个胖JAR混合Netty/gRPC。注册元数据并不代表这些依赖已联合编译通过。
+
 ## 1. 全局约束
 
 - 根服务YAML/配置/.env.example及既有数据不改；所有动作只针对已核验target与登记实例；远端及Windows containers不执行。
@@ -40,12 +42,13 @@
 | `toolbox/src-tauri/src/contracts.rs` | 采用来源design的DockerTarget/DatabaseBinding/DatabaseClaim/ProbeSpec/OperationRecord/ResetPlan/ServicePhase；复用Plan01 schema，不复制前后端类型 |
 | `toolbox/src-tauri/src/docker_cli.rs` | `discover_target(Option<&Path>, Option<&str>) -> Result<DockerTarget, ToolboxError>`；`DockerRunner::connect(DockerTarget) -> Result<Self, ToolboxError>`；`verify_identity() -> Result<(), ToolboxError>`；`compose_run(&Path, &InstanceIdentity, &OverrideArtifact, &[OsString]) -> Result<CommandOutcome, ToolboxError>`，网络/执行方法为async |
 | `toolbox/src-tauri/src/preflight.rs`、`storage_probe.rs` | `run_preflight(&DockerRunner, &EffectiveConfig) -> Result<PreflightReport, ToolboxError>`；`probe_storage(&DockerRunner, &Path) -> Result<StorageCapacity, ToolboxError>`；容量unknown显式枚举 |
+| `toolbox/src-tauri/src/image_store.rs` | `ensure_service_image(&DockerRunner, &ImageArtifactRef, &OperationContext) -> Result<VerifiedImage, ToolboxError>`；registry digest或受校验image-save归档下载/load，ID/架构复核，不执行任意外部构建命令 |
 | `toolbox/src-tauri/src/bindings.rs` | `verify_binding(&DockerRunner, &DatabaseBinding) -> Result<VerifiedBinding, ToolboxError>`；`authorize_binding(&VerifiedBinding, &InitializationGrant) -> Result<DatabaseBinding, ToolboxError>`；无默认写授权 |
 | `toolbox/src-tauri/src/database_claims.rs` | `plan_database_claim(&VerifiedBinding, &InstanceIdentity, &[String]) -> Result<ClaimPlan, ToolboxError>`；`verify_database_claim(&VerifiedBinding, &DatabaseClaim) -> Result<VerifiedClaim, ToolboxError>` |
 | `toolbox/src-tauri/src/provisioner.rs`、`initialization_store.rs` | `plan_initialization(&ServiceSpec, &VerifiedBinding, &EffectiveConfig) -> Result<InitializationPlan, ToolboxError>`；`execute_initialization(&InitializationPlan, &OperationContext) -> Result<InitializationOutcome, ToolboxError>`；逐DDL/种子记录 |
 | `toolbox/src-tauri/resources/sql/seata_1_8_0_mysql.sql`、`sql/manifest.json` | 对应四表DDL、上游许可/校验和；XXL源SQL转换为版本步骤，不手工复制另一套业务结构 |
 | `toolbox/src-tauri/src/probes.rs`、`probe_clients.rs` | `run_probe(&ProbeSpec, &ProbeContext) -> Result<ProbeResult, ToolboxError>`；`evaluate_service_readiness(&ServiceSpec, &[ProbeResult], &[JobExit]) -> ServicePhase` |
-| `toolbox/probe-clients/` | 仅在原生客户端不足时构建一次性协议探针：`Dockerfile`、`pom.xml`、`src/main/java/io/codeark/ProbeMain.java`；源码和镜像/SDK锁定，供Rocket/Canal/Seata等客户端验证，不是新常驻中间件 |
+| `toolbox/probe-clients/` | `Dockerfile`、聚合`pom.xml`、`modules/<protocol>/pom.xml`及各自`src/main/java/io/codeark/ProbeMain.java`；按协议独立classpath、锁定SDK/JRE17双架构，不要求宿主JDK，不是新常驻中间件 |
 | `toolbox/src-tauri/src/operation_store.rs`、`locks.rs` | `OperationStore::load/persist`、`acquire_resource_locks(&[ResourceLockKey]) -> Result<OperationGuard, ToolboxError>`；稳定排序、受限权限与原子写 |
 | `toolbox/src-tauri/src/usage_index.rs` | `register_usage(&UsageRegistration)`、`unregister_verified_usage(&UsageRegistration)`、`query_dependents(&ResourceRef) -> Result<UsageReport, ToolboxError>`、`repair_usage_index(&RepairUsageRequest) -> Result<UsageReport, ToolboxError>`；公共control_root下跨工作区原子索引，变更返回`Result<(), ToolboxError>`；repair只重建可核验引用，不能清除Unknown |
 | `toolbox/src-tauri/src/orchestrator.rs`、`config_apply.rs` | `start_services(&StartRequest) -> Result<OperationId, ToolboxError>`、`stop_services(&StopRequest)`、`retry_operation(OperationId)`、`cancel_operation(OperationId)`、`recover_operations()`；`validate_draft(&ConfigDraft) -> Result<ValidatedDraft, ToolboxError>`、`apply_draft(&ValidatedDraft)` |
@@ -56,6 +59,8 @@
 
 `ResetConfirmation { plan_id, fingerprint, typed_service_id }`；`ResetPlan.expires_at`为生成后5分钟。`ConfigDraft`引用base_generation，过时草稿需要重新比较，不直接覆盖新配置。`UsageRegistration { target_id, provider_instance_id, claim_id, consumer_workspace_id, consumer_instance_id, preset_refs, operation_id, status }`；`UsageReport { consumers, unknown_entries, inspected_at }`；只有安全停止/解绑核验后注销，心跳过期不得自动移除。
 
+`VerifiedImage { source_id, target_id, platform, image_id, runtime_reference }`为后端保证器产生；load后的内容tag必须pull_policy=never，部署前后再核对实际Image。归档producer由Plan01任务6形成，不依赖桌面安装包；本任务只消费已解析来源和实际artifact，不能把尚未生成的下载地址当可用。
+
 ## 4. 实施任务
 
 ### 任务1：固定目标的DockerRunner与能力检查
@@ -64,7 +69,7 @@
 
 - [ ] 1. 写 `docker_cli::tests`：候选路径与Windows creation_flags；Compose2.20/2.24.3拒绝、2.24.4及兼容新主版本能力通过；远端/Windows containers拒绝；宿主覆盖变量清除；target变化返回TargetChanged，所有命令固定参数且无密码日志。
 - [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml docker_cli::tests` 确认未实现行为失败。
-- [ ] 3. 实现绝对路径发现、context/daemon绑定、类型化参数构造、无窗进程和错误分类；不修改全局context，保留必要的已选本地连接配置。
+- [ ] 3. 实现绝对路径发现、context/daemon绑定、类型化参数构造、无窗进程和错误分类；不修改全局context，保留必要的已选本地连接配置。Docker认证首期为Desktop/Engine，OrbStack/Rancher被发现仍须单独实测；不默认引入Bollard重写Compose。
 - [ ] 4. 重跑模块测试，在每目标原生环境验证GUI打开时发现和无窗；未知target不得走默认daemon。
 - [ ] 5. 提交 `feat(toolbox): pin local docker targets and capabilities`。
 
@@ -72,10 +77,10 @@
 
 **文件**：`preflight.rs`、`storage_probe.rs`、catalog容量字段/锁定诊断工具配置。覆盖R02，TS-05。
 
-- [ ] 1. 写模块测试：TCP/UDP占用、已验证本实例端口豁免、Nacos组冲突、bind竞态、4/6GiB、宿主盘足够但daemon盘不足、unknown不伪报、中文路径/权限/架构不符。
-- [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml preflight::tests` 和完整同前缀的 `storage_probe::tests` 过滤测试，确认失败。
-- [ ] 3. 实现原生Linux/虚拟化目标的容量能力适配、工作区及daemon分开报告；不能读取容量时按design展示复检/本次接受入口，诊断任务需用户同意并锁定镜像。
-- [ ] 4. 重跑测试，实测每支持运行时路径及实际单位；为每服务填有来源的最低空间/拉取估算，仍未知则标pending并阻断发行记录通过。
+- [ ] 1. 写模块测试：TCP/UDP/端口组/4–6GiB/双盘/unknown/路径/权限；加入归档坏SHA、截断下载、错误image ID/CPU、local内容tag被替换、下载401和取消；不能用源码AMD64镜像模拟通过ARM，未知来源URL拒绝。
+- [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml preflight::tests` 及完整同前缀的 `storage_probe::tests`、`image_store::tests`，确认容量/归档错误分支红灯。
+- [ ] 3. 实现容量/架构预检及image_store：registry不可变digest或按允许HTTPS来源下载image-save归档、核SHA并在固定target load、inspect ID/CPU；缓存按内容复用、受操作期限约束、不进入reset清单。下载401给准确错误，不自动删服务/换镜像站。容量未知展示复检/本次接受入口，诊断任务需用户同意且锁定镜像。
+- [ ] 4. 重跑preflight/storage_probe/image_store测试，实测每运行时容量及归档下载/load/实际Image；填真实空间/传输体积，MinIO/XXL/ES-IK producer尚无可获取归档则保持pending并阻断对应candidate/release，而非从维护者缓存伪造冷启动通过。
 - [ ] 5. 提交 `feat(toolbox): preflight ports capacity and architecture`。
 
 ### 任务3：外部绑定、权限和数据库claim
@@ -94,8 +99,8 @@
 
 - [ ] 1. 写失败测试：Canal旧账号认证不符必须失败；XXL自定义库、每个表/种子中断、已有用户/任务保持；Seata四表/列版本；Temporal认证/claim/双job/版本与Namespace；Nacos独立卷；Elastic只配置kibana_system、Basic实际状态和HTTP错误。
 - [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml provisioner::tests` 及完整同前缀的 `initialization_store::tests`，确认失败原因。
-- [ ] 3. 实现初始化计划、逐步journal及实际完成核验，SQL值参数化/标识符验证；业务账号取同一来源，未知或不兼容库进入门禁；不实现通用SQL重放/整库重建修复。
-- [ ] 4. 重跑单测后执行隔离故障注入：在每个DDL/种子步骤退出并恢复，比较原记录；Temporal Server/Schema相同版本，不改History分片或已有Namespace retention。
+- [ ] 3. 实现初始化计划、逐步journal及实际完成核验，SQLx0.9仅启用需要的MySQL/PG/Tokio/TLS/mysql-rsa；不用编译期业务库宏。业务账号同源，未知或不兼容库进入门禁；不实现通用SQL重放/整库重建修复。
+- [ ] 4. 重跑单测及隔离每步DDL/种子故障；强制验证Temporal1.32.2/同版本Schema对PG18.6的双库、权限、集群和Namespace，不能把官方PG12+ Visibility条件当已测试18的证明；不改History/retention或另起PG16绕过。
 - [ ] 5. 提交 `feat(toolbox): resume scoped service initialization safely`。
 
 ### 任务5：17服务就绪和协议客户端
@@ -104,7 +109,7 @@
 
 - [ ] 1. 为来源design §7.5的17行各写正反例，断言job非0、错误凭据、后台断连、缺probe和上游不可达不为Ready；Sentinel等缺业务客户端显示等待接入；ProbeResult记录时间和错误码。
 - [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml probes::tests`，确认每类错误现状失败。
-- [ ] 3. 实现SQL/HTTP/Redis/AMQP等原生后端探针；需专用SDK的客户端使用锁定一次性任务，同步其源文件/版本/架构/digest；禁止假定宿主有JDK或镜像有curl。探针秘密通过受限输入，不进入命令日志。
+- [ ] 3. 实现SQL/HTTP/Redis等原生探针，Rabbit AMQP/S3/Rocket/Canal/Seata等专用客户端用分协议独立classpath的一次性JRE17任务，版本取来源design §7.9；JSON输入/ProbeResult输出有上限，秘密不进命令。验证Kafbat1.5.0、Dashboard2.1.0/8082的实际后台API；不假定宿主有JDK或镜像有curl。
 - [ ] 4. 重跑测试与隔离17行真实探针；就绪阶段只做授权读取/连接，写读/测试Topic等在明确测试scope的功能验收执行并清理自建资源；缺任意一行不得完成此任务的运行验证。
 - [ ] 5. 提交 `feat(toolbox): verify readiness for every packaged service`。
 
@@ -114,7 +119,7 @@
 
 - [ ] 1. 写`fresh_database_precedes_dependent_initialization`、`cross_workspace_usage_is_visible`、`stale_usage_fails_closed`、`recover_actual_generation`、`cancel_reconciles_daemon`测试：全新基础库拉取/启动/认证后才做上层DDL；跨工作区登记在上层启动前发生；陈旧/丢失索引不能当无消费者；多进程锁序、事件续订、deadline、过时草稿和迁移后禁降级均覆盖。
 - [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml orchestrator::tests`、`config_apply::tests`、`locks::tests`、`operation_store::tests`各模块过滤测试（每次使用同一完整cargo前缀），确认红灯。
-- [ ] 3. 实现逐节点DAG：新基础库先启动/管理认证，再登记绑定和上层消费者、初始化上层；公共UsageIndex和锁不随workspace切换，索引不完整时修复前拒绝提供者危险操作。实现journal/实际generation对账/受控重试取消/配置必要重建和验证后提交；已有账号新连接值必须先认证，禁用服务器轮换。沿design的5s/30s×3/10min/60s/30min及120s无进展提示。
+- [ ] 3. 实现逐节点DAG，基础库启动/认证后才做上层，镜像准备统一调用image_store并记录实际Image；公共UsageIndex和标准File专用锁不随workspace切换，try_lock/期限异步等待，不复制持锁句柄或阻塞Tokio。实现journal/实际generation/重试取消/必要重建后提交；既有账号先认证新连接值，禁轮换；保留design的各阶段期限和无进展提示。
 - [ ] 4. 重跑测试，隔离故障注入分别杀进程/断网络/换daemon/中断DDL；只有无数据格式变更才允许经验证恢复旧配置；不确定状态显示RecoveryRequired。
 - [ ] 5. 提交 `feat(toolbox): persist operations and recover configuration changes`。
 

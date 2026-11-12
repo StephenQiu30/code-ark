@@ -51,7 +51,7 @@ macOS 探测 PATH、`~/.docker/bin`、`/usr/local/bin`、`/opt/homebrew/bin`、D
 - 仅在 inspect 证明为同一 target/instance/component 的发布端口时免重复占用报错。外部容器、其他实例、非 Docker 进程不能被误当“本服务”。
 - Docker `MemTotal` 与当前运行场景共同估算；Elastic 至少6 GiB，使用整数单位换算并报告需求、可用值及运行时设置入口。
 - 分别检查工作区磁盘和 Docker 存储（镜像/构建缓存/命名卷）空间。支持目标需提供 `StorageCapacityProbe`：原生 Linux 对 daemon 数据目录所在文件系统查询；Desktop/OrbStack 使用其可读取容量信息，或经用户同意运行锁定 digest 的轻量诊断任务在 daemon 侧查询可用空间。读取失败返回 `UnknownCapacity` 并给出运行时存储设置/复检入口，不能拿宿主机工作区空间冒充 daemon 空间。
-- catalog 每项声明 `minWorkspaceFreeBytes/minDaemonFreeBytes/estimatedPullBytes`；实施基于锁定制品实测填值。未知空间时允许观察，默认不执行大镜像拉取/构建；普通启动需显式接受本次未知容量风险并记录，发行测试必须验证可测目标路径。
+- catalog 每项声明 `minWorkspaceFreeBytes/minDaemonFreeBytes/estimatedPullBytes`；实施基于锁定制品实测填值。未知空间时允许观察，默认不执行大镜像拉取/下载/加载；普通启动需显式接受本次未知容量风险并记录，发行测试必须验证可测目标路径。
 - 现有外部网络检查 target、网络 ID、可达别名；Linux bind 目录按镜像 UID/GID 创建并做写权限验证，不对任意宿主目录递归 chmod/chown。
 
 ### 7.3 资源识别与数据库绑定
@@ -86,7 +86,7 @@ Temporal 沿用 PG 现有账号，数据库名固定 `temporal`、`temporal_visi
 | Canal | 校验 ROW binlog、服务端账号/权限、指定账号密码认证，写入同一来源凭据 | `CREATE USER IF NOT EXISTS` 后还要验证认证；已有账号不匹配则阻断，不只覆盖本地密码 |
 | XXL-Job | 把真实 SQL 解析为版本化建表及种子步骤，移除固定库选择；执行于已 claim 专属库，逐步记录 | 检查全部必需表/列与种子状态，不能仅看 `xxl_job_info`；仅补缺失兼容项，已存在用户/任务不重写；不兼容进入迁移门禁 |
 | Seata | 内置对应1.8.0系列四表 DDL及校验和；专属账号与实际 JDBC 配置 | 逐表/列核验，缺失兼容项补建，已有业务行不改；版本不符拒绝自动迁移 |
-| Elastic | 内存/磁盘/架构门禁 → 串行构建锁定 ES/IK → ES → 只负责 `kibana_system` 配置的 job → Kibana/Logstash | 覆盖源码 job，移除自动 trial 请求；默认 Basic，按实际授权状态处理，HTTP非成功必须失败；任何步骤不打印秘密 |
+| Elastic | 内存/磁盘/架构门禁 → 校验/加载producer的ES/IK原生归档 → ES → 只负责 `kibana_system` 配置的 job → Kibana/Logstash | 桌面移除源码build项，不让用户端隐式构建；覆盖job去除自动trial，Basic按真实状态处理，HTTP错误不吞掉、不打印秘密 |
 
 初始化 journal 与 SQL 结果核验共同决定状态，不能把 MySQL DDL 当作可整体回滚事务。创建数据库前持久化claim预留及计划，创建后立即写归属标记；若在创建与标记间崩溃、无法证实成功归属，则进入RecoveryRequired，不自动认领未知空库或删除它。进程重开重新探测已完成事实；对已有未知库不尝试“补表修复”。SQL标识符严格校验/引用、值参数化，禁止把用户输入直接拼入数据库/账号语句。
 
@@ -128,12 +128,12 @@ v1不执行已初始化数据库账号轮换；更新连接凭据必须先证明
 
 1. 加锁、复核目标/所有权，解析已有绑定与去重DAG，完成可离线预检及候选计划。
 2. 新托管基础库：物化初始化凭据→拉取镜像→启动MySQL/PG→端口/服务探针→管理账号真实认证→登记绑定；管理连接未通过不得开始任何下游DDL。已登记外部或已运行托管基础库不重建，直接认证/复核。
-3. 上层节点：登记跨工作区消费者→认证其依赖→claim/账号/可恢复预置→生成包含实际绑定的最终配置→拉取/构建→该节点部署/job→业务探针→记录applied/last_ready。
+3. 上层节点：登记跨工作区消费者→认证其依赖→claim/账号/可恢复预置→生成包含实际绑定的最终配置→拉取/下载/加载→该节点部署/job→业务探针→记录applied/last_ready。
 4. 对下一个节点重复，全部必需节点通过才结束场景。Temporal的Schema/Server/Namespace/UI顺序在其节点内保持；资源不足/某节点失败保留已完成节点并定位失败步。
 
 动态依赖根据绑定解析，不固定“只要启动Temporal就再启动PG”。
 
-默认上限：单次协议连接5秒、单探针30秒/重试3次、初始化/就绪阶段10分钟、停止60秒、拉取/构建30分钟；等待每2秒更新状态，拉取/构建连续120秒无进展提示网络检查，仍有总截止时间。服务可在catalog给出有依据的更具体期限，不能无限等待。错误码至少包含 `DockerMissing/DaemonUnavailable/ComposeTooOld/UnsupportedTarget/UnsupportedDependencyTopology/TargetChanged/OwnershipConflict/PortConflict/InsufficientMemory/InsufficientStorage/UnknownCapacity/CredentialMismatch/InitializationPartial/SchemaIncompatible/ProbeFailed/TimedOut/Cancelled/RecoveryRequired`。
+默认上限：单次协议连接5秒、单探针30秒/重试3次、初始化/就绪阶段10分钟、停止60秒、拉取/下载/加载30分钟；等待每2秒更新状态，拉取/下载/加载连续120秒无进展提示网络检查，仍有总截止时间。服务可在catalog给出有依据的更具体期限，不能无限等待。错误码至少包含 `DockerMissing/DaemonUnavailable/ComposeTooOld/UnsupportedTarget/UnsupportedDependencyTopology/TargetChanged/OwnershipConflict/PortConflict/InsufficientMemory/InsufficientStorage/UnknownCapacity/CredentialMismatch/InitializationPartial/SchemaIncompatible/ProbeFailed/TimedOut/Cancelled/RecoveryRequired`。
 
 ### 7.7 锁、取消、恢复及配置应用
 
@@ -143,7 +143,7 @@ v1不执行已初始化数据库账号轮换；更新连接凭据必须先证明
 
 索引修复只加载用户重新选择的工作区registry、实际实例标签/网络及操作journal，在公共锁内重建可证实引用；没有证据的条目保持Unknown，不以“修复”清空。已无运行实例/活跃操作且资源关系可验证的停用消费者，可经用户确认解除陈旧登记；无法核验时只提供导出诊断/恢复原工作区指引，继续禁止提供者重置。
 
-取消拉取/构建可终止CLI子进程，但不能保证daemon停止内部任务，之后重新inspect并展示仍在运行的状态。SQL执行不强制中断未知事务；在步骤边界停止，遇不确定结果标 `RecoveryRequired`。不自动回滚数据库迁移、不删除已有依赖；失败默认保留成功步骤，只提供“复检后重试失败步骤”与“停止本次新建且不被其他场景使用的服务”。
+取消下载停止网络流并处理受控临时文件；取消pull/load可终止CLI，但daemon可能继续内部任务，须重新inspect展示实际状态。SQL不强制中断未知事务，在步骤边界停止，不确定结果标RecoveryRequired。不自动回滚迁移或删除已有依赖；失败保留成功步骤，提供复检重试与停止本次新建且未被其他场景使用的服务。
 
 配置流程：`Draft → Validated → Applying → Ready | Failed | RecoveryRequired`。预览差异，候选配置校验后使用 `compose up -d` 应用必要重建，**不能用restart代替配置重建**；就绪后提交`.env`更改和last_ready。保存草稿不改变运行服务。失败且无数据格式变更可按记录恢复上一配置并重新探针；有Schema/数据变更时禁止自动降级。崩溃后用actual inspect判定applied_generation，而非强行回写旧指针。
 
@@ -155,6 +155,20 @@ v1不执行已初始化数据库账号轮换；更新连接凭据必须先证明
 - 本地清理只针对catalog声明且位于实例边界内的真实目录、明确登记的自有卷。禁止顺着symlink越界，禁止按名称前缀批量删。执行清单化的容器/卷删除，不把宽泛 `down -v` 当所有权证明。
 - 数据库重置要求 `created_by_codeark=true`、registry和库内claim双重吻合、服务器指纹一致、独占且非系统/外部库；否则禁用整库删除。Temporal只处理其已claim双库；外部连接库即使有初始化授权也默认禁止整库重置。基础数据库重置要列出**全部**已登记使用者，不能承诺整实例重置还保留该实例其他库；存在外部/未知业务库时拒绝整实例重置，改用单服务清理或导出指引。
 - 原“停止并删除外部容器后接管”入口取消。提供只读观察、显式绑定、创建新托管实例三条路径；数据迁移使用逻辑导出/导入指南，并明确原数据不会自动出现在新实例。外部容器自动移除和自动恢复重建均不属于v1。
+
+### 7.9 后端库、协议工具与兼容门禁
+
+依据[技术选型核验](../research/05-完整技术选型与服务制品核验.md)，候选后端为Tokio1.54.1、serde1.0.229/serde_json1.0.154、SQLx0.9.0、Reqwest0.13.5、sysinfo0.40.3、dirs7.0.0、uuid1.29.2、thiserror2.0.21、tracing0.1.44、secrecy0.10.3/zeroize1.9.1。编译候选Rust1.99.1；各版本存在性/声明MSRV已查，联合编译与依赖树未验，不提前写锁或创建源码。
+
+SQLx关闭默认Any/SQLite/编译期查询宏，只启用MySQL/PG、Tokio及选定rustls；本地允许范围内的无TLS MySQL需要显式mysql-rsa以适配现有认证。Reqwest采用0.13的json/stream/rustls特性，SQLx使用同路线AWS-LC后端，验证依赖树无provider歧义及构建原生依赖；不用旧版本特性名拼凑。编译不连接业务库，运行凭据显式注入；健康探针不经过继承的公共HTTP代理，发行资源下载另使用受控网络配置，TLS不因方便被禁用。
+
+跨进程锁采用Rust标准File专用锁文件（1.89已稳定）；try_lock配合操作期限/异步等待，不在Tokio工作线程无限阻塞，不复制持锁句柄重入。JSON/journal/UsageIndex协议保持，不引入新的元数据服务或SQLite；跨文件恢复依赖journal与实际资源核验，不声称JSON本身具备事务性。
+
+镜像保证器先解析ImageArtifactRef：registry走不可变manifest；原生重打包归档按设计01校验/加载并核对实际image ID及CPU，所有步骤加入operation journal、下载/加载超时、容量与错误分类；401表示本次认证失败，不能自动认定镜像不存在、删除服务或改为未登记镜像站。
+
+复杂协议工具为原生Java17短命镜像，按协议独立模块/classpath，统一受控JSON输入/ProbeResult输出，秘密经受限stdin/短期只读文件传递。候选SDK：Rocket gRPC5.2.2、Canal1.1.8、Seata1.8.0、XXL3.5.0、Nacos3.3.0、Sentinel1.8.10、Rabbit AMQP5.37.1、MinIO9.0.4、PG JDBC42.7.14/MySQL JDBC26.10.0；JRE/SDK/传递依赖/双架构按锁验证，不把镜像1.8.0.2当Seata Maven版本。用户只需Docker，工具镜像包含所需运行时，执行结束清理自有短命任务，不增加常驻中间件。
+
+Temporal1.32.2与既定PG18.6复用关系保持。官方文档的PG12+ Visibility条件及列举的测试版本不能证明PG18已认证；Schema工具、双库、账号、cluster health、Namespace和保留数据重建必须实测，不为绕过失败另起PG16或降级现有数据。Kafka新UI、Rocket Dashboard8082及MinIO/XXL/ES-IK新制品均需更新对应探针/默认端口映射后验证，架构清单不代表功能已通过。
 
 ## 8. 实施与验收
 

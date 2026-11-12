@@ -66,6 +66,8 @@ toolbox/
 
 为避免“先通过实机才能构建首个验收包”的循环，验证分两级：`candidate`要求全部digest/下载校验和可解析、目标架构在镜像清单内、资源和源码检查通过，允许实机结果为pending；仅用于独立隔离验收，不宣称已支持。`release`另要求对应目标的17服务、场景和最终候选制品全部通过。实机/制品结果写在包外验收清单，以源码/锁摘要和候选制品SHA-256关联，不能为改成passed而重写包内锁导致制品哈希再次变化。同一SHA候选包通过后可原样推广发行，失败必须修订、重新构建并重验受影响范围。
 
+早期骨架另有`development`资产/schema检查，只允许未解析的制品条目以pending报告，供源码/单元开发；不能生成发行安装包、冒充完整candidate或在运行时使用未解析引用。制品producer不依赖Tauri安装包，可先原生构建/锁定MinIO、XXL及ES/IK归档，再放行完整candidate，避免Plan01任务1与任务6互相等待。常规打包默认candidate，公开发行始终release。
+
 ### 7.2 工作区、实例及资源所有权
 
 默认工作区为 `~/.code-ark/`，Windows 为用户配置目录下 `.code-ark`；**路径允许中文、空格和非默认盘符**。目录结构：
@@ -104,11 +106,11 @@ toolbox/
 
 `EnvDocument` 行级解析保留注释、键序、引号、CRLF 及无末尾换行；支持值含 `=`、`$`、`#`、引号。生成 Docker 插值文件时按 Compose dotenv 语义编码，拒绝无法无损表达的输入并保留原文件。前端不持久化秘密；registry 和操作日志只保存 `SecretRef`。
 
-`SecretPolicy = GenerateOnFirstManagedCreate | InheritBinding | PreserveExisting | OptionalEmpty`。新托管实例按逐字段策略生成，不靠 `change_me_*` 等通用前缀识别全部默认值：
+`SecretPolicy = GenerateOnFirstManagedCreate | InheritBinding | PreserveExisting | OptionalEmpty`。新托管实例通过getrandom系统随机源生成，不靠 `change_me_*` 等通用前缀识别全部默认值；不把旧版rand OsRng调用签名作为实现依赖：
 
 | 字段/服务 | 初次托管策略 | 已初始化实例 |
 | --- | --- | --- |
-| Nacos Token/身份值 | `OsRng` 原始不少于32字节、Base64；替换公开样例 Token，覆盖模板硬编码身份环境 | 保留；轮换是显式配置操作 |
+| Nacos Token/身份值 | 系统CSPRNG原始不少于32字节、Base64；替换公开样例Token，覆盖模板硬编码身份环境 | 保留；Token更改是显式配置操作 |
 | Canal 复制密码 | 安全字母数字，24 字符且不超过32 | 从已登记账号取值；失配报错 |
 | SearXNG Secret | 32随机字节转64位小写hex | 保留 |
 | Kibana Encryption Key | 32随机字节转64位hex，包括替换公开 `change-this-...` 样例 | 保留，避免无法解密已有内容 |
@@ -146,7 +148,23 @@ toolbox/
 
 `contracts.rs` 定义稳定、可序列化的跨模块类型，前后端类型从同一 schema 生成。至少包括 `WorkspaceIdentity/InstanceIdentity/ResourceRef/SecretRef/DatabaseBinding/EffectiveConfig/ProbeSpec/OperationRecord/ServiceSnapshot`，字段 schema_version 明确；Plan 01 定义构建入口，Plan 02 扩充运行协议，Plan 03 消费相同类型。
 
-`EffectiveConfig` 含 `generation_id/target_id/instance_id/ports/endpoints/secret_refs/config_digest`；秘密仅在后端执行时解引用。运行快照必须指出 desired、applied、last_ready 三种 generation，不能把保存草稿当应用完成。
+`EffectiveConfig`含`generation_id/target_id/instance_id/ports/endpoints/secret_refs/config_digest/image_artifacts`；`image_artifacts: Vec<ImageArtifactRef>`由catalog和目标CPU解析，渲染覆盖层时取明确runtime引用，部署前逐一交给镜像保证器核验。秘密仅在后端执行时解引用；运行快照指出desired/applied/last_ready，不能把保存草稿当应用完成。
+
+### 7.8 技术选型候选基线（2026-11-12）
+
+依据[完整选型核验](../research/05-完整技术选型与服务制品核验.md)，实施候选固定为Rust1.99.1、Node24.22.3 LTS、pnpm12.18.0；保留既定Tauri版本。最低Rust不能只按Tauri1.90计算，SQLx0.9.0和sysinfo0.40.3分别要求1.94/1.95。工具链/锁文件在未来创建，当前只证明版本元数据与声明范围，不证明联合编译通过。
+
+构建期选yaml2.9.1；运行覆盖层选serde-saphyr2.1.1（固定Tagged生成!override、禁用include等不必要功能、设输入预算），不新用归档serde_yaml。公共DTO用ts-rs12.0.1导出，serde实际JSON夹具与TS校验一致，不能静默忽略不支持属性；不把生成类型当权限验证。系统随机源用getrandom0.4.3，已有dotenv行保留与特殊值最终Compose回归不变。
+
+`images.lock.json`新增`ImageArtifactRef { source_id, kind, platform, registry_ref, manifest_digest, archive_url, archive_sha256, expected_image_id, local_content_tag }`：`kind=registry`只使用已解析不可变manifest；`kind=release-image-archive`使用允许来源HTTPS的Docker image-save归档，下载校验归档SHA，固定target加载后核验image ID/平台，再以唯一内容tag及`pull_policy: never`运行。两种kind互斥字段按schema校验，禁止用未解析tag或未生成归档假填digest。公共镜像缓存可跨工作区按内容复用，不属于stop/reset清理集合。
+
+ES/IK也统一采用producer生成的原生归档，不保留桌面运行期local-build第三路径。producer只读复用现有Dockerfile配方，锁定ES9.3.0平台基础digest、IK9.3.0下载归档SHA/构建参数，串行构建验证后登记实际image ID并导出。桌面覆盖层显式`build: !reset null`移除源码build项，引用已验证内容tag且pull_policy=never；最终模型不得遗留任何未声明build，普通启动不隐式构建。原CLI的start.sh/串行构建原样保留。所有架构按`x86_64→amd64`、`aarch64→arm64`及合法arm64/v8归一化匹配，不能以字符串别名误判或借模拟通过。
+
+桌面适配候选：Kafka Broker4.4.0保留，UI采用`ghcr.io/kafbat/kafka-ui:v1.5.0`；Rocket Broker5.5.0/Proxy保留，Console采用`apacherocketmq/rocketmq-dashboard:2.1.0`并将宿主18180映射到其内部8082，不能沿用旧Console的8080。替代必须显式记录原source image、候选digest、配置/API探针适配和验收；根CLI模板不变。不直接采用引入新依赖布局的Studio3.0。
+
+本次查明旧Rocket Console和XXL3.5.0镜像仅声明amd64，MinIO两个官方latest入口匿名查询401。选择为MinIO同产品固定源码与XXL3.5.0生产原生amd64/arm64归档制品，由维护者使用受支持且锁定的builder构建/重打包；不让新手安装Go/Maven，也不以QEMU模拟当原生通过。MinIO候选source commit `9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a`、Go1.27.4；XXL候选commit `3bebfc1609b95413581b11e270e5670dce679813`、Maven3.9.16/JDK17，实际JRE基础用已解析平台digest，保存上游许可/来源和构建参数。
+
+producer生成的image-save归档、可获取发行URL、SHA/image ID及原生验收当前全不存在，均是发行前必需产物。只在选择服务时按需下载/加载，记录体积、空间、进度、超时和重试；没有对应制品就阻断该目标release，不把查询401解释成产品必然不可用，也不静默回退旧包/模拟。现有候选/release分级、同SHA推广与全部17服务范围不变。
 
 ## 8. 实施与验收
 
