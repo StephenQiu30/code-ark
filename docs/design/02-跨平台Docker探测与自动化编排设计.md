@@ -1,85 +1,165 @@
 # 02 跨平台 Docker 探测与自动化编排设计
 
-状态：已对齐基线，待进入实施。依据：[需求 02](../requirement/02-服务依赖与新手使用场景清单.md)（`REQ-03`、`REQ-04`、`C01`、`C04`、`C05`）、[调研 03](../research/03-CodeArk现有17套服务痛点与兼容基线盘点.md)。
+状态：**审查修订版，技术合同待实现与实机验证**（2026-11-12）。来源：[需求 02](../requirement/02-服务依赖与新手使用场景清单.md)、[审查报告](../research/04-一键启动工具箱设计完整性审查.md) `ARK-01/03/04/07/08/09/10/11/12`。实例、覆盖层和有效配置遵循设计 01；本文件是运行语义的权威来源。
 
 ## 1. 摘要
 
-定义工作箱 Rust 后端如何跨 macOS、Windows、Linux 稳定发现并调度 Docker，如何在启动前拦截端口/内存/外部容器冲突，以及如何通过拓扑锁与幂等初始化引擎解决 Temporal、Canal、XXL-Job、Seata、Nacos 与 Elastic Stack 的复杂启动前置。
+编排器在固定的本地 Docker 目标上，完成发现、预检、依赖复用、初始化、部署、业务探针与可恢复操作。所有动作受资源所有权和权限范围约束；实际可连接才成为 Ready。外部观察不授予写权限，选择复用也不授予容器生命周期和整库删除权限。
 
 ## 2. 参与者
 
-- **Rust 编排核心（`docker_cli` / `preflight` / `provisioner` / `orchestrator`）**：负责探测、加锁、按依赖启停、初始化与作用域隔离重置。
-- **终端用户**：通过界面一键触发场景或单服务动作，遇到冲突或硬件不足时得到明确中文指引与选项，而非原始 Docker 错误堆栈。
+- `DockerRunner`：固定二进制、context、daemon、工作目录和参数，返回结构化错误，禁止 shell 命令拼接。
+- 目录/配置层：提供实例、最终插值配置、绑定和探针定义。
+- 编排器：跨进程锁、持久步骤记录、依赖排序、重试/取消、恢复和危险操作复核。
+- 用户：通过界面选择已有依赖及一次性授权，处理硬件/网络问题，明确确认重置范围。
 
 ## 3. 背景
 
-- macOS GUI 应用默认不继承用户终端 `PATH`；Windows 子进程默认会弹出黑色 CMD 窗口；Linux 常遇 `/var/run/docker.sock` 权限不足；
-- 仓库已有服务中，存在硬编码 `container_name`（如 `nacos-standalone`、`mysql-start-dev`、`pgsql-start-dev`），容易与用户此前手动起过的容器碰撞；
-- `temporal`、`xxjob`、`seata` 的实际状态存储在共享 PostgreSQL / MySQL 内而非本地挂载目录。
+源码服务混合数据库、消息系统、Web 控制台和一次性初始化任务；相同 `running` 状态不能证明它们具有相同可用性。旧计划只有内存锁和正常重启测试，无法覆盖半途建表、应用退出、外部资源、配置应用及数据重置。
 
 ## 4. 目标
 
-- **可检查结果**：
-  1. 三端无黑窗、无需手工配置 `PATH` 即可发现 Docker CLI 与读取 Daemon 内存/状态；
-  2. 存在外部同名容器时准确分类为 `ExternalObserve`（只读观察）并支持显式“替换接管”，绝不静默删数据或直接报错崩溃；
-  3. 一键启动任意依赖链服务（如 `temporal`、`canal`、`xxjob`、`seata`、`elastic`）均保持跨平台幂等，可重复启动且保留既有业务数据；
-  4. 按存储归属精确执行 `stop` / `down` / `重置数据` 与级联影响提醒。
-- **Non-Goals**：不跨文件系统自动迁移旧手工仓库里的 `mysql-data` / `pgsql-data` 二进制数据文件（避免数据库版本/权限不一致引发损坏）。
+- 无需终端发现本地 Docker；在有外部环境、特殊路径及端口占用时给出可执行出口。
+- 17 套服务、7 场景的启停和幂等初始化具有明确步骤、超时、状态及复用策略。
+- 专属数据库和数据目录的归属可验证；停止/删除外部实例和通用 prune 不属于普通流程。
+- 非目标：管理远端 daemon、绕过权限自动提权、自动迁移不兼容数据、默认接管外部生命周期。
 
 ## 5. 使用场景
 
-- 场景 1：新手点击启动 Elastic Stack，工作箱先检查 Docker 内存（当前如仅 4 GB 则阻断并指导去 Docker Desktop Settings 调至 >= 6 GB）；满足后自动在无并发冲突下构建 IK 镜像并续期 Basic License。
-- 场景 2：开发者电脑里已有外部手动启动的 `nacos-standalone`（与本机现场观测情况一致），工作箱识别后标记“外部运行中”，提供“只读观察”或“停止并移除旧容器外壳后由工作箱接管（保留 `nacos-start-local-data` 卷）”。
-- 场景 3：开发者需要重置 XXL-Job 到干净状态，工作箱仅清空 `./logs/xxl-job` 与 `${MYSQL_DATABASE}` 库后重导 `tables_xxl_job.sql`，不影响同一 MySQL 内的其他业务库。
+- 新手机器未安装 Docker：引导安装/启动和复检，不要求输入启动命令。
+- 已有仓库 PG/MySQL：先展示复用入口，认证和授权完成后只初始化当前服务需要的专属资源。
+- 场景启动在 SQL 导入或镜像下载中断：保留已有成功服务，显示失败步骤，复检后安全续跑。
+- 多个场景共用数据库：停止场景不默认停止仍被其他场景使用的基础服务；重置先列清归属和影响。
 
 ## 6. 价值
 
-- 把原本需要阅读十余份 README、手敲 SQL 与判断网络依赖的多步操作收敛为确定性状态机；
-- 彻底摆脱 `elastic-start-local/start.sh` 等 Unix Shell 制约，让 Windows 原生开发者拥有同等一键体验。
+避免以“命令成功退出”替代产品结果；将可恢复运行状态与资源边界落实到后端，使新手不需要理解 Docker 标签、SQL 重放或进程退出码。
 
 ## 7. 方案
 
-### 7.1 跨平台 Docker CLI 探测与无窗执行（设计建议）
+### 7.1 Docker 发现、目标与能力门禁
 
-- **二进制路径探测**：除读取 `PATH` 及用户设置覆盖路径外，按 OS 追加探测：
-  - macOS：`~/.docker/bin`、`/usr/local/bin`、`/opt/homebrew/bin`、`/Applications/Docker.app/Contents/Resources/bin`、`~/.orbstack/bin`、`~/.rd/bin`；
-  - Windows：`%ProgramFiles%\Docker\Docker\resources\bin\docker.exe`，所有 `tokio::process::Command` 统一设置 `CREATE_NO_WINDOW` (`0x08000000`)；
-  - Linux：`/usr/bin/docker`、`/usr/local/bin/docker`，若命中 `/var/run/docker.sock` permission denied，返回可操作指引（加入 `docker` 用户组并重新登录）。
+macOS 探测 PATH、`~/.docker/bin`、`/usr/local/bin`、`/opt/homebrew/bin`、Docker.app、OrbStack/Rancher 常用路径；Windows 探测 ProgramFiles Docker 路径，全部子进程使用 `CREATE_NO_WINDOW`；Linux 探测标准路径，区分 socket 权限不足并提示按发行版授权后重新登录，不后台执行提权。
 
-### 7.2 预检与外部容器分类规则（设计建议）
+`DockerTarget { target_id, cli_path, context_name, endpoint_kind, daemon_id, os_type, architecture }` 在环境选择后绑定。只支持已核验的本地 Linux containers 目标：Unix socket、Windows named pipe、本地 Desktop/OrbStack 虚拟化端点；SSH/TCP 远端及 Windows containers 拒绝执行。对本地 endpoint 也读取并记录实际 daemon 身份，每个变更步骤前复核，变化则中止。运行时不能修改用户全局 context；清除未选中的 `DOCKER_HOST/DOCKER_CONTEXT` 等覆盖，所有命令显式指向所选目标。[Context 官方说明](https://docs.docker.com/engine/manage-resources/contexts/)。
 
-- **宿主机资源与端口探测**：
-  - 通过 `docker info --format '{{json .}}'` 读取 `MemTotal`；通过 `sysinfo` 读取工作区磁盘剩余空间；
-  - 启动前用 `TcpListener::bind` 对目标宿主机端口做可用性探测（仅当目标容器尚未运行且非本服务自用端口时拦截）。
-- **外部容器分类（`ContainerOwnership`）**：调用 `docker ps -a` 与 `docker inspect`：
-  - 若 `com.docker.compose.project.working_dir` 归一化路径等于 `~/.code-ark/stacks/<id>` → **`Managed`**；
-  - 若存在同 `container_name` 但工作目录不同或无标签 → **`ExternalObserve`**：
-    - **仅观察语义**：只读展示状态、来源目录、端口与实时日志；禁用启停、配置编辑和重置；禁止作为下游依赖（`canal`/`temporal`/`seata`/`xxjob`）的自动初始化目标（下游如需连外部库，在表单切为“手动填写外部库”）；
-    - **替换接管语义**：弹窗展示原容器工作目录及挂载路径后，由用户明确确认执行 `docker stop <name> && docker rm <name>`（**严禁删除原绑定数据目录与命名卷**），随后从 `~/.code-ark/stacks/<id>` 启动工作箱托管实例。
+门禁包括 CLI 存在、daemon 可达、Compose `>=2.24.4` 和 `!override` 能力、Linux containers、镜像digest与目标CPU清单匹配、工作区权限、端口、内存和存储。候选隔离验收允许实机结果pending，公开发行才要求全部验收通过，遵循设计01的candidate/release分级。版本比较支持新主版本；能力探测使用合成无秘密配置，不调度服务。
 
-### 7.3 拓扑编排锁与幂等初始化引擎（设计建议）
+### 7.2 端口、内存、磁盘与网络检查
 
-- **串行互斥锁**：`OrchestratorState` 持有全局/依赖组异步操作锁，快速连点场景或单服务启动时拒绝并发重入，并按步骤发射 `StepProgressEvent`（`Preflight` → `Materialize & .env` → `Pre-provision` → `Compose Up & Wait Healthy` → `Post-provision`）。
-- **依赖启动顺序**：基于 DAG 拓扑排序，优先启动 `mysql` / `pgsql` 并轮询容器 `Health.Status == healthy` 后再推进上层服务；若中间步骤失败立即中止并定位到具体失败步骤，不留下未决的半残流程。
-- **各服务幂等初始化策略**：
-  - `nacos`：执行 `docker volume inspect/create nacos-start-local-data`；
-  - `temporal`：从 `pgsql/.env` 同步 `PGSQL_USER`/`PGSQL_PASSWORD`，连接验证 `pgsql-start-dev` 账号连通性（若历史 `pgsql-data` 密码不匹配则明确报错提示修改配置），再启动 Temporal Compose（内部容器自动完成幂等 Schema 与 Namespace 初始化）；
-  - `canal`：确保 MySQL 健康后通过 `docker exec` 幂等执行 `CREATE USER IF NOT EXISTS 'canal'@'%' ...` 及 `GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT`，写回 `canal/.env`；
-  - `xxjob`：检查配置库 `${MYSQL_DATABASE}`（默认 `xxl_job`）是否存在 `xxl_job_info` 等核心表；若不存在，剥离 `tables_xxl_job.sql` 顶部硬编码 `CREATE DATABASE / USE xxl_job` 并针对 `${MYSQL_DATABASE}` 执行建库与导入；
-  - `seata`：检查 `${MYSQL_DATABASE}`（默认 `seata`）是否存在四张元数据表，缺失时执行内置 `seata_1_8_0_mysql.sql` 建库建表；
-  - `elastic`：校验 Docker 内存 >= `ELASTIC_STACK_MIN_DOCKER_MEMORY_GB`（6 GB）与磁盘空间；当 `elastic-start-local-elasticsearch:${ES_LOCAL_VERSION}-${IK_VERSION}` 缺失或要求重建时先停栈并以 `COMPOSE_PARALLEL_LIMIT=1` 构建镜像；全部容器就绪后如需要，以 Rust `reqwest` 调用 `/_license/start_basic?acknowledge=true` 完成 Basic License 授权。
+- 默认仅 IPv4 回环发布；同时区分 TCP/UDP，按完整映射及耦合组检查。探测端口不能消除检查后竞争，实际 bind 冲突归类为 `PortConflict` 并保留重选入口，不静默终止占用进程。
+- 仅在 inspect 证明为同一 target/instance/component 的发布端口时免重复占用报错。外部容器、其他实例、非 Docker 进程不能被误当“本服务”。
+- Docker `MemTotal` 与当前运行场景共同估算；Elastic 至少6 GiB，使用整数单位换算并报告需求、可用值及运行时设置入口。
+- 分别检查工作区磁盘和 Docker 存储（镜像/构建缓存/命名卷）空间。支持目标需提供 `StorageCapacityProbe`：原生 Linux 对 daemon 数据目录所在文件系统查询；Desktop/OrbStack 使用其可读取容量信息，或经用户同意运行锁定 digest 的轻量诊断任务在 daemon 侧查询可用空间。读取失败返回 `UnknownCapacity` 并给出运行时存储设置/复检入口，不能拿宿主机工作区空间冒充 daemon 空间。
+- catalog 每项声明 `minWorkspaceFreeBytes/minDaemonFreeBytes/estimatedPullBytes`；实施基于锁定制品实测填值。未知空间时允许观察，默认不执行大镜像拉取/构建；普通启动需显式接受本次未知容量风险并记录，发行测试必须验证可测目标路径。
+- 现有外部网络检查 target、网络 ID、可达别名；Linux bind 目录按镜像 UID/GID 创建并做写权限验证，不对任意宿主目录递归 chmod/chown。
 
-### 7.4 分级停止与作用域精准重置（设计建议）
+### 7.3 资源识别与数据库绑定
 
-- **停止（`stop`）**：若目标为 `mysql`/`pgsql` 且检测到有上层服务（`canal`/`seata`/`xxjob`/`temporal`）正在运行，先弹出影响列表，提供“一并安全停止”或取消；
-- **重置数据（`reset_service_data`）**（需二次输入服务名确认，严禁全局 `docker system prune`）：
-  - 独立存储服务（12 个）：仅清空 `~/.code-ark/stacks/<id>` 下本地数据/日志目录及该项目命名卷（`docker compose -p <project> down -v`）；
-  - 共享数据库上层服务（`temporal`、`xxjob`、`seata`）：除清理自身日志外，仅在共享 PG/MySQL 中执行 `DROP DATABASE IF EXISTS <专属库>` 并标记待重新初始化（`temporal` 清理 `temporal` + `temporal_visibility`；`xxjob` 与 `seata` 清理各自配置的 `${MYSQL_DATABASE}`），绝不碰 `test_db` 等其他库；
-  - 基础数据库自身（`mysql`、`pgsql`）：显示受影响上层服务**级联警告**，确认后先停止关联上层服务，再清理数据库目录并重设上层初始化状态。
+`ContainerOwnership = Managed | ExternalObserve | NotPresent | OwnershipConflict`。Managed 要求设计 01 的实例标签、registry、daemon 身份、资源 ID/挂载路径全部相符；相同路径或相同名称均不足以获得所有权。发生丢失、漂移或歧义时只观察和修复登记。
+
+`DatabaseBinding { binding_id, target_id, engine, lifecycle_owner, container_ref, network_name, network_alias, container_port, host_endpoint, credential_ref, allowed_databases, grant }`：
+
+v1的ExternalConnected明确限定为**同一已固定本地Linux-containers daemon中的MySQL/PG容器**，具备可验证实例身份、可加入的网络和可认证账号。本机原生数据库、远端数据库/daemon、无法验证身份或不可达的网络拓扑不在自动编排范围：返回`UnsupportedDependencyTopology`，说明原因并提供观察/拓扑指引或显式创建独立托管实例，不悄悄新建替代库。`host_endpoint: Option<Endpoint>`；有发布端口时从宿主认证，无发布端口则使用该daemon内已锁定一次性SQL客户端在绑定网络认证/查询指纹，凭据经受限输入传递，不要求用户开放端口。两条验证路径都不能把不同服务器当同一绑定。
+
+- `lifecycle_owner = Managed(instance_id) | ExternalConnected`；`ExternalConnected` 是显式连接授权，不改变外部容器所有权。
+- 引用其他工作区Managed提供者时仍记录其真实所有者，但消费者不获得提供者的启停/重置权限；只有拥有者工作区在查询公共UsageIndex并完成影响确认后可发起生命周期操作。
+- 发现已有可用基础数据库时不自动启动第二套；引导选择已登记绑定或在界面填凭据并验证。没有已有实例时才按场景创建一个托管基础库；同工作区后续场景复用它。
+- 外部默认 `grant=ReadOnlyConnect`，不读取未选择的外部 `.env`。用户可在界面显式授权 `InitializeNamedResources`，授权展示并锁定服务器、准确库名、账号、待执行建库/授权/Schema 步骤；不能凭“连接成功”推断可自动写任意库。
+- 启动上层服务前认证到实际端点，并确认内网别名、账号权限与数据库范围；不能把 root 初始化密码写成另一个随机值。宿主机端点用于认证/连接测试，内网端点用于服务连接；二者都必须指向所登记服务器。
+- 外部服务的启停/移除、外部账号轮换、整库重置始终禁用。撤销绑定先提示依赖，保留外部资源；所有外部写操作仅针对已授权专属资源，不改其他业务记录。
+
+原 `temporal-start-local/` CLI 仍按根规范复用 `pgsql-start-dev` 和 `pgsql-start-local_default`，本轮不更改其配置。桌面检测到该 PG 时优先登记此真实网络与账号；全新环境仅创建一个托管 PG，再把上层覆盖层绑定到它。不得另起 Temporal 私有 PG。
+
+### 7.4 凭据、数据库归属及可恢复初始化
+
+`DatabaseClaim { claim_id, binding_id, daemon_id, server_fingerprint, database_names, owner_instance_id, created_by_codeark, ddl_version, ddl_checksum, status }`；各专属数据库内有保留的归属表 `codeark_resource_owner`（字段含 claim/instance），registry 另记；对同一服务器/库名跨工作区加锁。标记存在、服务器指纹与登记记录相符才可视为自有，不能因名称相似或存在框架表就认领。服务器指纹采用可核验的引擎实例标识及目标资源身份；权限不足以核验时可只读连接，但不授予重置权限。
+
+托管 MySQL 的 Seata/XXL 默认分别使用 `ca_<workspace标识>_seata`、`ca_<workspace标识>_xxjob`，每服务专属账号；保持合法标识符、长度及系统库拒绝列表。Canal 使用专属复制账号及所需权限。管理凭据来自已认证绑定，服务凭据只由一次账号创建产生并写入 `SecretRef`；失配进入修复，不悄悄 `ALTER USER` 外部账号。
+
+Temporal 沿用 PG 现有账号，数据库名固定 `temporal`、`temporal_visibility`，Server 和 Schema 工具同一 `TEMPORAL_VERSION`，History 分片数不变；对同一服务器的这对库只允许一个所有者。已有非本实例 Schema 不能直接认领/迁移；需单独展示版本、备份和专属授权后复用，或只观察。多工作区可连接同一已登记 Temporal 实例，但不各自迁移同一对库。
+
+| 服务 | 初始化合同 | 中断/已有状态处理 |
+| --- | --- | --- |
+| Nacos | 使用实例专属卷；不预创建源码固定名称卷，不宣称其是 external | 归属不明的同名卷拒绝挂载或删除 |
+| Temporal | 认证 PG → 检查/取得双库 claim → Schema job → Server 集群可用 → Namespace job → UI | 成功任务退出0；保留已有 Namespace 设置，新增默认3天；Schema 不降级，失败不伪造完成标记 |
+| Canal | 校验 ROW binlog、服务端账号/权限、指定账号密码认证，写入同一来源凭据 | `CREATE USER IF NOT EXISTS` 后还要验证认证；已有账号不匹配则阻断，不只覆盖本地密码 |
+| XXL-Job | 把真实 SQL 解析为版本化建表及种子步骤，移除固定库选择；执行于已 claim 专属库，逐步记录 | 检查全部必需表/列与种子状态，不能仅看 `xxl_job_info`；仅补缺失兼容项，已存在用户/任务不重写；不兼容进入迁移门禁 |
+| Seata | 内置对应1.8.0系列四表 DDL及校验和；专属账号与实际 JDBC 配置 | 逐表/列核验，缺失兼容项补建，已有业务行不改；版本不符拒绝自动迁移 |
+| Elastic | 内存/磁盘/架构门禁 → 串行构建锁定 ES/IK → ES → 只负责 `kibana_system` 配置的 job → Kibana/Logstash | 覆盖源码 job，移除自动 trial 请求；默认 Basic，按实际授权状态处理，HTTP非成功必须失败；任何步骤不打印秘密 |
+
+初始化 journal 与 SQL 结果核验共同决定状态，不能把 MySQL DDL 当作可整体回滚事务。创建数据库前持久化claim预留及计划，创建后立即写归属标记；若在创建与标记间崩溃、无法证实成功归属，则进入RecoveryRequired，不自动认领未知空库或删除它。进程重开重新探测已完成事实；对已有未知库不尝试“补表修复”。SQL标识符严格校验/引用、值参数化，禁止把用户输入直接拼入数据库/账号语句。
+
+v1不执行已初始化数据库账号轮换；更新连接凭据必须先证明新值已在真实服务器有效，再应用依赖候选，失败保留旧连接值。首次新账号创建仍在本期。后续轮换需单独定义旧/新SecretRef持久恢复和依赖重建失败处理，本期不暴露轮换命令，禁止只改.env假称密码已更换。
+
+### 7.5 就绪判定与全量探针
+
+`ProbeSpec { probe_id, component_id, role, kind, endpoint_ref, credential_ref, timeout_secs, attempts, success_rule }`；job 必须成功退出0，daemon 需要进程存活和表中业务探针。没有 Docker healthcheck 的镜像由 Rust 网络/协议客户端或锁定验证任务探测，不假定镜像内有 curl。
+
+| 服务 ID | 运行就绪条件 | 发行功能验证（隔离数据） |
+| --- | --- | --- |
+| pgsql | 展示的账号/库成功认证，SQL `SELECT 1` | 写入记录、停止/保留数据重建后仍存在 |
+| mysql | 实际下游账号可认证、权限/库/ROW binlog符合使用者需求 | 专属库读写、半初始化恢复及重建保留 |
+| redis | PING成功 | 测试键读写及AOF保留 |
+| minio | S3认证可列出授权范围、服务ready | 测试桶/对象上传下载、保留数据 |
+| kafka | broker元数据可用、UI后端能读集群 | 宿主机和同网容器生产/消费，改绑端口后重复 |
+| canal | MySQL复制前提/账号通过、Canal客户端可订阅并取空批次，无复制致命错误 | 专用测试表变更由Canal客户端读取；不把Kafka同时运行当转发成功 |
+| rabbitmq | AMQP实际账号/vhost可连接、管理API认证 | 发布/消费、持久消息保留 |
+| rocketmq | NameServer/Broker路由、Proxy SDK连接和Console后台查询通过 | Proxy宿主机/容器收发及Console Topic查询 |
+| temporal | Schema/Namespace job成功；CLI cluster health、namespace describe、UI Namespace API通过 | 测试Workflow由测试Worker执行，重复启动设置/数据保留 |
+| xxjob | 实际专属库认证和结构/种子完整，管理端登录/API读取成功 | 登录后读取测试任务，示例执行器完成一次调度 |
+| nacos | 认证API、配置读取及SDK连接可用，Console后台连接通过 | 专用配置写读、重建保留，端口组改绑后SDK通过 |
+| sentinel | Dashboard接口可用；无人接入时标明等待客户端 | 示例客户端注册并产生可观察请求/限流结果 |
+| seata | 四表结构/账号可用，协调端客户端握手及Console认证通过 | 示例业务库的undo_log及事务回滚；不写用户业务库 |
+| elastic | job退出0，ES认证健康达到yellow/green，IK接口、Kibana后台、Logstash pipeline API可用 | 测试日志进入索引，可查询且保留数据 |
+| monitoring | Prometheus ready及预置targets正常、Grafana认证/数据源健康和查询通过 | 实际查询有数据，仪表盘/账号保留 |
+| rsshub | healthz和内置确定性RSS校验通过 | 可解析XML；真实站点路由独立验证并区分上游错误 |
+| searxng | JSON搜索接口可调用、至少一个配置引擎实际有可用响应 | 请求成功、JSON结构/引擎失败可诊断；网络不可用为Degraded |
+
+就绪默认只做授权范围内非破坏性读取/连接；发行写读探针在明确隔离的测试实例和测试标识下运行，并清理其自建资源。对于框架客户端缺失，显示“基础服务就绪，等待应用接入”，不声称用户业务已跑通；SDK/协议探针工具、版本与镜像由 catalog 声明并锁定，安装包不依赖用户开发工具。
+
+### 7.6 状态机、步骤与错误
+
+`ServicePhase = Uninitialized | Stopped | Starting | RunningUnverified | Ready | Degraded | Failed | AwaitingAction | ExternalObserve`。只有全部必需job和探针通过才为 Ready；外部只观察不冒充托管就绪。探针失效后撤销Ready，快照注明采样时间和最后成功时间。
+
+`OperationRecord { operation_id, target_id, instance_ids, request_digest, desired_generation, applied_generation, last_ready_generation, phase, steps, created_resources, error_code }`；`StepProgressEvent { operation_id, seq, service_id, step_id, phase, message_code }`，事件可由持久快照补齐。秘密不出现在参数日志或journal。
+
+启动按DAG**逐节点**执行，不是全局先认证/建库再启动基础库：
+
+1. 加锁、复核目标/所有权，解析已有绑定与去重DAG，完成可离线预检及候选计划。
+2. 新托管基础库：物化初始化凭据→拉取镜像→启动MySQL/PG→端口/服务探针→管理账号真实认证→登记绑定；管理连接未通过不得开始任何下游DDL。已登记外部或已运行托管基础库不重建，直接认证/复核。
+3. 上层节点：登记跨工作区消费者→认证其依赖→claim/账号/可恢复预置→生成包含实际绑定的最终配置→拉取/构建→该节点部署/job→业务探针→记录applied/last_ready。
+4. 对下一个节点重复，全部必需节点通过才结束场景。Temporal的Schema/Server/Namespace/UI顺序在其节点内保持；资源不足/某节点失败保留已完成节点并定位失败步。
+
+动态依赖根据绑定解析，不固定“只要启动Temporal就再启动PG”。
+
+默认上限：单次协议连接5秒、单探针30秒/重试3次、初始化/就绪阶段10分钟、停止60秒、拉取/构建30分钟；等待每2秒更新状态，拉取/构建连续120秒无进展提示网络检查，仍有总截止时间。服务可在catalog给出有依据的更具体期限，不能无限等待。错误码至少包含 `DockerMissing/DaemonUnavailable/ComposeTooOld/UnsupportedTarget/UnsupportedDependencyTopology/TargetChanged/OwnershipConflict/PortConflict/InsufficientMemory/InsufficientStorage/UnknownCapacity/CredentialMismatch/InitializationPartial/SchemaIncompatible/ProbeFailed/TimedOut/Cancelled/RecoveryRequired`。
+
+### 7.7 锁、取消、恢复及配置应用
+
+应用每用户单实例，工作区另用OS文件锁；公共控制目录按daemon ID及数据库claim加跨进程锁，操作多个资源时按稳定ID排序避免死锁。不能只靠 `tokio::Mutex`。锁所有者死亡后根据实际资源和journal恢复；非协作外部工具仍可能改变资源，每一步变更前再核验ID/归属。
+
+`UsageIndex`位于设计01规定的公共控制根，不随workspace切换。每个消费者在上层初始化/启动前原子登记provider/target/claim/consumer workspace+instance/场景，安全停止/解绑并确认无活跃操作后才注销；心跳过期仅为Unknown，不能自动当作已停止。提供者stop/down/reset在持同一公共锁时查询全部workspace使用者并核对daemon实际容器；索引损坏、无法访问消费者工作区、登记缺失但发现关联容器时保守拒绝，提供索引修复/重新验证入口。不同OS用户或未登记业务连接无法完整枚举时不能声称“全部外部依赖已发现”；基础库停止前明确这一限制，整实例重置还必须枚举并核验其全部非系统库/账号/连接范围，存在未知业务资源则拒绝。
+
+索引修复只加载用户重新选择的工作区registry、实际实例标签/网络及操作journal，在公共锁内重建可证实引用；没有证据的条目保持Unknown，不以“修复”清空。已无运行实例/活跃操作且资源关系可验证的停用消费者，可经用户确认解除陈旧登记；无法核验时只提供导出诊断/恢复原工作区指引，继续禁止提供者重置。
+
+取消拉取/构建可终止CLI子进程，但不能保证daemon停止内部任务，之后重新inspect并展示仍在运行的状态。SQL执行不强制中断未知事务；在步骤边界停止，遇不确定结果标 `RecoveryRequired`。不自动回滚数据库迁移、不删除已有依赖；失败默认保留成功步骤，只提供“复检后重试失败步骤”与“停止本次新建且不被其他场景使用的服务”。
+
+配置流程：`Draft → Validated → Applying → Ready | Failed | RecoveryRequired`。预览差异，候选配置校验后使用 `compose up -d` 应用必要重建，**不能用restart代替配置重建**；就绪后提交`.env`更改和last_ready。保存草稿不改变运行服务。失败且无数据格式变更可按记录恢复上一配置并重新探针；有Schema/数据变更时禁止自动降级。崩溃后用actual inspect判定applied_generation，而非强行回写旧指针。
+
+### 7.8 停止、拆除、重置和外部迁移
+
+- `stop_service/stop_preset` 计算反向依赖及场景使用记录。停止场景默认只停止该场景独占并由它启动的托管实例；共用依赖和启动前就运行的服务保留，影响其他场景时明确列出并确认。外部数据库永不自动停止。
+- `down_service` 先检查依赖与所有权，仅移除本实例容器/网络，保留数据；不使用全局prune或删除孤立资源选项。
+- `plan_reset` 返回不可变 `ResetPlan { plan_id, target_id, instance_id, exact_resource_ids, database_claims, impact, fingerprint, expires_at }`，有效5分钟。用户输入服务名并确认准确资源后，后端携plan_id复核目标、ID、归属和依赖，再执行；前端确认不是唯一保护。
+- 本地清理只针对catalog声明且位于实例边界内的真实目录、明确登记的自有卷。禁止顺着symlink越界，禁止按名称前缀批量删。执行清单化的容器/卷删除，不把宽泛 `down -v` 当所有权证明。
+- 数据库重置要求 `created_by_codeark=true`、registry和库内claim双重吻合、服务器指纹一致、独占且非系统/外部库；否则禁用整库删除。Temporal只处理其已claim双库；外部连接库即使有初始化授权也默认禁止整库重置。基础数据库重置要列出**全部**已登记使用者，不能承诺整实例重置还保留该实例其他库；存在外部/未知业务库时拒绝整实例重置，改用单服务清理或导出指引。
+- 原“停止并删除外部容器后接管”入口取消。提供只读观察、显式绑定、创建新托管实例三条路径；数据迁移使用逻辑导出/导入指南，并明确原数据不会自动出现在新实例。外部容器自动移除和自动恢复重建均不属于v1。
 
 ## 8. 实施与验收
 
-- **下游来源映射**：由 [PRD 02](../prd/02-跨平台环境预检与服务自动化编排PRD.md) 承接验收边界，由 [Plan 02](../plan/02-跨平台Docker探测与编排引擎实施计划.md) 定义 Rust 测试与集成验证命令。
-- **核心验证出口**：Docker 错误分类测试、TCP 端口占用与 6 GB 内存门禁测试、`ExternalObserve` 边界测试、`tables_xxl_job.sql` 自定义库名替换测试、并发启停锁与级联停止警示测试。
+唯一承接：[PRD 02](../prd/02-跨平台环境预检与服务自动化编排PRD.md) → [Plan 02](../plan/02-跨平台Docker探测与编排引擎实施计划.md)。先完成Redis闭环，再完成已认证MySQL依赖组和PG→Temporal，再扩展全量探针；最终范围仍为17套服务。
+
+必须覆盖每一步故障注入、已存在账号、部分DDL/种子、错误凭据、跨进程并发、远端/切换context、中文路径、数据库误指、外部库、共用场景、保留数据重建、恢复及重置竞态。源码/Mock通过不替代设计03的安装包发行验收。所有运行检查当前均未执行。
 
 [返回设计导航](00-设计导航.md)

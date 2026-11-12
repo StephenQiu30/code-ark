@@ -17,6 +17,8 @@ Code Ark brings together **17 Docker Compose configurations** for databases, cac
 
 [中文](./README.md) · [Quick start](#quick-start) · [Service catalog](#service-catalog) · [Daily use](#daily-use) · [Contribute](#contribute)
 
+The [desktop toolbox design and implementation documents](./docs/00-文档导航.md) incorporate the one-click startup review. The desktop toolbox has not been implemented or released, and runtime acceptance remains unexecuted. The service Compose configurations below remain the current way to use this repository.
+
 ## Quick start
 
 Start with Redis: it does not need an `.env` file. You need **Docker Engine / Docker Desktop, Docker Compose v2 or later, and Git**.
@@ -76,7 +78,7 @@ These are default host ports. Follow each service link for credentials, resource
 
 | Service | Default ports | Use |
 | --- | --- | --- |
-| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | Discovery and configuration; create its external volume first |
+| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | Discovery and configuration; Compose creates its explicitly named persistent volume |
 | [Sentinel](./sentinel-start-local/README.md) | `8858` / `8719` | Traffic control, circuit breaking, and rule experiments |
 | [Seata](./seata-start-local/README.md) | `7091` / `8091` | Distributed transactions; requires MySQL metadata tables |
 | [Elastic Stack](./elastic-start-local/README.md) | `9200` / `5601` / `5044` | Search, IK analysis, logs, and Kibana |
@@ -113,7 +115,7 @@ For services that need `.env`, copy `.env.example` **on the first run** and set 
 - `stop` and ordinary `down` preserve persistent directories and named volumes. `down -v` deletes this project's named volumes, not host bind mounts or external databases.
 - Host applications use published ports. Inside a container, `localhost` means that container; follow its service guide for service names, container ports, or host access.
 - Start `pgsql-start-local` before Temporal. Canal reuses MySQL and requires ROW binlogging plus a replication account. Seata and XXL-Job need accessible MySQL databases and their metadata tables.
-- Nacos needs an external named volume: run `docker volume create nacos-start-local-data` before its first startup.
+- Nacos uses the explicitly named volume `nacos-start-local-data`, created by Compose without `external: true`. `down -v` requests its removal; verify ownership and data before cleanup. See its guide.
 - Start Elastic Stack with `./start.sh`. Its precheck requires at least 6 GB of Docker VM memory; use WSL or a compatible shell on Windows.
 
 </details>

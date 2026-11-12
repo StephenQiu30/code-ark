@@ -1,6 +1,6 @@
 # Nacos 本地开发环境
 
-启动单机 Nacos 3.1.1，在本地验证服务注册、配置管理和客户端接入。首次运行需准备外部数据卷。
+启动单机 Nacos 3.3.0，在本地验证服务注册、配置管理和客户端接入。Compose 自动创建固定名称持久卷。
 
 [项目首页](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
 
@@ -9,7 +9,7 @@
 
 This directory provides a standalone Nacos server for local service discovery and config testing.
 It uses `.env` for token-related configuration, a Docker named volume for database data, and a local directory for logs.
-Create `.env` from `.env.example` before startup.
+Create `.env` from `.env.example` before the first startup, keeping any existing `.env`. Compose creates the explicitly named volume; it is not declared external.
 
 </details>
 
@@ -38,15 +38,15 @@ Create `.env` from `.env.example` before startup.
 
 - 已安装 Docker 和 Docker Compose
 - 首次启动前准备 `.env`，使用有效的 Base64 编码认证密钥
-- 数据卷 `nacos-start-local-data` 是外部卷，首次运行需先创建
+- Compose 自动创建固定名称卷 `nacos-start-local-data`；当前配置没有 `external: true`，不同路径运行也会引用同名卷，启动前确认没有其他实例正在使用它
 
 ## 快速启动
 
 ```bash
 cd nacos-start-local
+# 仅在不存在 .env 时首次复制；已有配置请保留
 cp .env.example .env
 # 编辑 .env，设置 NACOS_AUTH_TOKEN
-docker volume create nacos-start-local-data
 docker compose up -d
 ```
 
@@ -67,7 +67,7 @@ docker compose up -d
 - 数据卷：`nacos-start-local-data`（Docker 管理，避免 Derby 数据库放在 Windows bind mount 上）
 - 日志目录：`./nacos/logs`
 
-`docker compose down` 不会删除数据卷。需要重置 Nacos 时，请先确认并备份该卷中的数据；删除数据卷会清空 Nacos 配置及注册数据。
+`docker compose down` 不会删除数据卷。当前卷不是外部卷，`docker compose down -v` 会请求删除它。需要重置 Nacos 时，先确认该固定名称卷的归属、其他使用者并备份；删除会清空其中的 Nacos 配置及注册数据。未来桌面工作箱的实例专属卷方案尚未实现，不改变此处 CLI 配置的行为。
 
 ```bash
 docker compose down

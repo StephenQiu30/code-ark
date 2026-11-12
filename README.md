@@ -17,6 +17,8 @@ Code Ark（代码方舟）收集了 **17 套 Docker Compose 配置**，覆盖数
 
 [English](./README.en.md) · [快速开始](#快速开始) · [服务目录](#服务目录) · [日常使用](#日常使用) · [参与贡献](#参与贡献)
 
+[工作箱设计与实施文档](./docs/00-文档导航.md)已按一键启动审查修订。桌面工作箱尚未开发、未发行，相关运行验收均未执行；当前可用方式仍是下方各服务的 Docker Compose 配置。
+
 ## 快速开始
 
 先运行一个不需要 `.env` 的 Redis 示例。需要 **Docker Engine / Docker Desktop、Docker Compose v2 及以上版本，以及 Git**。
@@ -76,7 +78,7 @@ docker compose exec redis redis-cli ping
 
 | 服务 | 默认端口 | 用途 |
 | --- | --- | --- |
-| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | 注册与配置中心；先创建外部数据卷 |
+| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | 注册与配置中心；Compose 自动创建固定名称持久卷 |
 | [Sentinel](./sentinel-start-local/README.md) | `8858` / `8719` | 流控、熔断与规则实验 |
 | [Seata](./seata-start-local/README.md) | `7091` / `8091` | 分布式事务；需 MySQL 元数据表 |
 | [Elastic Stack](./elastic-start-local/README.md) | `9200` / `5601` / `5044` | 搜索、IK 分词、日志与 Kibana |
@@ -113,7 +115,7 @@ docker compose down           # 移除当前项目容器和网络
 - `stop` 和普通 `down` 不删除持久化目录或命名卷。`down -v` 会删除本项目命名卷，不会删除宿主机绑定目录，也不会清空外部数据库。
 - 宿主机应用使用发布端口；容器里的 `localhost` 指向容器自己，应按服务 README 使用服务名、容器端口或宿主机入口。
 - Temporal 复用 `pgsql-start-local`，先启动 PostgreSQL。Canal 复用 MySQL，需启用 ROW binlog 并配置复制账号；Seata、XXL-Job 需要可访问的 MySQL 和对应表结构。
-- Nacos 使用外部命名卷，首次运行 `docker volume create nacos-start-local-data`；详情见其 README。
+- Nacos 使用固定名称命名卷 `nacos-start-local-data`，由 Compose 创建，并未声明为外部卷；`down -v` 会请求删除该卷，清理前核对归属与数据。详情见其 README。
 - Elastic Stack 建议通过 `./start.sh` 启动。脚本要求 Docker 虚拟机至少有 6 GB 内存，Windows 下使用 WSL / 兼容 Shell。
 
 </details>
