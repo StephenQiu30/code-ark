@@ -65,7 +65,7 @@ git -c commit.template=.gitmessage commit
 
 ## 服务与配置约定
 
-- 新服务使用 `<service>-start-local/`，至少包含 `docker-compose.yml` 和 `README.md`；使用环境变量时提供 `.env.example`。初始化 SQL、配置和脚本放在当前服务目录内。
+- 新服务集中在 `services/<service>-start-local/`，至少包含 `docker-compose.yml` 和 `README.md`；使用环境变量时提供 `.env.example`。初始化 SQL、配置和脚本放在当前服务目录内。
 - 保留 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 的历史名称。复用现有数据库/网络，明确依赖、启动顺序及当前服务专属数据库，不操作其他业务数据。
 - 使用 Compose v2，不新增顶层 `version`。新增镜像固定已验证版本，配置健康检查、资源限制、日志轮转；常驻服务 `unless-stopped`，初始化任务成功后退出。
 - 默认宿主机入口绑定 `127.0.0.1`，检查仓库默认端口与本机占用；说明容器内部地址和宿主机地址。
@@ -76,7 +76,7 @@ git -c commit.template=.gitmessage commit
 
 服务 README 使用 UTF-8，中文优先，包含 English Summary、简介、组件/端口、前置条件、启动、配置、持久化/清理、常用命令和返回根 README 的链接。命令可公开复现，能力描述以实际配置为准。
 
-新增或删除服务时，同步中英文根 README 的服务表、数量和现有目录树（如有），并更新 `PROJECT.md`。工作箱技术变化沿 `requirement → design → prd → plan` 追溯，详见 [知识库维护说明](docs/01-知识库维护说明.md)。计划路径和未执行任务必须标注状态。
+新增或删除服务时，更新唯一服务表 `services/README.md`，同步中英文根 README 的数量与入口，并更新 `PROJECT.md`；不要在首页或结构规范复制完整清单。工作箱技术变化沿 `requirement → design → prd → plan` 追溯，详见 [知识库维护说明](docs/01-知识库维护说明.md)。计划路径和未执行任务必须标注状态。
 
 ## 提交前验证
 

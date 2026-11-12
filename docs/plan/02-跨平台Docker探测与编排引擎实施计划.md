@@ -14,7 +14,7 @@
 
 ## 1. 全局约束
 
-- 根服务YAML/配置/.env.example及既有数据不改；所有动作只针对已核验target与登记实例；远端及Windows containers不执行。
+- services下源码YAML/配置/.env.example及既有数据不改；所有动作只针对已核验target与登记实例；远端及Windows containers不执行。
 - `ExternalObserve`无写权限；`ExternalConnected`只获准确列名初始化授权，无外部生命周期/整库删除权限。
 - 外部绑定v1仅支持同一本地daemon中的MySQL/PG容器；未发布宿主端口用锁定一次性SQL客户端认证。本机原生/远端库不自动编排，提示拓扑限制；不悄悄新建替代库。
 - Temporal复用已选PG和现有账号，固定双库、同版本Server/Schema工具及既有History分片，不另启私有PG。

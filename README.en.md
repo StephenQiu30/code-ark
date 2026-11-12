@@ -17,7 +17,7 @@ Code Ark brings together **17 Docker Compose configurations** for databases, cac
 
 [中文](./README.md) · [Quick start](#quick-start) · [Service catalog](#service-catalog) · [Daily use](#daily-use) · [Contribute](#contribute)
 
-The [desktop toolbox design and implementation documents](./docs/00-文档导航.md) incorporate the one-click startup review. The desktop toolbox has not been implemented or released, and runtime acceptance remains unexecuted. The service Compose configurations below remain the current way to use this repository.
+The [desktop toolbox design and implementation documents](./docs/00-文档导航.md) incorporate the one-click startup review. The desktop toolbox has not been implemented or released, and runtime acceptance remains unexecuted. The Compose configurations in the [service index](./services/README.md) remain the current way to use this repository.
 
 ## Quick start
 
@@ -25,7 +25,7 @@ Start with Redis: it does not need an `.env` file. You need **Docker Engine / Do
 
 ```bash
 git clone https://github.com/StephenQiu30/code-ark.git
-cd code-ark/redis-start-local
+cd code-ark/services/redis-start-local
 docker compose up -d
 docker compose exec redis redis-cli ping
 ```
@@ -34,66 +34,15 @@ A `PONG` response means your host application can connect to `localhost:6379`. R
 
 > Some services need environment variables, initialization SQL, or an existing database. Read the selected service's README first. You do not need to run the whole collection.
 
-## Find your starting point
-
-- **Backend development** → [PostgreSQL](./pgsql-start-local/README.md), [MySQL](./mysql-start-lcoal/README.md), [Redis](./redis-start-local/README.md), [MinIO](./minio-start-local/README.md).
-- **Messaging, data changes, and background work** → [Kafka](./kafka-start-local/README.md), [RabbitMQ](./rabbitmq-start-lcoal/README.md), [Canal](./canal-start-local/README.md), [Temporal](./temporal-start-local/README.md).
-- **Service discovery and distributed apps** → [Nacos](./nacos-start-local/README.md), [Sentinel](./sentinel-start-local/README.md), [Seata](./seata-start-local/README.md).
-- **Search, logs, and metrics** → [Elastic Stack](./elastic-start-local/README.md), [Prometheus / Grafana](./monitoring-start-local/README.md).
-- **RSS and search APIs** → [RSSHub](./rsshub-start-local/README.md), [SearXNG](./searxng-start-local/README.md).
-
-## Why keep these together?
-
-**Choose by service.** Each directory contains its own Compose file and documentation. Services that reuse a database state their prerequisites explicitly.
-
-**See where configuration and data live.** Environment-based services include `.env.example`; their guides cover ports, initialization, bind mounts, and named volumes.
-
-**Use familiar Docker commands.** Most services start with `docker compose up -d`. Elastic Stack includes a build and memory-check script; specialized setup stays in the service guide.
-
 ## Service catalog
 
-These are default host ports. Follow each service link for credentials, resource requirements, and setup details; adjust its configuration if a port is already in use.
+The complete list of services, default ports, and prerequisites lives in [services/README.md](./services/README.md). Choose only what you need from the databases, caches, messaging, workflows, search, storage, and monitoring projects.
 
-### Data and storage
+```text
+services/    # 17 Compose projects and one host-tool guide
+```
 
-| Service | Default ports | Use |
-| --- | --- | --- |
-| [PostgreSQL 18](./pgsql-start-local/README.md) | `5432` | SQL, relational data, and initialization scripts |
-| [MySQL 8.4](./mysql-start-lcoal/README.md) | `3306` | Relational data and application integration |
-| [Redis](./redis-start-local/README.md) | `6379` | Caching, locks, and messaging experiments; AOF persistence |
-| [MinIO](./minio-start-local/README.md) | `9000` / `9001` | S3-compatible API and web console |
-
-### Messaging, workflows, and scheduling
-
-| Service | Default ports | Use |
-| --- | --- | --- |
-| [Kafka + Kafka UI](./kafka-start-local/README.md) | `9092` / `19000` | Event streams, topics, and consumer groups |
-| [Canal Server](./canal-start-local/README.md) | `11111` | Reuses MySQL and subscribes to ROW binlog changes |
-| [RabbitMQ](./rabbitmq-start-lcoal/README.md) | `5672` / `15672` | AMQP messaging and web console |
-| [RocketMQ](./rocketmq-start-local/README.md) | `15876` / `15909` / `15911` / `15912` / `18180` | NameServer, Broker, and Console |
-| [Temporal + UI](./temporal-start-local/README.md) | `7233` / `18080` | Durable workflows; reuses this repo's PostgreSQL |
-| [XXL-Job](./xxjob-start-local/README.md) | `18081` | Scheduler; requires MySQL and initialization SQL |
-
-### Governance, search, and observability
-
-| Service | Default ports | Use |
-| --- | --- | --- |
-| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | Discovery and configuration; Compose creates its explicitly named persistent volume |
-| [Sentinel](./sentinel-start-local/README.md) | `8858` / `8719` | Traffic control, circuit breaking, and rule experiments |
-| [Seata](./seata-start-local/README.md) | `7091` / `8091` | Distributed transactions; requires MySQL metadata tables |
-| [Elastic Stack](./elastic-start-local/README.md) | `9200` / `5601` / `5044` | Search, IK analysis, logs, and Kibana |
-| [Prometheus + Grafana](./monitoring-start-local/README.md) | `19090` / `13000` | Metrics, alerts, and dashboards |
-
-Logstash also publishes `5000` (TCP / UDP) and `9600`; see its guide.
-
-### Content and search APIs
-
-| Service | Default port | Use |
-| --- | --- | --- |
-| [RSSHub](./rsshub-start-local/README.md) | `1200` | RSS routes using a Chromium bundled image |
-| [SearXNG](./searxng-start-local/README.md) | `8888` | Metasearch and a JSON search API |
-
-The [MediaCrawler version and patch guide](./mediacrawler-start-local/README.md) documents a host process, not a Compose service. The historical directory names `mysql-start-lcoal` and `rabbitmq-start-lcoal` are retained for compatibility.
+Before updating an existing clone, read the [migration notes](./services/README.md#从旧根目录布局迁移) and preserve your local configuration and data.
 
 ## Daily use
 

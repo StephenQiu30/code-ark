@@ -17,7 +17,7 @@ Code Ark（代码方舟）收集了 **17 套 Docker Compose 配置**，覆盖数
 
 [English](./README.en.md) · [快速开始](#快速开始) · [服务目录](#服务目录) · [日常使用](#日常使用) · [参与贡献](#参与贡献)
 
-[工作箱设计与实施文档](./docs/00-文档导航.md)已按一键启动审查修订。桌面工作箱尚未开发、未发行，相关运行验收均未执行；当前可用方式仍是下方各服务的 Docker Compose 配置。
+[工作箱设计与实施文档](./docs/00-文档导航.md)已按一键启动审查修订。桌面工作箱尚未开发、未发行，相关运行验收均未执行；当前可用方式仍是[服务索引](./services/README.md)中的 Docker Compose 配置。
 
 ## 快速开始
 
@@ -25,7 +25,7 @@ Code Ark（代码方舟）收集了 **17 套 Docker Compose 配置**，覆盖数
 
 ```bash
 git clone https://github.com/StephenQiu30/code-ark.git
-cd code-ark/redis-start-local
+cd code-ark/services/redis-start-local
 docker compose up -d
 docker compose exec redis redis-cli ping
 ```
@@ -34,66 +34,15 @@ docker compose exec redis redis-cli ping
 
 > 其他服务可能需要 `.env`、初始化 SQL 或已有数据库。每个目录的 README 都说明了自己的启动条件；无需同时启动整套环境。
 
-## 选一个适合你的入口
-
-- **后端接口开发** → [PostgreSQL](./pgsql-start-local/README.md)、[MySQL](./mysql-start-lcoal/README.md)、[Redis](./redis-start-local/README.md)、[MinIO](./minio-start-local/README.md)。
-- **消息、数据变更与异步任务** → [Kafka](./kafka-start-local/README.md)、[RabbitMQ](./rabbitmq-start-lcoal/README.md)、[Canal](./canal-start-local/README.md)、[Temporal](./temporal-start-local/README.md)。
-- **服务发现与分布式应用** → [Nacos](./nacos-start-local/README.md)、[Sentinel](./sentinel-start-local/README.md)、[Seata](./seata-start-local/README.md)。
-- **搜索、日志与指标** → [Elastic Stack](./elastic-start-local/README.md)、[Prometheus / Grafana](./monitoring-start-local/README.md)。
-- **RSS 与搜索 API** → [RSSHub](./rsshub-start-local/README.md)、[SearXNG](./searxng-start-local/README.md)。
-
-## 为什么放在同一个仓库
-
-**按目录选择服务。** 每个服务有自己的 Compose 和说明文件，方便按应用需求组合；需要复用数据库的服务会明确列出依赖。
-
-**配置与数据位置可见。** 需要环境变量的目录提供 `.env.example`，文档说明连接端口、初始化、数据目录或命名卷，便于团队复用。
-
-**沿用熟悉的 Docker 命令。** 多数服务使用 `docker compose up -d` 启动；Elastic Stack 提供构建和内存预检脚本，复杂服务的步骤留在各自文档中。
-
 ## 服务目录
 
-下面列出默认宿主机端口；点击服务名查看凭据、资源需求和启动步骤。端口有冲突时，按对应服务配置调整。
+完整服务清单、默认端口与启动前置条件统一维护在 [services/README.md](./services/README.md)。数据库、缓存、消息、工作流、搜索、存储和监控均按目录选择，不需要启动整套环境。
 
-### 数据与存储
+```text
+services/    # 17 套 Compose 配置与 1 份宿主机工具指南
+```
 
-| 服务 | 默认端口 | 用途 |
-| --- | --- | --- |
-| [PostgreSQL 18](./pgsql-start-local/README.md) | `5432` | SQL、关系型数据、初始化脚本 |
-| [MySQL 8.4](./mysql-start-lcoal/README.md) | `3306` | 关系型数据与应用联调 |
-| [Redis](./redis-start-local/README.md) | `6379` | 缓存、锁与消息实验；AOF 持久化 |
-| [MinIO](./minio-start-local/README.md) | `9000` / `9001` | S3 兼容接口与管理控制台 |
-
-### 消息、工作流与调度
-
-| 服务 | 默认端口 | 用途 |
-| --- | --- | --- |
-| [Kafka + Kafka UI](./kafka-start-local/README.md) | `9092` / `19000` | 事件流、主题与消费者组观察 |
-| [Canal Server](./canal-start-local/README.md) | `11111` | 复用 MySQL，订阅 ROW binlog 变更 |
-| [RabbitMQ](./rabbitmq-start-lcoal/README.md) | `5672` / `15672` | AMQP 消息与管理控制台 |
-| [RocketMQ](./rocketmq-start-local/README.md) | `15876` / `15909` / `15911` / `15912` / `18180` | NameServer、Broker 与 Console |
-| [Temporal + UI](./temporal-start-local/README.md) | `7233` / `18080` | 持久化工作流；复用本仓库 PostgreSQL |
-| [XXL-Job](./xxjob-start-local/README.md) | `18081` | 调度中心；需 MySQL 与初始化 SQL |
-
-### 治理、搜索与观测
-
-| 服务 | 默认端口 | 用途 |
-| --- | --- | --- |
-| [Nacos](./nacos-start-local/README.md) | `8840` / `8848` / `9848–9850` | 注册与配置中心；Compose 自动创建固定名称持久卷 |
-| [Sentinel](./sentinel-start-local/README.md) | `8858` / `8719` | 流控、熔断与规则实验 |
-| [Seata](./seata-start-local/README.md) | `7091` / `8091` | 分布式事务；需 MySQL 元数据表 |
-| [Elastic Stack](./elastic-start-local/README.md) | `9200` / `5601` / `5044` | 搜索、IK 分词、日志与 Kibana |
-| [Prometheus + Grafana](./monitoring-start-local/README.md) | `19090` / `13000` | 指标采集、告警与仪表盘 |
-
-Logstash 还发布 `5000`（TCP / UDP）和 `9600`，详见服务文档。
-
-### 内容与搜索 API
-
-| 服务 | 默认端口 | 用途 |
-| --- | --- | --- |
-| [RSSHub](./rsshub-start-local/README.md) | `1200` | RSS 路由；Chromium bundled 镜像 |
-| [SearXNG](./searxng-start-local/README.md) | `8888` | 聚合搜索与 JSON API |
-
-另有 [MediaCrawler 固定版本与补丁说明](./mediacrawler-start-local/README.md)，用于宿主机运行的采集工具，不提供 Compose 服务。历史目录名 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 保留以兼容已有使用方式。
+已有克隆升级目录布局前，请先阅读 [迁移说明](./services/README.md#从旧根目录布局迁移)，保留本机配置和数据。
 
 ## 日常使用
 

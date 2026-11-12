@@ -1,0 +1,97 @@
+# Seata 本地开发环境
+
+启动 Seata 1.8.0.2，验证分布式事务协调；启动前需准备可访问的 MySQL 与元数据表。
+
+[项目首页](../../README.md) · [服务索引](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
+
+This directory provides a local Seata server for distributed transaction testing.
+It depends on an external MySQL instance for metadata storage.
+Create `.env` from `.env.example` and prepare the required database tables before startup.
+
+</details>
+
+## 服务简介
+
+该目录提供一个本地 Seata Server，用于开发和验证分布式事务场景。
+
+当前配置特点：
+
+- Server 运行在 Docker 中
+- 元数据存储模式为 `db`
+- 依赖外部 MySQL
+
+## 端口与访问入口
+
+| 组件 | 端口 | 说明 |
+| --- | --- | --- |
+| Seata Console | `7091` | 管理控制台 |
+| Seata Service | `8091` | 事务协调服务 |
+
+- Console 账号：`seata / seata`
+
+## 前置条件
+
+- 已安装 Docker 和 Docker Compose
+- 已准备可访问的 MySQL 实例
+- 首次启动前准备 `.env`
+- 目标 MySQL 中已导入 Seata 所需表结构
+
+## 快速启动
+
+以下进入目录的命令从仓库根目录执行；已有 `.env` 时保留原文件。
+
+```bash
+cd services/seata-start-local
+cp .env.example .env
+docker compose up -d
+```
+
+## 配置说明
+
+请在 `.env` 中设置：
+
+- `MYSQL_HOST`
+- `MYSQL_PORT`
+- `MYSQL_DATABASE`
+- `MYSQL_USERNAME`
+- `MYSQL_PASSWORD`
+
+当前目录还包含以下关键配置：
+
+- `seata-config/application.yml`
+
+其中已经指定：
+
+- 控制台端口：`7091`
+- 服务端口：`8091`
+- 存储模式：`db`
+- 需要的表：`global_table`、`branch_table`、`lock_table`、`distributed_lock`
+
+## 数据持久化与清理
+
+- 日志目录：`./seata/logs`
+- 配置文件：`./seata-config/application.yml`
+
+```bash
+docker compose down
+```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./seata/logs` 中的对应数据。
+
+## 常用命令
+
+```bash
+docker compose up -d
+docker compose logs -f
+docker compose stop
+docker compose down
+```
+
+## 使用说明
+
+- `MYSQL_HOST` 默认可使用 `host.docker.internal` 连接宿主机数据库
+- 如果 Seata 无法启动，请优先检查 MySQL 连通性和元数据表是否已初始化
+- 不要把真实数据库密码写进 README 或提交到仓库

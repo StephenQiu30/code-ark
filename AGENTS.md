@@ -11,7 +11,7 @@
 ## 仓库与目录
 
 - 本仓库是本地 Docker Compose 中间件配置集合。修改前阅读根目录 `README.md`、`CONTRIBUTING.md` 和目标服务的 README、Compose、`.env.example`。
-- 新服务使用 `<service>-start-local/`，提供 `docker-compose.yml`、`README.md`，使用环境变量时提供 `.env.example`。保留 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 的历史名称。
+- 所有服务集中在 `services/`；新服务使用 `services/<service>-start-local/`，提供 `docker-compose.yml`、`README.md`，使用环境变量时提供 `.env.example`。保留 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 的历史名称。
 - 优先复用已有数据库及网络，满足需求即可；不要为新服务重复启动已有中间件或引入不必要的脚本、可配置项。必要的初始化任务放在当前服务目录内。
 - 使用 Compose v2 命令 `docker compose`，在目标目录执行。新增配置不写废弃的顶层 `version`；项目与容器名称避免冲突。
 - 运行数据、缓存、安装包和本机凭据不属于源码结构。新增或移动目录时同步 `PROJECT.md`；未来工作箱结构变化先同步对应 design、PRD、plan，不能把计划路径写成已实现。
@@ -28,7 +28,7 @@
 ## 文档与验证
 
 - 文档使用 UTF-8，中文优先。服务 README 包含 English Summary、简介、组件/端口、前置条件、启动、配置、持久化/清理、常用命令和返回根 README 链接。
-- 新服务同步中英文根 README 的服务表、数量及中文目录树；描述以实际配置为准。
+- 完整服务表只在 `services/README.md` 维护；增删服务同步该索引、中英文根 README 的数量/入口与 PROJECT 结构说明，首页不复制完整清单。
 - 保留用户原有修改，验证只操作任务相关服务。在目标目录运行 `docker compose config --quiet`，避免输出展开后的密码。
 - 用户要求启动时实际执行 `docker compose up -d`，检查 `ps -a`、健康状态、初始化退出码和客户端/API；网页首页 200 不代表后台连接正常。
 - 初始化流程验证重复启动和保留数据的重建，检查 `git diff --check`、文档一致性和 `.env` 未跟踪，交付时报告实际入口和验证结果。
@@ -36,8 +36,8 @@
 
 ## Temporal
 
-- `temporal-start-local/` 复用 `pgsql-start-local/` 中的 `pgsql-start-dev`，通过外部网络 `pgsql-start-local_default` 连接。先启动现有 PostgreSQL，再启动 Temporal。
-- Temporal 创建 `temporal` 和 `temporal_visibility` 两个数据库，沿用 PostgreSQL 现有账号；数据持久化由 `pgsql-start-local/pgsql-data` 管理。
+- `services/temporal-start-local/` 复用 `services/pgsql-start-local/` 中的 `pgsql-start-dev`，通过外部网络 `pgsql-start-local_default` 连接。先启动现有 PostgreSQL，再启动 Temporal。
+- Temporal 创建 `temporal` 和 `temporal_visibility` 两个数据库，沿用 PostgreSQL 现有账号；数据持久化由 `services/pgsql-start-local/pgsql-data` 管理。
 - Server 和 Schema 初始化工具共用 `TEMPORAL_VERSION`。启动顺序：Schema 初始化 → Server 就绪 → Namespace 初始化 → UI。初始化保留已有 Schema 和 Namespace。
 - 默认 gRPC `127.0.0.1:7233`，UI `http://127.0.0.1:18080`，Namespace `default`，新 Namespace 保留时间 3 天。业务 Workflow/Activity Worker 由应用提供。
 - 验证 CLI 集群健康、Namespace describe、UI Namespace API 及重复启动后的数据保留。停止 Temporal 不停止、删除现有 PostgreSQL；不随意修改已初始化的 History 分片数或降级已迁移的 Schema。

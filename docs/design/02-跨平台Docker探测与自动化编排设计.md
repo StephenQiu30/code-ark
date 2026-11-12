@@ -69,7 +69,7 @@ v1的ExternalConnected明确限定为**同一已固定本地Linux-containers dae
 - 启动上层服务前认证到实际端点，并确认内网别名、账号权限与数据库范围；不能把 root 初始化密码写成另一个随机值。宿主机端点用于认证/连接测试，内网端点用于服务连接；二者都必须指向所登记服务器。
 - 外部服务的启停/移除、外部账号轮换、整库重置始终禁用。撤销绑定先提示依赖，保留外部资源；所有外部写操作仅针对已授权专属资源，不改其他业务记录。
 
-原 `temporal-start-local/` CLI 仍按根规范复用 `pgsql-start-dev` 和 `pgsql-start-local_default`，本轮不更改其配置。桌面检测到该 PG 时优先登记此真实网络与账号；全新环境仅创建一个托管 PG，再把上层覆盖层绑定到它。不得另起 Temporal 私有 PG。
+原 `services/temporal-start-local/` CLI 仍按根规范复用 `pgsql-start-dev` 和 `pgsql-start-local_default`，本轮不更改其配置。桌面检测到该 PG 时优先登记此真实网络与账号；全新环境仅创建一个托管 PG，再把上层覆盖层绑定到它。不得另起 Temporal 私有 PG。
 
 ### 7.4 凭据、数据库归属及可恢复初始化
 

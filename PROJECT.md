@@ -2,13 +2,13 @@
 
 本文件定义 Code Ark 的目录职责和新增文件位置。当前仓库是 **17 套 Docker Compose 配置 + 1 份宿主机工具指南 + 工作箱设计文档**；`toolbox/` 尚未创建、桌面工作箱尚未实现或发行。下方规划结构不作为已实现能力声明。
 
-English Summary: Keep current Compose templates at the repository root. Put service-owned configuration and initialization beside that service. The planned desktop application belongs under `toolbox/`; runtime secrets, data, caches, and release binaries stay outside source control.
+English Summary: Keep Compose templates together under `services/`. Put service-owned configuration and initialization beside that service. The planned desktop application belongs under `toolbox/`; runtime secrets, data, caches, and release binaries stay outside source control.
 
 ## 当前根目录
 
 ```text
 code-ark/
-├── README.md / README.en.md       # 中英文使用入口与服务表
+├── README.md / README.en.md       # 中英文使用入口与服务索引
 ├── AGENTS.md                     # 人工与自动化协作规则
 ├── PROJECT.md                    # 本文件：结构与职责
 ├── CONTRIBUTING.md               # 贡献、提交与验证流程
@@ -25,41 +25,23 @@ code-ark/
 │   └── ISSUE_TEMPLATE/           # 问题、功能建议与安全政策入口
 ├── assets/readme/                # 项目首页静态素材
 ├── docs/                         # 需求、设计、PRD、计划与证据
-├── <service>-start-local/        # 下表 17 个 Compose 服务目录
-└── mediacrawler-start-local/     # 宿主机指南与补丁，不是 Compose 服务
+└── services/                     # 17 套 Compose 配置、1 份宿主机指南与统一索引
 ```
 
-| 当前 Compose 目录 | 主要职责 |
-| --- | --- |
-| `pgsql-start-local/` | PostgreSQL 与数据库初始化 |
-| `mysql-start-lcoal/` | MySQL，保留历史目录名 |
-| `redis-start-local/` | Redis |
-| `minio-start-local/` | MinIO 对象存储 |
-| `kafka-start-local/` | Kafka 与 Kafka UI |
-| `canal-start-local/` | MySQL binlog 订阅 |
-| `rabbitmq-start-lcoal/` | RabbitMQ，保留历史目录名 |
-| `rocketmq-start-local/` | RocketMQ 与控制台 |
-| `temporal-start-local/` | Temporal 与 UI，复用现有 PostgreSQL |
-| `xxjob-start-local/` | XXL-Job，依赖 MySQL 与初始化 SQL |
-| `nacos-start-local/` | 服务注册与配置 |
-| `sentinel-start-local/` | 流量治理 |
-| `seata-start-local/` | 分布式事务，依赖 MySQL |
-| `elastic-start-local/` | Elasticsearch、IK、Logstash、Kibana |
-| `monitoring-start-local/` | Prometheus、Grafana 与监控配置 |
-| `rsshub-start-local/` | RSSHub |
-| `searxng-start-local/` | SearXNG |
+完整服务表唯一维护在 [services/README.md](services/README.md)，根 README 只提供快速开始与索引入口。所有服务都在 `services/` 下，保留 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 的历史名称。
 
-不为了目录整齐迁移现有服务到新的总目录；保留现有命令、挂载相对路径和历史名称的兼容性。端口、镜像、变量具体值以各服务 Compose 与 README 为准，本文不复制第二份配置表。
+目录迁移保留各服务的内部相对路径与 Docker 项目/容器/网络/卷名；已有克隆的本机配置、数据和绑定路径按 [迁移说明](services/README.md#从旧根目录布局迁移) 处理。端口、镜像、变量以各服务 Compose 与 README 为准。
 
 ## 文件应放在哪里
 
 | 内容 | 位置与维护边界 |
 | --- | --- |
-| 快速开始、服务选择 | 根 README；中英文同步 |
+| 快速开始、服务索引入口 | 根 README；中英文同步 |
+| 完整服务表、默认端口与目录迁移 | `services/README.md`，集中维护，根 README 和本文不复制清单 |
 | 提交流程与质量要求 | `CONTRIBUTING.md`；`AGENTS.md` 引用并补充执行规则 |
 | 结构规范 | `PROJECT.md`，实际新增/移动路径必须同步 |
 | 许可、共享、安全与社区 | 根对应专用文件，不散落在服务目录中 |
-| 服务 Compose、配置、SQL、脚本、补丁 | 当前服务目录，按已有命名；必要子目录如 `config/`、`scripts/`、`init/` 按需要创建 |
+| 服务 Compose、配置、SQL、脚本、补丁 | `services/<service>-start-local/`，按已有命名；必要子目录如 `config/`、`scripts/`、`init/` 按需要创建 |
 | 首页图片 | `assets/readme/`；不放含秘密或个人路径的截图 |
 | 原始需求与确认记录 | `docs/requirement/` |
 | 技术合同、状态机与接口 | `docs/design/` |
@@ -71,7 +53,7 @@ code-ark/
 新服务最低布局如下；只创建确实需要的初始化和配置目录，不强制给所有服务加脚本。
 
 ```text
-<service>-start-local/
+services/<service>-start-local/
 ├── docker-compose.yml
 ├── README.md
 ├── .env.example       # 使用环境变量时必需；不提交真实 .env
@@ -133,7 +115,7 @@ toolbox/                                      # 未来独立桌面工程
 
 ## 源码、生成物与运行数据边界
 
-- 根服务目录是现有 CLI 模板来源；未来同步脚本只读提取白名单文件，不反向修改原目录或打包真实 `.env`、数据、日志。
+- `services/` 下各服务目录是现有 CLI 模板来源；未来同步脚本只读提取白名单文件，不反向修改原目录或打包真实 `.env`、数据、日志。
 - `toolbox/src-tauri/resources/blueprints/` 是计划生成的随包资源；实施时通过同步/校验再生成，不能手改成另一份权威 Compose。是否纳入 Git 随构建方案明确，但必须可从同一来源复现。
 - 现有 CLI 运行数据位置仍遵循各服务 README；未来工作箱默认工作区为 `~/.code-ark`，不得用源码目录作为默认运行目录。
 - 未来公共控制目录分别为 macOS `~/Library/Application Support/CodeArk/control`、Windows `%LOCALAPPDATA%\CodeArk\control`、Linux `$XDG_DATA_HOME/codeark/control`（未设置时为 `~/.local/share/codeark/control`）。共享引用、锁和操作记录不是可提交源码。

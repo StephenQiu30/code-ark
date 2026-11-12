@@ -1,8 +1,10 @@
 # Code Ark 现有 17 套服务痛点与兼容基线盘点
 
-核查日期：2026-11-12（Asia/Shanghai）。状态：**仓库源码现状盘点（S）**。基于对仓库根目录 18 个服务目录（17 个 Compose 服务 + 1 个宿主机工具指南）的 `docker-compose.yml`、`.env.example`、`README.md` 与脚本逐一核验。
+核查日期：2026-11-12（Asia/Shanghai）。状态：**仓库源码现状盘点（S）**。基于对当时仓库根目录的 18 个服务目录（17 个 Compose 服务 + 1 个宿主机工具指南）的 `docker-compose.yml`、`.env.example`、`README.md` 与脚本逐一核验。
 
 审查后校准：源码事实继续保留在本页；桌面运行合同以当前design为准。Nacos固定命名卷不等于external卷，源码兼容项目名也不再作为托管运行名。
+
+目录说明（2026-11-12 增量）：上述核查保留历史基线；18 个目录现统一迁入 `services/`，本文链接已更新到新位置，Compose 内容不因迁移改变。完整服务索引见 [services/README.md](../../services/README.md)。
 
 ## 1. 全量服务盘点表（S）
 
@@ -29,7 +31,7 @@
 
 ## 2. 盘点出的核心设计约束（I）
 
-1. **不能假定直接修改根目录17个Compose文件**：工作箱构建期提取模板，运行时生成独立实例项目/容器/网络/卷名和完整覆盖层。源码 `sourceProject` 只用于识别旧CLI实例，不能作为托管运行名；端口/JDBC/路由等覆盖以当前design为准。
+1. **不能假定直接修改源码17个Compose文件**：工作箱构建期提取模板，运行时生成独立实例项目/容器/网络/卷名和完整覆盖层。源码 `sourceProject` 只用于识别旧CLI实例，不能作为托管运行名；端口/JDBC/路由等覆盖以当前design为准。
 2. **必须解决 Linux 跨容器连 MySQL 的通病**：`seata` 与 `xxjob` 默认连接 `host.docker.internal`，在 Linux Docker Engine 下遇到绑定 `127.0.0.1:3306` 的 MySQL 会超时失败，通过工作箱 Override 层接入 `mysql-start-lcoal_default` 网络改为 `mysql:3306` 可三端一致打通。
 3. **重置操作不能只删本地目录**：`temporal`、`xxjob`、`seata` 的真实业务状态都在共享 PostgreSQL/MySQL 中，设计上必须区分“独立目录清理”与“共享库中仅清空专属数据库”。
 

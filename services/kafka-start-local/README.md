@@ -1,0 +1,81 @@
+# Kafka 本地开发环境
+
+启动单节点 Kafka 与 Kafka UI，在本地观察主题、消息和消费者组，验证事件流与消息收发。
+
+[项目首页](../../README.md) · [服务索引](../README.md) · [快速启动](#快速启动) · [连接入口](#端口与访问入口) · [配置说明](#配置说明)
+
+<details>
+<summary>English summary</summary>
+
+This directory starts a local Kafka broker together with Kafka UI.
+It is suitable for local messaging tests and stream integration work.
+No `.env` file is required for the current setup.
+
+</details>
+
+## 服务简介
+
+该目录提供一个单节点 Kafka 本地环境，包含：
+
+- Kafka Broker
+- Kafka UI
+
+适合本地消息收发测试、消费者联调和主题观察。
+
+## 端口与访问入口
+
+| 组件 | 端口 | 说明 |
+| --- | --- | --- |
+| Kafka | `9092` | 宿主机访问地址 |
+| Kafka UI | `19000` | Web 管理界面 |
+| Kafka 内部监听 | `29092` | Docker 网络内访问地址 |
+
+Kafka UI 地址：`http://localhost:19000`
+
+## 前置条件
+
+- 已安装 Docker 和 Docker Compose
+
+## 快速启动
+
+以下进入目录的命令从仓库根目录执行；已有 `.env` 时保留原文件。
+
+```bash
+cd services/kafka-start-local
+docker compose up -d
+```
+
+## 配置说明
+
+当前配置直接写在 `docker-compose.yml` 中，未使用 `.env`。
+
+关键约定：
+
+- 宿主机应用连接地址：`localhost:9092`
+- 同一 Docker 网络中的其他容器连接地址：`kafka:29092`
+- 数据目录挂载到当前目录下的 `./data`
+
+## 数据持久化与清理
+
+- 数据目录：`./data`
+
+```bash
+docker compose down
+```
+
+普通 `down` 保留绑定目录。需要完全重置时，先备份，再手动删除 `./data` 中的对应数据。
+
+## 常用命令
+
+```bash
+docker compose up -d
+docker compose ps
+docker compose logs -f
+docker compose stop
+docker compose down
+```
+
+## 使用说明
+
+- 如果宿主机应用无法消费消息，请优先检查是否连接到了 `localhost:9092`
+- Kafka UI 适合查看主题、分区、消息和消费者组状态
