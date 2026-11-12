@@ -31,6 +31,7 @@ ts-rs = { version = "=12.0.1", features = ["serde-compat"] }
 getrandom = "=0.4.3"
 sha2 = "0.10"
 base64 = "0.22"
+zeroize = "=1.9.1"
 serde-saphyr = "=2.1.1"
 tauri = { version = "=2.12.5", optional = true }
 

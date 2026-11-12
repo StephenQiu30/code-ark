@@ -1,2 +1,4 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-fn main() { codeark_toolbox::run(); }
+fn main() {
+    codeark_toolbox::run();
+}
