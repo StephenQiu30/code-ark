@@ -1,6 +1,6 @@
 # 项目结构规范
 
-本文件定义 Code Ark 的目录职责和新增文件位置。当前仓库是 **17 套 Docker Compose 配置 + 1 份宿主机工具指南 + 工作箱设计文档**；`toolbox/` 尚未创建、桌面工作箱尚未实现或发行。下方规划结构不作为已实现能力声明。
+本文件定义 Code Ark 的目录职责和新增文件位置。当前仓库是 **17 套 Docker Compose 配置 + 1 份宿主机工具指南 + 工作箱设计文档**；`toolbox/` 已创建并开始实施，桌面工作箱尚未完成或发行。下方目标结构按计划逐步落实，已实现范围见 [工作箱 README](toolbox/README.md)。
 
 English Summary: Keep Compose templates together under `services/`. Put service-owned configuration and initialization beside that service. The planned desktop application belongs under `toolbox/`; runtime secrets, data, caches, and release binaries stay outside source control.
 
@@ -25,7 +25,8 @@ code-ark/
 │   └── ISSUE_TEMPLATE/           # 问题、功能建议与安全政策入口
 ├── assets/readme/                # 项目首页静态素材
 ├── docs/                         # 需求、设计、PRD、计划与证据
-└── services/                     # 17 套 Compose 配置、1 份宿主机指南与统一索引
+├── services/                     # 17 套 Compose 配置、1 份宿主机指南与统一索引
+└── toolbox/                      # 桌面工作箱源码（实施中）
 ```
 
 完整服务表唯一维护在 [services/README.md](services/README.md)，根 README 只提供快速开始与索引入口。所有服务都在 `services/` 下，保留 `mysql-start-lcoal`、`rabbitmq-start-lcoal` 的历史名称。
@@ -60,9 +61,9 @@ services/<service>-start-local/
 └── ...                # 当前服务专属配置、初始化或构建文件
 ```
 
-## 未来工作箱布局（待实施）
+## 工作箱目标布局（实施中）
 
-以下路径来自当前 [底座计划](docs/plan/01-服务清单与蓝图同步实施计划.md)、[编排计划](docs/plan/02-跨平台Docker探测与编排引擎实施计划.md)、[前端计划](docs/plan/03-工作箱前端工作台与跨平台CI实施计划.md)。本次只制定规范，不创建这些目录、依赖或 CI。
+以下路径来自当前 [底座计划](docs/plan/01-服务清单与蓝图同步实施计划.md)、[编排计划](docs/plan/02-跨平台Docker探测与编排引擎实施计划.md)、[前端计划](docs/plan/03-工作箱前端工作台与跨平台CI实施计划.md)。工程已开始实施；下图是目标结构，精确已实现范围以 [toolbox/README.md](toolbox/README.md) 和对应计划执行记录为准。
 
 ```text
 toolbox/                                      # 未来独立桌面工程

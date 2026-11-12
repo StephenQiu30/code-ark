@@ -1,0 +1,41 @@
+{
+  "name": "@code-ark/toolbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=24.22.3 <25"
+  },
+  "scripts": {
+    "test:scripts": "node --test scripts/*.test.mjs",
+    "sync": "node scripts/sync-blueprints.mjs",
+    "verify": "node scripts/verify-blueprints.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "build": "vite build",
+    "dev": "vite --host 127.0.0.1",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1",
+    "@tauri-apps/cli": "2.12.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/node": "24.10.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.8",
+    "@vitejs/plugin-react": "6.3.0",
+    "vitest": "5.1.0",
+    "jsdom": "31.0.0",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/user-event": "14.6.10",
+    "@testing-library/jest-dom": "6.9.1"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.12.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

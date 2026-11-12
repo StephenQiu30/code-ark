@@ -17,7 +17,7 @@ Code Ark brings together **17 Docker Compose configurations** for databases, cac
 
 [中文](./README.md) · [Quick start](#quick-start) · [Service catalog](#service-catalog) · [Daily use](#daily-use) · [Contribute](#contribute)
 
-The [desktop toolbox design and implementation documents](./docs/00-文档导航.md) incorporate the one-click startup review. The desktop toolbox has not been implemented or released, and runtime acceptance remains unexecuted. The Compose configurations in the [service index](./services/README.md) remain the current way to use this repository.
+The [desktop toolbox design and implementation documents](./docs/00-文档导航.md) incorporate the one-click startup review. The desktop toolbox is being implemented in [toolbox/](./toolbox/README.md); it has not been released, and full runtime acceptance remains unexecuted. The Compose configurations in the [service index](./services/README.md) remain the current way to use this repository.
 
 ## Quick start
 

@@ -1,0 +1,1 @@
+{"$schema":"../gen/schemas/desktop-schema.json","identifier":"main","description":"Code Ark main window; no shell or arbitrary filesystem plugin access","windows":["main"],"permissions":["core:default"]}

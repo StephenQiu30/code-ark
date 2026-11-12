@@ -29,3 +29,12 @@
 # Python cache
 **/__pycache__/
 *.pyc
+
+# Toolbox development and build outputs
+.tools/
+toolbox/node_modules/
+toolbox/dist/
+toolbox/src-tauri/target/
+toolbox/src-tauri/gen/
+toolbox/src-tauri/resources/blueprints/
+toolbox/*.tsbuildinfo

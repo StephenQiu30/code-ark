@@ -1,6 +1,6 @@
 # 贡献指南 · Contributing
 
-欢迎贡献服务模板、问题修复、文档与使用反馈。当前仓库提供 17 套本地 Docker Compose 配置，桌面工作箱仍处于设计阶段。请先阅读 [README](README.md)、[项目结构](PROJECT.md) 和 [协作规范](AGENTS.md)。
+欢迎贡献服务模板、问题修复、文档与使用反馈。当前仓库提供 17 套本地 Docker Compose 配置，桌面工作箱已进入源码实施阶段。请先阅读 [README](README.md)、[项目结构](PROJECT.md) 和 [协作规范](AGENTS.md)。
 
 English Summary: Use `type(scope): description` for new commits and PR titles; scope is required. Keep changes focused, preserve local data and secrets, and report only checks actually performed. Original contributions use the existing MIT license; third-party licenses remain applicable. See [sharing](SHARING.md), [security](SECURITY.md), and [community conduct](CODE_OF_CONDUCT.md).
 

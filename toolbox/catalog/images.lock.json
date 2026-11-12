@@ -1,0 +1,437 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "sourceId": "pgsql-postgres",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "postgres:18.6",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "pgsql-postgres",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "postgres:18.6",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "mysql-mysql",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "mysql:8.4.13",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "mysql-mysql",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "mysql:8.4.13",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "redis-redis",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "redis:8.10.3",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "redis-redis",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "redis:8.10.3",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "minio-minio",
+      "kind": "release-image-archive",
+      "platform": "linux/amd64",
+      "sourceImage": "minio/minio:latest",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "minio-minio",
+      "kind": "release-image-archive",
+      "platform": "linux/arm64",
+      "sourceImage": "minio/minio:latest",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "kafka-kafka",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "apache/kafka:4.4.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "kafka-kafka",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "apache/kafka:4.4.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "kafka-kafka-ui",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "provectuslabs/kafka-ui:v0.7.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "kafka-kafka-ui",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "provectuslabs/kafka-ui:v0.7.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "canal-canal-server",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "canal/canal-server:v1.1.8",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "canal-canal-server",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "canal/canal-server:v1.1.8",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rabbitmq-rabbitmq",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "rabbitmq:4.4.0-management-alpine",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rabbitmq-rabbitmq",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "rabbitmq:4.4.0-management-alpine",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rocketmq-broker",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "apache/rocketmq:5.5.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rocketmq-broker",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "apache/rocketmq:5.5.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rocketmq-console",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "styletang/rocketmq-console-ng:latest",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rocketmq-console",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "styletang/rocketmq-console-ng:latest",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rocketmq-namesrv",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "apache/rocketmq:5.5.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rocketmq-namesrv",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "apache/rocketmq:5.5.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "temporalio/server:1.32.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "temporalio/server:1.32.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal-namespace-setup",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "temporalio/admin-tools:1.32.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal-namespace-setup",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "temporalio/admin-tools:1.32.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal-schema-setup",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "temporalio/admin-tools:1.32.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal-schema-setup",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "temporalio/admin-tools:1.32.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal-ui",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "temporalio/ui:2.58.1",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "temporal-temporal-ui",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "temporalio/ui:2.58.1",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "xxjob-xxl-job-admin",
+      "kind": "release-image-archive",
+      "platform": "linux/amd64",
+      "sourceImage": "xuxueli/xxl-job-admin:3.5.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "xxjob-xxl-job-admin",
+      "kind": "release-image-archive",
+      "platform": "linux/arm64",
+      "sourceImage": "xuxueli/xxl-job-admin:3.5.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "nacos-nacos",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "nacos/nacos-server:v3.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "nacos-nacos",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "nacos/nacos-server:v3.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "sentinel-sentinel",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "bladex/sentinel-dashboard:1.8.10",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "sentinel-sentinel",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "bladex/sentinel-dashboard:1.8.10",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "seata-seata-server",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "seataio/seata-server:1.8.0.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "seata-seata-server",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "seataio/seata-server:1.8.0.2",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-elasticsearch",
+      "kind": "release-image-archive",
+      "platform": "linux/amd64",
+      "sourceImage": "elastic-start-local-elasticsearch:9.3.0-9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-elasticsearch",
+      "kind": "release-image-archive",
+      "platform": "linux/arm64",
+      "sourceImage": "elastic-start-local-elasticsearch:9.3.0-9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-kibana",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "docker.elastic.co/kibana/kibana:9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-kibana",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "docker.elastic.co/kibana/kibana:9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-kibana_settings",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-kibana_settings",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-logstash",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "docker.elastic.co/logstash/logstash:9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "elastic-logstash",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "docker.elastic.co/logstash/logstash:9.3.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "monitoring-grafana",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "grafana/grafana:13.3.1",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "monitoring-grafana",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "grafana/grafana:13.3.1",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "monitoring-prometheus",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "prom/prometheus:v3.16.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "monitoring-prometheus",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "prom/prometheus:v3.16.0",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rsshub-rsshub",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "diygod/rsshub:chromium-bundled-2026-09-24",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "rsshub-rsshub",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "diygod/rsshub:chromium-bundled-2026-09-24",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "searxng-searxng",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "searxng/searxng:2026.9.25-487f51922",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    },
+    {
+      "sourceId": "searxng-searxng",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "searxng/searxng:2026.9.25-487f51922",
+      "status": "pending",
+      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+    }
+  ]
+}

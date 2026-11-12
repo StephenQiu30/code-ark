@@ -1,0 +1,1824 @@
+{
+  "schemaVersion": 1,
+  "services": [
+    {
+      "id": "pgsql",
+      "name": "PostgreSQL",
+      "category": "database",
+      "sourceDir": "services/pgsql-start-local",
+      "sourceProject": "pgsql-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "pgsql-init/01-init.sql"
+      ],
+      "dataPaths": [
+        "pgsql-data"
+      ],
+      "imageRefs": [
+        "pgsql-postgres"
+      ],
+      "components": [
+        {
+          "id": "postgres",
+          "role": "daemon",
+          "imageRef": "pgsql-postgres"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "postgres",
+          "hostIp": "127.0.0.1",
+          "hostPort": 5432,
+          "containerPort": 5432,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "PGSQL_DATABASE",
+          "publicDefault": "test_db",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "PGSQL_USER",
+          "publicDefault": "user",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "PGSQL_PASSWORD",
+          "publicDefault": "change_me_pgsql_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "TZ",
+          "publicDefault": "Asia/Shanghai",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "pgsql-native",
+          "componentId": "postgres",
+          "role": "daemon",
+          "kind": "sql",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "mysql",
+      "name": "MySQL",
+      "category": "database",
+      "sourceDir": "services/mysql-start-lcoal",
+      "sourceProject": "mysql-start-lcoal",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "mysql-init/.gitkeep"
+      ],
+      "dataPaths": [
+        "mysql-data"
+      ],
+      "imageRefs": [
+        "mysql-mysql"
+      ],
+      "components": [
+        {
+          "id": "mysql",
+          "role": "daemon",
+          "imageRef": "mysql-mysql"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "mysql",
+          "hostIp": "127.0.0.1",
+          "hostPort": 3306,
+          "containerPort": 3306,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "MYSQL_ROOT_PASSWORD",
+          "publicDefault": "change_me_mysql_root_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "MYSQL_DATABASE",
+          "publicDefault": "test_db",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_USER",
+          "publicDefault": "user",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_PASSWORD",
+          "publicDefault": "change_me_mysql_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "TZ",
+          "publicDefault": "Asia/Shanghai",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "mysql-native",
+          "componentId": "mysql",
+          "role": "daemon",
+          "kind": "sql",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "redis",
+      "name": "Redis",
+      "category": "database",
+      "sourceDir": "services/redis-start-local",
+      "sourceProject": "redis-start-local",
+      "assets": [
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [
+        "data"
+      ],
+      "imageRefs": [
+        "redis-redis"
+      ],
+      "components": [
+        {
+          "id": "redis",
+          "role": "daemon",
+          "imageRef": "redis-redis"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "redis",
+          "hostIp": "127.0.0.1",
+          "hostPort": 6379,
+          "containerPort": 6379,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [],
+      "probes": [
+        {
+          "probeId": "redis-native",
+          "componentId": "redis",
+          "role": "daemon",
+          "kind": "redis",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "minio",
+      "name": "MinIO",
+      "category": "storage",
+      "sourceDir": "services/minio-start-local",
+      "sourceProject": "minio-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [
+        "data"
+      ],
+      "imageRefs": [
+        "minio-minio"
+      ],
+      "components": [
+        {
+          "id": "minio",
+          "role": "daemon",
+          "imageRef": "minio-minio"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "minio",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9000,
+          "containerPort": 9000,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "minio",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9001,
+          "containerPort": 9001,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "MINIO_ROOT_USER",
+          "publicDefault": "minio",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MINIO_ROOT_PASSWORD",
+          "publicDefault": "your_secure_password_here",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "minio-native",
+          "componentId": "minio",
+          "role": "daemon",
+          "kind": "s3",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "kafka",
+      "name": "Kafka",
+      "category": "messaging",
+      "sourceDir": "services/kafka-start-local",
+      "sourceProject": "kafka-start-local",
+      "assets": [
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [
+        "data"
+      ],
+      "imageRefs": [
+        "kafka-kafka",
+        "kafka-kafka-ui"
+      ],
+      "components": [
+        {
+          "id": "kafka",
+          "role": "daemon",
+          "imageRef": "kafka-kafka"
+        },
+        {
+          "id": "kafka-ui",
+          "role": "daemon",
+          "imageRef": "kafka-kafka-ui"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "kafka",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9092,
+          "containerPort": 9092,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "kafka-ui",
+          "hostIp": "127.0.0.1",
+          "hostPort": 19000,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [],
+      "probes": [
+        {
+          "probeId": "kafka-native",
+          "componentId": "kafka",
+          "role": "daemon",
+          "kind": "kafka",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "canal",
+      "name": "Canal",
+      "category": "messaging",
+      "sourceDir": "services/canal-start-local",
+      "sourceProject": "canal-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [],
+      "imageRefs": [
+        "canal-canal-server"
+      ],
+      "components": [
+        {
+          "id": "canal-server",
+          "role": "daemon",
+          "imageRef": "canal-canal-server"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "canal-server",
+          "hostIp": "127.0.0.1",
+          "hostPort": 11111,
+          "containerPort": 11111,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [
+        "mysql"
+      ],
+      "envSchema": [
+        {
+          "key": "CANAL_MYSQL_ADDRESS",
+          "publicDefault": "mysql:3306",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "CANAL_MYSQL_USER",
+          "publicDefault": "canal",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "CANAL_MYSQL_PASSWORD",
+          "publicDefault": "change_me_16chars",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "InheritBinding",
+          "secretFormat": "alphanumeric24"
+        },
+        {
+          "key": "CANAL_FILTER_REGEX",
+          "publicDefault": ".*\\\\..*",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "canal-native",
+          "componentId": "canal-server",
+          "role": "daemon",
+          "kind": "canal",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "rabbitmq",
+      "name": "RabbitMQ",
+      "category": "messaging",
+      "sourceDir": "services/rabbitmq-start-lcoal",
+      "sourceProject": "rabbitmq-start-lcoal",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [
+        "rabbitmq-data"
+      ],
+      "imageRefs": [
+        "rabbitmq-rabbitmq"
+      ],
+      "components": [
+        {
+          "id": "rabbitmq",
+          "role": "daemon",
+          "imageRef": "rabbitmq-rabbitmq"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "rabbitmq",
+          "hostIp": "127.0.0.1",
+          "hostPort": 5672,
+          "containerPort": 5672,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "rabbitmq",
+          "hostIp": "127.0.0.1",
+          "hostPort": 15672,
+          "containerPort": 15672,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "RABBITMQ_DEFAULT_USER",
+          "publicDefault": "admin",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "RABBITMQ_DEFAULT_PASS",
+          "publicDefault": "change_me_rabbitmq_password",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "rabbitmq-native",
+          "componentId": "rabbitmq",
+          "role": "daemon",
+          "kind": "amqp",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "rocketmq",
+      "name": "RocketMQ",
+      "category": "messaging",
+      "sourceDir": "services/rocketmq-start-local",
+      "sourceProject": "rocketmq-start-local",
+      "assets": [
+        "README.md",
+        "conf/broker.conf",
+        "docker-compose.yml",
+        "start.sh",
+        "stop.sh"
+      ],
+      "dataPaths": [
+        "data/broker/logs",
+        "data/broker/store"
+      ],
+      "imageRefs": [
+        "rocketmq-broker",
+        "rocketmq-console",
+        "rocketmq-namesrv"
+      ],
+      "components": [
+        {
+          "id": "broker",
+          "role": "daemon",
+          "imageRef": "rocketmq-broker"
+        },
+        {
+          "id": "console",
+          "role": "daemon",
+          "imageRef": "rocketmq-console"
+        },
+        {
+          "id": "namesrv",
+          "role": "daemon",
+          "imageRef": "rocketmq-namesrv"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "broker",
+          "hostIp": "127.0.0.1",
+          "hostPort": 15909,
+          "containerPort": 10909,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "broker",
+          "hostIp": "127.0.0.1",
+          "hostPort": 15911,
+          "containerPort": 10911,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "broker",
+          "hostIp": "127.0.0.1",
+          "hostPort": 15912,
+          "containerPort": 10912,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "console",
+          "hostIp": "127.0.0.1",
+          "hostPort": 18180,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "namesrv",
+          "hostIp": "127.0.0.1",
+          "hostPort": 15876,
+          "containerPort": 9876,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [],
+      "probes": [
+        {
+          "probeId": "rocketmq-native",
+          "componentId": "broker",
+          "role": "daemon",
+          "kind": "rocketmq",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "temporal",
+      "name": "Temporal",
+      "category": "workflow",
+      "sourceDir": "services/temporal-start-local",
+      "sourceProject": "temporal-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "dynamicconfig/development-sql.yaml",
+        "scripts/create-namespace.sh",
+        "scripts/setup-postgres.sh"
+      ],
+      "dataPaths": [],
+      "imageRefs": [
+        "temporal-temporal",
+        "temporal-temporal-namespace-setup",
+        "temporal-temporal-schema-setup",
+        "temporal-temporal-ui"
+      ],
+      "components": [
+        {
+          "id": "temporal",
+          "role": "daemon",
+          "imageRef": "temporal-temporal"
+        },
+        {
+          "id": "temporal-namespace-setup",
+          "role": "job",
+          "imageRef": "temporal-temporal-namespace-setup"
+        },
+        {
+          "id": "temporal-schema-setup",
+          "role": "job",
+          "imageRef": "temporal-temporal-schema-setup"
+        },
+        {
+          "id": "temporal-ui",
+          "role": "daemon",
+          "imageRef": "temporal-temporal-ui"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "temporal",
+          "hostIp": "127.0.0.1",
+          "hostPort": 7233,
+          "containerPort": 7233,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "temporal-ui",
+          "hostIp": "127.0.0.1",
+          "hostPort": 18080,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [
+        "pgsql"
+      ],
+      "envSchema": [
+        {
+          "key": "TEMPORAL_VERSION",
+          "publicDefault": "1.32.2",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TEMPORAL_UI_VERSION",
+          "publicDefault": "2.58.1",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TEMPORAL_BIND_ADDRESS",
+          "publicDefault": "127.0.0.1",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TEMPORAL_PORT",
+          "publicDefault": "7233",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TEMPORAL_UI_PORT",
+          "publicDefault": "18080",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "PGSQL_DOCKER_NETWORK",
+          "publicDefault": "pgsql-start-local_default",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TEMPORAL_POSTGRES_HOST",
+          "publicDefault": "pgsql-start-dev",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "PGSQL_USER",
+          "publicDefault": "user",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "PGSQL_PASSWORD",
+          "publicDefault": "your_existing_pgsql_password_here",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "InheritBinding",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "TEMPORAL_NAMESPACE",
+          "publicDefault": "default",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TZ",
+          "publicDefault": "Asia/Shanghai",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "temporal-native",
+          "componentId": "temporal",
+          "role": "daemon",
+          "kind": "temporal",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "xxjob",
+      "name": "XXL-Job",
+      "category": "governance",
+      "sourceDir": "services/xxjob-start-local",
+      "sourceProject": "xxjob-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "tables_xxl_job.sql"
+      ],
+      "dataPaths": [
+        "logs/xxl-job"
+      ],
+      "imageRefs": [
+        "xxjob-xxl-job-admin"
+      ],
+      "components": [
+        {
+          "id": "xxl-job-admin",
+          "role": "daemon",
+          "imageRef": "xxjob-xxl-job-admin"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "xxl-job-admin",
+          "hostIp": "127.0.0.1",
+          "hostPort": 18081,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [
+        "mysql"
+      ],
+      "envSchema": [
+        {
+          "key": "MYSQL_HOST",
+          "publicDefault": "host.docker.internal",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_PORT",
+          "publicDefault": "3306",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_DATABASE",
+          "publicDefault": "xxl_job",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_USERNAME",
+          "publicDefault": "root",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_PASSWORD",
+          "publicDefault": "your_mysql_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "InheritBinding",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "XXL_JOB_ACCESS_TOKEN",
+          "publicDefault": "default_token",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "xxjob-native",
+          "componentId": "xxl-job-admin",
+          "role": "daemon",
+          "kind": "xxjob",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "nacos",
+      "name": "Nacos",
+      "category": "governance",
+      "sourceDir": "services/nacos-start-local",
+      "sourceProject": "nacos-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [
+        "nacos/logs"
+      ],
+      "imageRefs": [
+        "nacos-nacos"
+      ],
+      "components": [
+        {
+          "id": "nacos",
+          "role": "daemon",
+          "imageRef": "nacos-nacos"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "nacos",
+          "hostIp": "127.0.0.1",
+          "hostPort": 8840,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "nacos",
+          "hostIp": "127.0.0.1",
+          "hostPort": 8848,
+          "containerPort": 8848,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "nacos",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9848,
+          "containerPort": 9848,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "nacos",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9849,
+          "containerPort": 9849,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "nacos",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9850,
+          "containerPort": 9850,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "NACOS_AUTH_TOKEN",
+          "publicDefault": "U2VjcmV0S2V5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "base64"
+        },
+        {
+          "key": "NACOS_TIME_ZONE",
+          "publicDefault": "Asia/Shanghai",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "NACOS_AUTH_IDENTITY_KEY",
+          "publicDefault": "serverIdentity",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "NACOS_AUTH_IDENTITY_VALUE",
+          "publicDefault": "nacos-server-stephenqhd30",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "base64"
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "nacos-native",
+          "componentId": "nacos",
+          "role": "daemon",
+          "kind": "nacos",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "sentinel",
+      "name": "Sentinel",
+      "category": "governance",
+      "sourceDir": "services/sentinel-start-local",
+      "sourceProject": "sentinel-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "start.sh"
+      ],
+      "dataPaths": [
+        "sentinel/data",
+        "sentinel/logs"
+      ],
+      "imageRefs": [
+        "sentinel-sentinel"
+      ],
+      "components": [
+        {
+          "id": "sentinel",
+          "role": "daemon",
+          "imageRef": "sentinel-sentinel"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "sentinel",
+          "hostIp": "127.0.0.1",
+          "hostPort": 8858,
+          "containerPort": 8858,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "sentinel",
+          "hostIp": "127.0.0.1",
+          "hostPort": 8719,
+          "containerPort": 8719,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "SENTINEL_DASHBOARD_PORT",
+          "publicDefault": "8858",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "SENTINEL_API_PORT",
+          "publicDefault": "8719",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "TZ",
+          "publicDefault": "Asia/Shanghai",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "sentinel-native",
+          "componentId": "sentinel",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "seata",
+      "name": "Seata",
+      "category": "governance",
+      "sourceDir": "services/seata-start-local",
+      "sourceProject": "seata-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "seata-config/application.yml"
+      ],
+      "dataPaths": [
+        "seata/logs"
+      ],
+      "imageRefs": [
+        "seata-seata-server"
+      ],
+      "components": [
+        {
+          "id": "seata-server",
+          "role": "daemon",
+          "imageRef": "seata-seata-server"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "seata-server",
+          "hostIp": "127.0.0.1",
+          "hostPort": 7091,
+          "containerPort": 7091,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "seata-server",
+          "hostIp": "127.0.0.1",
+          "hostPort": 8091,
+          "containerPort": 8091,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [
+        "mysql"
+      ],
+      "envSchema": [
+        {
+          "key": "MYSQL_HOST",
+          "publicDefault": "host.docker.internal",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_PORT",
+          "publicDefault": "3306",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_DATABASE",
+          "publicDefault": "seata",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_USERNAME",
+          "publicDefault": "root",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "MYSQL_PASSWORD",
+          "publicDefault": "your_mysql_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "InheritBinding",
+          "secretFormat": "alphanumeric32"
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "seata-native",
+          "componentId": "seata-server",
+          "role": "daemon",
+          "kind": "seata",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "elastic",
+      "name": "Elastic Stack",
+      "category": "observability",
+      "sourceDir": "services/elastic-start-local",
+      "sourceProject": "elastic-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "config/logstash/config/logstash.yml",
+        "config/logstash/pipeline/logstash.conf",
+        "config/logstash/pipelines.yml",
+        "config/telemetry.yml",
+        "docker-compose.yml",
+        "elasticsearch/Dockerfile",
+        "start.sh",
+        "stop.sh",
+        "uninstall.sh"
+      ],
+      "dataPaths": [],
+      "imageRefs": [
+        "elastic-elasticsearch",
+        "elastic-kibana",
+        "elastic-kibana_settings",
+        "elastic-logstash"
+      ],
+      "components": [
+        {
+          "id": "elasticsearch",
+          "role": "daemon",
+          "imageRef": "elastic-elasticsearch"
+        },
+        {
+          "id": "kibana",
+          "role": "daemon",
+          "imageRef": "elastic-kibana"
+        },
+        {
+          "id": "kibana_settings",
+          "role": "job",
+          "imageRef": "elastic-kibana_settings"
+        },
+        {
+          "id": "logstash",
+          "role": "daemon",
+          "imageRef": "elastic-logstash"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "elasticsearch",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9200,
+          "containerPort": 9200,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "kibana",
+          "hostIp": "127.0.0.1",
+          "hostPort": 5601,
+          "containerPort": 5601,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "logstash",
+          "hostIp": "127.0.0.1",
+          "hostPort": 5044,
+          "containerPort": 5044,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "logstash",
+          "hostIp": "127.0.0.1",
+          "hostPort": 5000,
+          "containerPort": 5000,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "logstash",
+          "hostIp": "127.0.0.1",
+          "hostPort": 5000,
+          "containerPort": 5000,
+          "protocol": "udp"
+        },
+        {
+          "componentId": "logstash",
+          "hostIp": "127.0.0.1",
+          "hostPort": 9600,
+          "containerPort": 9600,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "START_LOCAL_VERSION",
+          "publicDefault": "0.13.0",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_VERSION",
+          "publicDefault": "9.3.0",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "IK_VERSION",
+          "publicDefault": "9.3.0",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_CONTAINER_NAME",
+          "publicDefault": "es-local-dev",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_LOCAL_CONTAINER_NAME",
+          "publicDefault": "kibana-local-dev",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_LOCAL_SETTINGS_CONTAINER_NAME",
+          "publicDefault": "kibana-local-settings",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "LOGSTASH_LOCAL_CONTAINER_NAME",
+          "publicDefault": "logstash-local-dev",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_PORT",
+          "publicDefault": "9200",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_LOCAL_PORT",
+          "publicDefault": "5601",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "LOGSTASH_LOCAL_PORT",
+          "publicDefault": "5044",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_URL",
+          "publicDefault": "http://localhost:${ES_LOCAL_PORT}",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_PASSWORD",
+          "publicDefault": "change_me_elastic_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "KIBANA_LOCAL_PASSWORD",
+          "publicDefault": "change_me_kibana_system_password",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "KIBANA_ENCRYPTION_KEY",
+          "publicDefault": "change-this-to-a-32-plus-char-encryption-key",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "hex64"
+        },
+        {
+          "key": "ES_LOCAL_DISK_SPACE_REQUIRED",
+          "publicDefault": "1gb",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_LICENSE_EXPIRE_DATE",
+          "publicDefault": "1893456000",
+          "sensitive": false,
+          "required": false,
+          "secretPolicy": "OptionalEmpty",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_JAVA_OPTS",
+          "publicDefault": "\"-Xms512m -Xmx512m\"",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_MEM_LIMIT",
+          "publicDefault": "2g",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_MEM_RESERVATION",
+          "publicDefault": "1g",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "ES_LOCAL_API_KEY",
+          "publicDefault": "replace_if_you_need_license_renewal_via_start_sh",
+          "sensitive": true,
+          "required": false,
+          "secretPolicy": "OptionalEmpty",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "ELASTIC_STACK_MIN_DOCKER_MEMORY_GB",
+          "publicDefault": "6",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_LOCAL_NODE_OPTIONS",
+          "publicDefault": "\"--max-old-space-size=768\"",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_LOCAL_MEM_LIMIT",
+          "publicDefault": "1536m",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_LOCAL_MEM_RESERVATION",
+          "publicDefault": "768m",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "KIBANA_SETTINGS_MEM_LIMIT",
+          "publicDefault": "256m",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "LOGSTASH_LOCAL_VERSION",
+          "publicDefault": "9.3.0",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "LOGSTASH_LOCAL_JAVA_OPTS",
+          "publicDefault": "\"-Xms256m -Xmx256m\"",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "LOGSTASH_LOCAL_MEM_LIMIT",
+          "publicDefault": "1g",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        },
+        {
+          "key": "LOGSTASH_LOCAL_MEM_RESERVATION",
+          "publicDefault": "512m",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "elastic-native",
+          "componentId": "elasticsearch",
+          "role": "daemon",
+          "kind": "elasticsearch",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 6442450944,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "monitoring",
+      "name": "Prometheus / Grafana",
+      "category": "observability",
+      "sourceDir": "services/monitoring-start-local",
+      "sourceProject": "monitoring-start-local",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "grafana/provisioning/dashboards/dashboards.yml",
+        "grafana/provisioning/datasources/prometheus.yml",
+        "prometheus/prometheus.yml",
+        "prometheus/rules/alerts.yml",
+        "start.sh",
+        "stop.sh"
+      ],
+      "dataPaths": [],
+      "imageRefs": [
+        "monitoring-grafana",
+        "monitoring-prometheus"
+      ],
+      "components": [
+        {
+          "id": "grafana",
+          "role": "daemon",
+          "imageRef": "monitoring-grafana"
+        },
+        {
+          "id": "prometheus",
+          "role": "daemon",
+          "imageRef": "monitoring-prometheus"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "grafana",
+          "hostIp": "127.0.0.1",
+          "hostPort": 13000,
+          "containerPort": 3000,
+          "protocol": "tcp"
+        },
+        {
+          "componentId": "prometheus",
+          "hostIp": "127.0.0.1",
+          "hostPort": 19090,
+          "containerPort": 9090,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [],
+      "probes": [
+        {
+          "probeId": "monitoring-native",
+          "componentId": "grafana",
+          "role": "daemon",
+          "kind": "monitoring",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "rsshub",
+      "name": "RSSHub",
+      "category": "content",
+      "sourceDir": "services/rsshub-start-local",
+      "sourceProject": "rsshub",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml"
+      ],
+      "dataPaths": [],
+      "imageRefs": [
+        "rsshub-rsshub"
+      ],
+      "components": [
+        {
+          "id": "rsshub",
+          "role": "daemon",
+          "imageRef": "rsshub-rsshub"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "rsshub",
+          "hostIp": "127.0.0.1",
+          "hostPort": 1200,
+          "containerPort": 1200,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "RSSHUB_PORT",
+          "publicDefault": "1200",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "rsshub-native",
+          "componentId": "rsshub",
+          "role": "daemon",
+          "kind": "rss",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    },
+    {
+      "id": "searxng",
+      "name": "SearXNG",
+      "category": "content",
+      "sourceDir": "services/searxng-start-local",
+      "sourceProject": "searxng",
+      "assets": [
+        ".env.example",
+        "README.md",
+        "docker-compose.yml",
+        "settings.yml"
+      ],
+      "dataPaths": [],
+      "imageRefs": [
+        "searxng-searxng"
+      ],
+      "components": [
+        {
+          "id": "searxng",
+          "role": "daemon",
+          "imageRef": "searxng-searxng"
+        }
+      ],
+      "ports": [
+        {
+          "componentId": "searxng",
+          "hostIp": "127.0.0.1",
+          "hostPort": 8888,
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "dependencies": [],
+      "envSchema": [
+        {
+          "key": "SEARXNG_SECRET",
+          "publicDefault": "",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "hex64"
+        },
+        {
+          "key": "SEARXNG_PORT",
+          "publicDefault": "8888",
+          "sensitive": false,
+          "required": true,
+          "secretPolicy": "PreserveExisting",
+          "secretFormat": null
+        }
+      ],
+      "probes": [
+        {
+          "probeId": "searxng-native",
+          "componentId": "searxng",
+          "role": "daemon",
+          "kind": "search",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        }
+      ],
+      "minMemoryBytes": 268435456,
+      "minWorkspaceFreeBytes": null,
+      "minDaemonFreeBytes": null,
+      "estimatedPullBytes": null,
+      "capacityStatus": "pending"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "backend-mysql",
+      "name": "后端开发 · MySQL",
+      "services": [
+        "mysql",
+        "redis",
+        "minio"
+      ]
+    },
+    {
+      "id": "backend-pgsql",
+      "name": "后端开发 · PostgreSQL",
+      "services": [
+        "pgsql",
+        "redis",
+        "minio"
+      ]
+    },
+    {
+      "id": "java-microservices",
+      "name": "Java 微服务",
+      "services": [
+        "mysql",
+        "redis",
+        "nacos",
+        "sentinel"
+      ]
+    },
+    {
+      "id": "java-distributed",
+      "name": "Java 分布式事务与调度",
+      "services": [
+        "mysql",
+        "seata",
+        "xxjob"
+      ]
+    },
+    {
+      "id": "workflow-temporal",
+      "name": "Temporal 工作流",
+      "services": [
+        "pgsql",
+        "temporal"
+      ]
+    },
+    {
+      "id": "cdc-messaging",
+      "name": "数据变更与消息",
+      "services": [
+        "mysql",
+        "canal",
+        "kafka"
+      ]
+    },
+    {
+      "id": "search-observability",
+      "name": "搜索与观测",
+      "services": [
+        "elastic",
+        "monitoring"
+      ]
+    }
+  ],
+  "guides": [
+    {
+      "id": "mediacrawler",
+      "name": "MediaCrawler 宿主机工具",
+      "sourceDir": "services/mediacrawler-start-local",
+      "assets": [
+        "README.md",
+        "hotkey-safe.patch",
+        "hotkey-safety-protocol.patch"
+      ],
+      "dataPaths": []
+    }
+  ]
+}
