@@ -6,48 +6,66 @@
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "postgres:18.6",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "postgres:18.6",
+      "manifestDigest": "sha256:e923a22ac074261dd73970c57edf659475bf0497cb9456f17d98ed7cdd3ca913",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "pgsql-postgres",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "postgres:18.6",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "postgres:18.6",
+      "manifestDigest": "sha256:a8a18afebc8b2b529112c931f193151b712e566b7a49563dc0f328d51f652087",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "mysql-mysql",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "mysql:8.4.13",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "mysql:8.4.13",
+      "manifestDigest": "sha256:72c368d898861f3b3a07af0e6d690400f44f048799ed46822783d9224cc2c86d",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "mysql-mysql",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "mysql:8.4.13",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "mysql:8.4.13",
+      "manifestDigest": "sha256:f4539b86c82f2c168fc95b439448bde3b9f48e8460344ce41e39081867d2b58e",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "redis-redis",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "redis:8.10.3",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "redis:8.10.3",
+      "manifestDigest": "sha256:e2728231060693472a8efb488dd139a8142a01bd0612ae70429bf5b5be924be1",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "redis-redis",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "redis:8.10.3",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "redis:8.10.3",
+      "manifestDigest": "sha256:3c67554ed679f7e95de0c538d2726edf184d26228455fbae76514f9976f0ee3d",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "minio-minio",
@@ -70,176 +88,242 @@
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "apache/kafka:4.4.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "apache/kafka:4.4.0",
+      "manifestDigest": "sha256:76af3d0116abbb33b4cd964af410d4921c33d1f663e7a95d5453a9c35a84869b",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "kafka-kafka",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "apache/kafka:4.4.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "apache/kafka:4.4.0",
+      "manifestDigest": "sha256:77b56ddfb7104fc5814a3d0127fcff49983220c7c7ad9bfc1f0af4d439228329",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "kafka-kafka-ui",
       "kind": "registry",
       "platform": "linux/amd64",
-      "sourceImage": "provectuslabs/kafka-ui:v0.7.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "sourceImage": "ghcr.io/kafbat/kafka-ui:v1.5.0",
+      "status": "resolved",
+      "registryRef": "ghcr.io/kafbat/kafka-ui:v1.5.0",
+      "manifestDigest": "sha256:2fc9a60b223de6d8cb45a64175afcbb79207ae19306a0b99c558aeaa1b22b6e9",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "kafka-kafka-ui",
       "kind": "registry",
       "platform": "linux/arm64",
-      "sourceImage": "provectuslabs/kafka-ui:v0.7.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "sourceImage": "ghcr.io/kafbat/kafka-ui:v1.5.0",
+      "status": "resolved",
+      "registryRef": "ghcr.io/kafbat/kafka-ui:v1.5.0",
+      "manifestDigest": "sha256:3928503e8b05193c9bfed691e08adc0ef5ad0063ea5fb2ca70941e1e2832d936",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "canal-canal-server",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "canal/canal-server:v1.1.8",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "canal/canal-server:v1.1.8",
+      "manifestDigest": "sha256:226a39380b4bf85fefde46adcdbe868d459eb0f9bd35a8f94dae8f913c3c8358",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "canal-canal-server",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "canal/canal-server:v1.1.8",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "canal/canal-server:v1.1.8",
+      "manifestDigest": "sha256:867052204954e1059d7c44e5523427ca6835a1f057a2e0e6d4d8d6344edfbe0a",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rabbitmq-rabbitmq",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "rabbitmq:4.4.0-management-alpine",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "rabbitmq:4.4.0-management-alpine",
+      "manifestDigest": "sha256:598b474e2511f37a7408f3fa580f002684638f4ad6401395102b51e3209a9a51",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rabbitmq-rabbitmq",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "rabbitmq:4.4.0-management-alpine",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "rabbitmq:4.4.0-management-alpine",
+      "manifestDigest": "sha256:606a715e996c2bf910a4b4e7f8039e2e8f90ec593ca8c72ae10dd3b1252474d3",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rocketmq-broker",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "apache/rocketmq:5.5.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "apache/rocketmq:5.5.0",
+      "manifestDigest": "sha256:a613f1341f3404b96900cf11e5c35f2d049c103504a1dd60242a04cebf5be467",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rocketmq-broker",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "apache/rocketmq:5.5.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "apache/rocketmq:5.5.0",
+      "manifestDigest": "sha256:2bf396167ec51a79f394a1aa3bc232c0a8bed8fbed53489e48c9a2d5af77fa25",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rocketmq-console",
       "kind": "registry",
       "platform": "linux/amd64",
-      "sourceImage": "styletang/rocketmq-console-ng:latest",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "sourceImage": "apacherocketmq/rocketmq-dashboard:2.1.0",
+      "status": "resolved",
+      "registryRef": "apacherocketmq/rocketmq-dashboard:2.1.0",
+      "manifestDigest": "sha256:81fbd0f5d82c79a50899b48bf18449ee1c52e1deb0246999a90291c786fbeabb",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rocketmq-console",
       "kind": "registry",
       "platform": "linux/arm64",
-      "sourceImage": "styletang/rocketmq-console-ng:latest",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "sourceImage": "apacherocketmq/rocketmq-dashboard:2.1.0",
+      "status": "resolved",
+      "registryRef": "apacherocketmq/rocketmq-dashboard:2.1.0",
+      "manifestDigest": "sha256:0fd0b891bc378904626fd5a7f3412a4399a8ea28590d9de0ebc7d4746650c9e1",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rocketmq-namesrv",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "apache/rocketmq:5.5.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "apache/rocketmq:5.5.0",
+      "manifestDigest": "sha256:a613f1341f3404b96900cf11e5c35f2d049c103504a1dd60242a04cebf5be467",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rocketmq-namesrv",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "apache/rocketmq:5.5.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "apache/rocketmq:5.5.0",
+      "manifestDigest": "sha256:2bf396167ec51a79f394a1aa3bc232c0a8bed8fbed53489e48c9a2d5af77fa25",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "temporalio/server:1.32.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/server:1.32.2",
+      "manifestDigest": "sha256:3e11544607762c3187c12a63e289e03beddf46c21ebb52b47ccb77db179d6313",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "temporalio/server:1.32.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/server:1.32.2",
+      "manifestDigest": "sha256:a2d55f913eb0f646dd6d8026d02a3f851b87051beaa6d0be57be44c51506ee7b",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal-namespace-setup",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "temporalio/admin-tools:1.32.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/admin-tools:1.32.2",
+      "manifestDigest": "sha256:d6655e288364110b61204fbae5f103232b2c5c78e647a27bc11603d274145809",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal-namespace-setup",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "temporalio/admin-tools:1.32.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/admin-tools:1.32.2",
+      "manifestDigest": "sha256:df920de90e0d8a02bd65480524de7e76addc0b6c889696d76229f8c507c90e84",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal-schema-setup",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "temporalio/admin-tools:1.32.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/admin-tools:1.32.2",
+      "manifestDigest": "sha256:d6655e288364110b61204fbae5f103232b2c5c78e647a27bc11603d274145809",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal-schema-setup",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "temporalio/admin-tools:1.32.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/admin-tools:1.32.2",
+      "manifestDigest": "sha256:df920de90e0d8a02bd65480524de7e76addc0b6c889696d76229f8c507c90e84",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal-ui",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "temporalio/ui:2.58.1",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/ui:2.58.1",
+      "manifestDigest": "sha256:0e2c36ce783ac7aa8918d093035d69be8ce231dd49514ed1d1465a760b535336",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "temporal-temporal-ui",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "temporalio/ui:2.58.1",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "temporalio/ui:2.58.1",
+      "manifestDigest": "sha256:07999b511bf421ab468a916f0ed2b79856898b6d386bc9f22eb2c1f4144f97c5",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "xxjob-xxl-job-admin",
@@ -262,48 +346,66 @@
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "nacos/nacos-server:v3.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "nacos/nacos-server:v3.3.0",
+      "manifestDigest": "sha256:8fa4724afe798993366ff5c1c648f0e30c8df4b49a2b605c84b6816be5bd320c",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "nacos-nacos",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "nacos/nacos-server:v3.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "nacos/nacos-server:v3.3.0",
+      "manifestDigest": "sha256:ce3ba100c76ab216d735c8228c653dd523102f7da9e2bd951982557d95c88d02",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "sentinel-sentinel",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "bladex/sentinel-dashboard:1.8.10",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "bladex/sentinel-dashboard:1.8.10",
+      "manifestDigest": "sha256:18453178d6eab3b8fb832f189a0d0ee99db39e0585d1e06e1a0197ecd4625e54",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "sentinel-sentinel",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "bladex/sentinel-dashboard:1.8.10",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "bladex/sentinel-dashboard:1.8.10",
+      "manifestDigest": "sha256:76ecb710b740ba5b7c076ca504e107c00925af5816a013d6ba843398998fd6c8",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "seata-seata-server",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "seataio/seata-server:1.8.0.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "seataio/seata-server:1.8.0.2",
+      "manifestDigest": "sha256:056ab8dcd01d8cb311d3bf95dba32d7aed117071aedffb3a896457fd678999ec",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "seata-seata-server",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "seataio/seata-server:1.8.0.2",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "seataio/seata-server:1.8.0.2",
+      "manifestDigest": "sha256:b521aa43db0bf2d2f731b2e1b354416b0c2314b1c36004df69e97563c73aab06",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "elastic-elasticsearch",
@@ -326,112 +428,154 @@
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "docker.elastic.co/kibana/kibana:9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "docker.elastic.co/kibana/kibana:9.3.0",
+      "manifestDigest": "sha256:3bc740a2579d1e0fd263fdc3d5108ecfac85ebe512fe32b50cd7884034cb3145",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "elastic-kibana",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "docker.elastic.co/kibana/kibana:9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "docker.elastic.co/kibana/kibana:9.3.0",
+      "manifestDigest": "sha256:9c8108498215d158109087bb3ae7ecab45c0bd3c8dde8c27086ed6cfba266c17",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "elastic-kibana_settings",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0",
+      "manifestDigest": "sha256:e40c831e58bbbeea174669f7bbeaa06dfc0038c2b96d6994257588cc154e15e6",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "elastic-kibana_settings",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0",
+      "manifestDigest": "sha256:c3ad2340447b6bd9e53c79dbfcca4d16697006077b61f8ea789d25a5384a1893",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "elastic-logstash",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "docker.elastic.co/logstash/logstash:9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "docker.elastic.co/logstash/logstash:9.3.0",
+      "manifestDigest": "sha256:754f63361c9cfed62dd60ed04a66ed5ff8fd3d2e343e9db2c004792641d0125c",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "elastic-logstash",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "docker.elastic.co/logstash/logstash:9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "docker.elastic.co/logstash/logstash:9.3.0",
+      "manifestDigest": "sha256:6b90240354d4b2c3f3545783cc82e4df68ca6fac2970020dce3899141354a40e",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "monitoring-grafana",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "grafana/grafana:13.3.1",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "grafana/grafana:13.3.1",
+      "manifestDigest": "sha256:1c88285f1dd391a62232c010e6c224846e6a73bdc583b3365be2eba614b7919e",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "monitoring-grafana",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "grafana/grafana:13.3.1",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "grafana/grafana:13.3.1",
+      "manifestDigest": "sha256:dd3f1c1880a26ef8871476613b919864065a51c842f3cd85d280193e6e25c241",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "monitoring-prometheus",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "prom/prometheus:v3.16.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "prom/prometheus:v3.16.0",
+      "manifestDigest": "sha256:89c1a644817e9ad70fa2af76c84898e327c1de7063735f962e8313b1e28672c3",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "monitoring-prometheus",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "prom/prometheus:v3.16.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "prom/prometheus:v3.16.0",
+      "manifestDigest": "sha256:c523006440e714e0e53405b77e9f6ee668871d9855fc1c853fd43f5b990c34d2",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rsshub-rsshub",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "diygod/rsshub:chromium-bundled-2026-09-24",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "diygod/rsshub:chromium-bundled-2026-09-24",
+      "manifestDigest": "sha256:3b33e0dd86d723d3cbed29235607e61be1d00501a646661fb8c642cf078fca4c",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "rsshub-rsshub",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "diygod/rsshub:chromium-bundled-2026-09-24",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "diygod/rsshub:chromium-bundled-2026-09-24",
+      "manifestDigest": "sha256:32bb3ad64be45896ce25c33b27f5e8c6dfc50c36ed9f3ba4390fe758d1dda5ca",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "searxng-searxng",
       "kind": "registry",
       "platform": "linux/amd64",
       "sourceImage": "searxng/searxng:2026.9.25-487f51922",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "searxng/searxng:2026.9.25-487f51922",
+      "manifestDigest": "sha256:cfbf1eac79dac3044a510e0f671bdad499b3dc4914cd2a77dfc9328238035add",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     },
     {
       "sourceId": "searxng-searxng",
       "kind": "registry",
       "platform": "linux/arm64",
       "sourceImage": "searxng/searxng:2026.9.25-487f51922",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "registryRef": "searxng/searxng:2026.9.25-487f51922",
+      "manifestDigest": "sha256:3589ed1674553a230d25ba1c79beb0c77bfa29172d7ee23ec870f91bc6e25808",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Registry platform manifest only; native runtime acceptance pending."
     }
   ]
 }

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "es-ik",
+  "sourceCommit": "c126f27927c906015aa0d1c5004ffaf6b7e85ab6",
+  "sourceUrl": "https://release.infinilabs.com/analysis-ik/stable/elasticsearch-analysis-ik-9.3.0.zip",
+  "sourceSha256": "83ae9acf675623a359a386e0a0fa55b39d63d0fe1f56a60d38ca0f2a4f888232",
+  "sourceBytes": 4618991,
+  "sourceStatus": "locked",
+  "error": null,
+  "platforms": {
+    "linux/amd64": {
+      "builder": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0@sha256:e40c831e58bbbeea174669f7bbeaa06dfc0038c2b96d6994257588cc154e15e6",
+      "runtime": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0@sha256:e40c831e58bbbeea174669f7bbeaa06dfc0038c2b96d6994257588cc154e15e6"
+    },
+    "linux/arm64": {
+      "builder": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0@sha256:c3ad2340447b6bd9e53c79dbfcca4d16697006077b61f8ea789d25a5384a1893",
+      "runtime": "docker.elastic.co/elasticsearch/elasticsearch:9.3.0@sha256:c3ad2340447b6bd9e53c79dbfcca4d16697006077b61f8ea789d25a5384a1893"
+    }
+  },
+  "nativeBuild": "pending",
+  "functionalAcceptance": "pending",
+  "licenseReview": "pending",
+  "recipeSha256": "fbd076b36db81dbac18f0d408ede089f5cb7b85584a5c01cf38ac830c1e84e81"
+}

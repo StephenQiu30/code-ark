@@ -111,7 +111,7 @@ function validImage(source) {
   if (source.kind === 'release-image-archive') {
     let url;
     try { url = new URL(source.archiveUrl); } catch { return false; }
-    return url.protocol === 'https:' && !url.username && !url.password && url.hostname === 'github.com' && url.pathname.startsWith('/StephenQiu30/code-ark/releases/download/') && /^[a-f0-9]{64}$/.test(source.archiveSha256 ?? '') && /^sha256:[a-f0-9]{64}$/.test(source.expectedImageId ?? '') && /^codeark\/[a-z0-9-]+:sha256-[a-f0-9]+$/.test(source.localContentTag ?? '') && !['registryRef', 'manifestDigest'].some(k => source[k] !== undefined);
+    return url.protocol === 'https:' && !url.username && !url.password && url.hostname === 'github.com' && url.pathname.startsWith('/StephenQiu30/code-ark/releases/download/') && /^[a-f0-9]{64}$/.test(source.archiveSha256 ?? '') && /^sha256:[a-f0-9]{64}$/.test(source.expectedImageId ?? '') && /^codeark\/[a-z0-9-]+:sha256-[a-f0-9]{64}$/.test(source.localContentTag ?? '') && source.localContentTag.endsWith(source.expectedImageId.slice(7)) && !['registryRef', 'manifestDigest'].some(k => source[k] !== undefined);
   }
   return false;
 }

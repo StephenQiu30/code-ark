@@ -131,3 +131,10 @@ pub enum ServicePhase {
 
 dto!(DatabaseBinding { binding_id: String, target_id: String, daemon_id: String, engine: String, lifecycle_owner: String, container_id: String, network_name: String, network_alias: String, container_port: u16, host_endpoint: Option<Endpoint>, credential_ref: SecretRef, allowed_databases: Vec<String>, grant: String, server_fingerprint: String });
 pub type BindingSet = Vec<DatabaseBinding>;
+
+dto!(StorageCapacity { #[ts(type="number | null")] workspace_free_bytes:Option<u64>, #[ts(type="number | null")] daemon_free_bytes:Option<u64>, daemon_status:String });
+dto!(PreflightIssue { code:String, field:Option<String>, severity:String });
+dto!(PreflightReport { issues:Vec<PreflightIssue>, capacity:StorageCapacity, #[ts(type="number")] required_memory_bytes:u64, #[ts(type="number")] daemon_memory_bytes:u64, requires_capacity_consent:bool });
+
+dto!(InitializationGrant { target_id:String,server_fingerprint:String,allowed_databases:Vec<String>,allowed_accounts:Vec<String>,operations:Vec<String>,#[ts(type="number")] confirmed_at:u64 });
+dto!(DatabaseClaim {claim_id:String,binding_id:String,daemon_id:String,server_fingerprint:String,database_names:Vec<String>,owner_instance_id:String,created_by_codeark:bool,ddl_version:String,ddl_checksum:String,status:String});

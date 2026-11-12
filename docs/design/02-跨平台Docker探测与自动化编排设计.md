@@ -58,6 +58,8 @@ macOS 探测 PATH、`~/.docker/bin`、`/usr/local/bin`、`/opt/homebrew/bin`、D
 
 `ContainerOwnership = Managed | ExternalObserve | NotPresent | OwnershipConflict`。Managed 要求设计 01 的实例标签、registry、daemon 身份、资源 ID/挂载路径全部相符；相同路径或相同名称均不足以获得所有权。发生丢失、漂移或歧义时只观察和修复登记。
 
+授权后保留完整授权的 `AuthorizedBinding` 为后端私有能力，不能从 IPC 反序列化；它不改变外部生命周期归属。
+
 `DatabaseBinding { binding_id, target_id, engine, lifecycle_owner, container_ref, network_name, network_alias, container_port, host_endpoint, credential_ref, allowed_databases, grant }`：
 
 v1的ExternalConnected明确限定为**同一已固定本地Linux-containers daemon中的MySQL/PG容器**，具备可验证实例身份、可加入的网络和可认证账号。本机原生数据库、远端数据库/daemon、无法验证身份或不可达的网络拓扑不在自动编排范围：返回`UnsupportedDependencyTopology`，说明原因并提供观察/拓扑指引或显式创建独立托管实例，不悄悄新建替代库。`host_endpoint: Option<Endpoint>`；有发布端口时从宿主认证，无发布端口则使用该daemon内已锁定一次性SQL客户端在绑定网络认证/查询指纹，凭据经受限输入传递，不要求用户开放端口。两条验证路径都不能把不同服务器当同一绑定。

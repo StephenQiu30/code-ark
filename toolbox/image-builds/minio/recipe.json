@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "minio",
+  "sourceCommit": "9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a",
+  "sourceUrl": "https://codeload.github.com/minio/minio/tar.gz/9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a",
+  "sourceSha256": "45521908307306e925c98d629e1c17d78c8b72b6ee242b1bfb1409f7d8ee5841",
+  "sourceBytes": 24232282,
+  "sourceStatus": "locked",
+  "error": null,
+  "platforms": {
+    "linux/amd64": {
+      "builder": "golang:1.27.4-trixie@sha256:2cd7e1ebf475c6208122d2b9cefc638d98fcc8dfd8554c8872c9dd0c21f4ac61",
+      "runtime": "debian:trixie-slim@sha256:7378260c0a098d27ac206225db5e7d92b8c7c84ea7afccc86eeb513756bbd392"
+    },
+    "linux/arm64": {
+      "builder": "golang:1.27.4-trixie@sha256:96335ac31f35abde9f40cbb1032e06d8571fc43c51230e9a90e14145debc6199",
+      "runtime": "debian:trixie-slim@sha256:24a01011d10eba3a023bc8585b9650b8b29021240d4217c05b905e09ef4a5232"
+    }
+  },
+  "nativeBuild": "pending",
+  "functionalAcceptance": "pending",
+  "licenseReview": "pending"
+}

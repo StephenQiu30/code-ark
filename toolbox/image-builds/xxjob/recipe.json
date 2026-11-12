@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "xxjob",
+  "sourceCommit": "3bebfc1609b95413581b11e270e5670dce679813",
+  "sourceUrl": "https://codeload.github.com/xuxueli/xxl-job/tar.gz/3bebfc1609b95413581b11e270e5670dce679813",
+  "sourceSha256": "8d106bb7ccf18e163446acd4001979b82b8d33cc5bb516ada9510bd0cd2d526a",
+  "sourceBytes": 10231428,
+  "sourceStatus": "locked",
+  "error": null,
+  "platforms": {
+    "linux/amd64": {
+      "builder": "maven:3.9.16-eclipse-temurin-17@sha256:c97d0fa42bed8c381518d76d7ca541ff5c6427b21fa93ac6fc4bd68ffb9a258d",
+      "runtime": "eclipse-temurin:17-jre-noble@sha256:75de746e1d782bd75704debd2b76f82f3d60c72c4c7818c288ad3ae2522bd8d3"
+    },
+    "linux/arm64": {
+      "builder": "maven:3.9.16-eclipse-temurin-17@sha256:a9f2cf869775553ae002e9d64b35679b9e810b335f58035031b39bf5c6429886",
+      "runtime": "eclipse-temurin:17-jre-noble@sha256:370a11e8a323ce6c9676f4e70b2b4d89bfcb87ddaa8e7f3b6c90c6003a99da6a"
+    }
+  },
+  "nativeBuild": "pending",
+  "functionalAcceptance": "pending",
+  "licenseReview": "pending"
+}

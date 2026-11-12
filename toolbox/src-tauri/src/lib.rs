@@ -19,3 +19,14 @@ pub fn run() {
 pub mod env_store;
 
 pub mod blueprint;
+
+pub mod docker_cli;
+
+pub mod preflight;
+pub mod storage_probe;
+
+pub mod image_store;
+
+pub mod bindings;
+
+pub mod database_claims;

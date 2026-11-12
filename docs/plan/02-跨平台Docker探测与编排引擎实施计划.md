@@ -3,7 +3,7 @@
 > 2026-11-12 开发授权已取得，当前开始实施；下述“本轮只修订文档/不创建”是制定计划时的历史限制，已被本次开发指令覆盖。未通过的运行/发行验证仍不能标为完成。
 > 原计划说明：获得明确开发指令后使用 `superpowers:executing-plans` 逐任务执行。**本轮只修订文档，以下源码、测试及容器操作全部不得执行。**
 
-唯一来源：[PRD 02](../prd/02-跨平台环境预检与服务自动化编排PRD.md)，技术协议沿该PRD唯一design读取。状态：**全部任务未执行**（2026-11-12）。
+唯一来源：[PRD 02](../prd/02-跨平台环境预检与服务自动化编排PRD.md)，技术协议沿该PRD唯一design读取。状态：**源码实施中：任务1–3已形成模块并通过本机单元检查；真实数据库/全服务矩阵未执行**（2026-11-12）。
 
 **目标**：让固定本地目标上的场景/单服务启动、初始化、探针、配置应用、恢复和重置具有完整权限与生命周期边界。
 
@@ -68,31 +68,31 @@
 
 **文件**：`contracts.rs`、`docker_cli.rs`、runtime fixtures。覆盖R01，TS-05/16；消费Plan01身份和目录类型。
 
-- [ ] 1. 写 `docker_cli::tests`：候选路径与Windows creation_flags；Compose2.20/2.24.3拒绝、2.24.4及兼容新主版本能力通过；远端/Windows containers拒绝；宿主覆盖变量清除；target变化返回TargetChanged，所有命令固定参数且无密码日志。
-- [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml docker_cli::tests` 确认未实现行为失败。
-- [ ] 3. 实现绝对路径发现、context/daemon绑定、类型化参数构造、无窗进程和错误分类；不修改全局context，保留必要的已选本地连接配置。Docker认证首期为Desktop/Engine，OrbStack/Rancher被发现仍须单独实测；不默认引入Bollard重写Compose。
+- [x] 1. 写 `docker_cli::tests`：候选路径与Windows creation_flags；Compose2.20/2.24.3拒绝、2.24.4及兼容新主版本能力通过；远端/Windows containers拒绝；宿主覆盖变量清除；target变化返回TargetChanged，所有命令固定参数且无密码日志。
+- [x] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml docker_cli::tests` 确认未实现行为失败。
+- [x] 3. 实现绝对路径发现、context/daemon绑定、类型化参数构造、无窗进程和错误分类；不修改全局context，保留必要的已选本地连接配置。Docker认证首期为Desktop/Engine，OrbStack/Rancher被发现仍须单独实测；不默认引入Bollard重写Compose。
 - [ ] 4. 重跑模块测试，在每目标原生环境验证GUI打开时发现和无窗；未知target不得走默认daemon。
-- [ ] 5. 提交 `feat(toolbox): pin local docker targets and capabilities`。
+- [x] 5. 提交 `feat(toolbox): pin local docker targets and capabilities`。
 
 ### 任务2：资源预检与存储探针
 
 **文件**：`preflight.rs`、`storage_probe.rs`、catalog容量字段/锁定诊断工具配置。覆盖R02，TS-05。
 
-- [ ] 1. 写模块测试：TCP/UDP/端口组/4–6GiB/双盘/unknown/路径/权限；加入归档坏SHA、截断下载、错误image ID/CPU、local内容tag被替换、下载401和取消；不能用源码AMD64镜像模拟通过ARM，未知来源URL拒绝。
-- [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml preflight::tests` 及完整同前缀的 `storage_probe::tests`、`image_store::tests`，确认容量/归档错误分支红灯。
-- [ ] 3. 实现容量/架构预检及image_store：registry不可变digest或按允许HTTPS来源下载image-save归档、核SHA并在固定target load、inspect ID/CPU；缓存按内容复用、受操作期限约束、不进入reset清单。下载401给准确错误，不自动删服务/换镜像站。容量未知展示复检/本次接受入口，诊断任务需用户同意且锁定镜像。
+- [x] 1. 写模块测试：TCP/UDP/端口组/4–6GiB/双盘/unknown/路径/权限；加入归档坏SHA、截断下载、错误image ID/CPU、local内容tag被替换、下载401和取消；不能用源码AMD64镜像模拟通过ARM，未知来源URL拒绝。
+- [x] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml preflight::tests` 及完整同前缀的 `storage_probe::tests`、`image_store::tests`，确认容量/归档错误分支红灯。
+- [x] 3. 实现容量/架构预检及image_store：registry不可变digest或按允许HTTPS来源下载image-save归档、核SHA并在固定target load、inspect ID/CPU；缓存按内容复用、受操作期限约束、不进入reset清单。下载401给准确错误，不自动删服务/换镜像站。容量未知展示复检/本次接受入口，诊断任务需用户同意且锁定镜像。
 - [ ] 4. 重跑preflight/storage_probe/image_store测试，实测每运行时容量及归档下载/load/实际Image；填真实空间/传输体积，MinIO/XXL/ES-IK producer尚无可获取归档则保持pending并阻断对应candidate/release，而非从维护者缓存伪造冷启动通过。
-- [ ] 5. 提交 `feat(toolbox): preflight ports capacity and architecture`。
+- [x] 5. 提交 `feat(toolbox): preflight ports capacity and architecture`。
 
 ### 任务3：外部绑定、权限和数据库claim
 
 **文件**：`bindings.rs`、`database_claims.rs`、`contracts.rs`及SQL/PG认证适配。覆盖R03/R09，TS-06/19。
 
-- [ ] 1. 写`ownership_requires_registry_and_labels`、`external_grant_is_scoped`、`unpublished_container_authenticates_on_network`、`unsupported_topology_is_explicit`、`claim_requires_server_identity`测试：同名/同路径不授予Managed，准确授权仍无生命周期权限；PG优先复用，无发布端口可网络认证；原生/远端库拒绝但不新建替代；专属账号/库、双claim和Temporal唯一所有者正确。
-- [ ] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml bindings::tests` 及完整同前缀的 `database_claims::tests`，确认红灯。
-- [ ] 3. 实现认证、可选宿主端点/一次性网络SQL客户端和服务器身份核验、权限scope、归属表和registry；只对已授权资源创建/核验，不读取未选择外部.env，不悄悄改账号；无归属标记的崩溃窗口返回RecoveryRequired。
+- [x] 1. 写`ownership_requires_registry_and_labels`、`external_grant_is_scoped`、`unpublished_container_authenticates_on_network`、`unsupported_topology_is_explicit`、`claim_requires_server_identity`测试：同名/同路径不授予Managed，准确授权仍无生命周期权限；PG优先复用，无发布端口可网络认证；原生/远端库拒绝但不新建替代；专属账号/库、双claim和Temporal唯一所有者正确。
+- [x] 2. 运行 `cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml bindings::tests` 及完整同前缀的 `database_claims::tests`，确认红灯。
+- [x] 3. 实现认证、可选宿主端点/一次性网络SQL客户端和服务器身份核验、权限scope、归属表和registry；只对已授权资源创建/核验，不读取未选择外部.env，不悄悄改账号；无归属标记的崩溃窗口返回RecoveryRequired。
 - [ ] 4. 重跑测试，在隔离库验证ReadOnlyConnect、精确初始化授权及外部整库禁删；记录未授权服务器无变更。
-- [ ] 5. 提交 `feat(toolbox): bind existing databases with scoped ownership`。
+- [x] 5. 提交 `feat(toolbox): bind existing databases with scoped ownership`。
 
 ### 任务4：可恢复初始化与凭据联动
 
@@ -150,6 +150,10 @@
 
 模块完成需单元/配置检查全绿；运行完成需任务8的17行真实探针、每步中断、资源隔离和保留数据重建通过，不能把“有测试文件”记为完成。Plan01的TS-04/15在这里产生源码环境证据，最终安装包仍需Plan03单独验收。
 
-**当前：8个任务全部未执行。** 开发工具链、Docker状态和原生执行器在将来执行前重新检查，不依赖旧调研声称本机当前可编译/运行。
+**当前：任务1–3已有源码与本机单元检查；原生多系统、真实连接/归档加载与全量运行仍待验证，任务4–8待实施。** 开发工具链、Docker状态和原生执行器在将来执行前重新检查，不依赖旧调研声称本机当前可编译/运行。
 
 [返回Plan导航](00-Plan导航.md)
+
+2026-11-12 源码验证：本机只读 Docker 发现/Compose能力探针通过；DockerRunner拒绝旧版本/远端/Windows容器/context漂移/daemon变化/环境覆盖及过量输出。TCP/UDP、6GiB门禁、独立存储Unknown、归档SHA/config-ID/CPU/内容tag、连接拓扑、精确授权与claim/marker保护均有单元检查；真实外部数据库认证、无宿主端口SQL客户端和半DDL恢复仍待隔离运行。
+
+实现细化：授权结果采用后端私有 `AuthorizedBinding` 能力对象，保留完整InitializationGrant；前端不能反序列化或凭字符串提升权限。SQLx0.9的SqlSafeStr要求已按实际库源码校准，普通查询使用静态SQL与绑定参数，后续DDL仅走受控标识符/已校验资源。

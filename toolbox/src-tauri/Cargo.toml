@@ -32,7 +32,14 @@ getrandom = "=0.4.3"
 sha2 = "0.10"
 base64 = "0.22"
 zeroize = "=1.9.1"
-serde-saphyr = "=2.1.1"
+serde-saphyr = { version = "=2.1.1", default-features = false, features = ["serialize", "deserialize"] }
+tokio = { version = "=1.54.1", features = ["rt-multi-thread", "macros", "net", "process", "io-util", "time", "sync", "fs"] }
+reqwest = { version = "=0.13.5", default-features = false, features = ["json", "stream", "rustls"] }
+sqlx = { version = "=0.9.0", default-features = false, features = ["mysql", "postgres", "runtime-tokio", "tls-rustls-aws-lc-rs", "mysql-rsa"] }
+sysinfo = { version = "=0.40.3", default-features = false, features = ["system", "disk"] }
+dirs = "=7.0.0"
+libc = "=0.2.191"
+tar = "0.4"
 tauri = { version = "=2.12.5", optional = true }
 
 [dev-dependencies]

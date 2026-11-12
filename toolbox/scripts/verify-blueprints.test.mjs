@@ -78,7 +78,7 @@ test('candidate_requires_resolved_architecture: registry/archive fields are mutu
   await syncBlueprints({ repoRoot: f.root, outDir: f.outDir, catalog: f.catalog });
   f.images.sources[0].archiveUrl = 'https://github.com/example/release.tar';
   assert.equal((await verifyBundle({ bundleDir: f.outDir, catalog: f.catalog, images: f.images, mode: 'candidate', target: 'mac-arm64' })).ok, false);
-  f.images.sources[0] = { sourceId: 'redis', kind: 'release-image-archive', platform: 'linux/arm64', status: 'resolved', archiveUrl: 'https://github.com/StephenQiu30/code-ark/releases/download/v0/test.tar', archiveSha256: 'a'.repeat(64), expectedImageId: `sha256:${'b'.repeat(64)}`, localContentTag: 'codeark/redis:sha256-abc' };
+  f.images.sources[0] = { sourceId: 'redis', kind: 'release-image-archive', platform: 'linux/arm64', status: 'resolved', archiveUrl: 'https://github.com/StephenQiu30/code-ark/releases/download/v0/test.tar', archiveSha256: 'a'.repeat(64), expectedImageId: `sha256:${'b'.repeat(64)}`, localContentTag: `codeark/redis:sha256-${'b'.repeat(64)}` };
   assert.equal((await verifyBundle({ bundleDir: f.outDir, catalog: f.catalog, images: f.images, mode: 'candidate', target: 'mac-arm64' })).ok, true);
   delete f.images.sources[0].expectedImageId;
   assert.equal((await verifyBundle({ bundleDir: f.outDir, catalog: f.catalog, images: f.images, mode: 'candidate', target: 'mac-arm64' })).ok, false);
