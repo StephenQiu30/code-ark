@@ -81,7 +81,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -176,7 +176,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -305,7 +305,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -368,9 +368,18 @@
           "timeoutSecs": 30,
           "attempts": 3,
           "required": true
+        },
+        {
+          "probeId": "kafka-kafka-ui",
+          "componentId": "kafka-ui",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 1342177280,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -456,7 +465,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 1073741824,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -516,10 +525,10 @@
         {
           "key": "RABBITMQ_DEFAULT_PASS",
           "publicDefault": "change_me_rabbitmq_password",
-          "sensitive": false,
+          "sensitive": true,
           "required": true,
-          "secretPolicy": "PreserveExisting",
-          "secretFormat": null
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
         }
       ],
       "probes": [
@@ -533,7 +542,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -620,6 +629,15 @@
       "envSchema": [],
       "probes": [
         {
+          "probeId": "rocketmq-namesrv",
+          "componentId": "namesrv",
+          "role": "daemon",
+          "kind": "rocket-route",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        },
+        {
           "probeId": "rocketmq-native",
           "componentId": "broker",
           "role": "daemon",
@@ -627,9 +645,18 @@
           "timeoutSecs": 30,
           "attempts": 3,
           "required": true
+        },
+        {
+          "probeId": "rocketmq-console",
+          "componentId": "console",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 1879048192,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -790,6 +817,15 @@
       ],
       "probes": [
         {
+          "probeId": "temporal-temporal-schema-setup",
+          "componentId": "temporal-schema-setup",
+          "role": "job",
+          "kind": "job-exit",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        },
+        {
           "probeId": "temporal-native",
           "componentId": "temporal",
           "role": "daemon",
@@ -797,9 +833,27 @@
           "timeoutSecs": 30,
           "attempts": 3,
           "required": true
+        },
+        {
+          "probeId": "temporal-temporal-namespace-setup",
+          "componentId": "temporal-namespace-setup",
+          "role": "job",
+          "kind": "job-exit",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        },
+        {
+          "probeId": "temporal-temporal-ui",
+          "componentId": "temporal-ui",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 1879048192,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -891,6 +945,14 @@
           "required": true,
           "secretPolicy": "GenerateOnFirstManagedCreate",
           "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "XXL_ADMIN_PASSWORD",
+          "publicDefault": "",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric20"
         }
       ],
       "probes": [
@@ -904,7 +966,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -1005,6 +1067,14 @@
           "required": true,
           "secretPolicy": "GenerateOnFirstManagedCreate",
           "secretFormat": "base64"
+        },
+        {
+          "key": "NACOS_AUTH_PASSWORD",
+          "publicDefault": "",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric20"
         }
       ],
       "probes": [
@@ -1018,7 +1088,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 1073741824,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -1196,6 +1266,22 @@
           "required": true,
           "secretPolicy": "InheritBinding",
           "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "SEATA_CONSOLE_PASSWORD",
+          "publicDefault": "",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        },
+        {
+          "key": "SEATA_SECURITY_SECRET",
+          "publicDefault": "",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "base64"
         }
       ],
       "probes": [
@@ -1209,7 +1295,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -1552,6 +1638,33 @@
           "timeoutSecs": 30,
           "attempts": 3,
           "required": true
+        },
+        {
+          "probeId": "elastic-kibana_settings",
+          "componentId": "kibana_settings",
+          "role": "job",
+          "kind": "job-exit",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        },
+        {
+          "probeId": "elastic-kibana",
+          "componentId": "kibana",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
+        },
+        {
+          "probeId": "elastic-logstash",
+          "componentId": "logstash",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
         }
       ],
       "minMemoryBytes": 6442450944,
@@ -1612,7 +1725,16 @@
         }
       ],
       "dependencies": [],
-      "envSchema": [],
+      "envSchema": [
+        {
+          "key": "GRAFANA_ADMIN_PASSWORD",
+          "publicDefault": "",
+          "sensitive": true,
+          "required": true,
+          "secretPolicy": "GenerateOnFirstManagedCreate",
+          "secretFormat": "alphanumeric32"
+        }
+      ],
       "probes": [
         {
           "probeId": "monitoring-native",
@@ -1622,9 +1744,18 @@
           "timeoutSecs": 30,
           "attempts": 3,
           "required": true
+        },
+        {
+          "probeId": "monitoring-prometheus",
+          "componentId": "prometheus",
+          "role": "daemon",
+          "kind": "http",
+          "timeoutSecs": 30,
+          "attempts": 3,
+          "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 805306368,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -1684,7 +1815,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,
@@ -1753,7 +1884,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 268435456,
+      "minMemoryBytes": 536870912,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,

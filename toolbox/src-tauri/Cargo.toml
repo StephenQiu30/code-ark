@@ -19,7 +19,7 @@ required-features = ["desktop"]
 
 [features]
 default = []
-desktop = ["dep:tauri", "dep:tauri-build"]
+desktop = ["dep:tauri", "dep:tauri-build", "dep:tauri-plugin-dialog", "dep:tauri-plugin-opener"]
 
 [build-dependencies]
 tauri-build = { version = "=2.7.4", optional = true }
@@ -34,13 +34,17 @@ base64 = "0.22"
 zeroize = "=1.9.1"
 serde-saphyr = { version = "=2.1.1", default-features = false, features = ["serialize", "deserialize"] }
 tokio = { version = "=1.54.1", features = ["rt-multi-thread", "macros", "net", "process", "io-util", "time", "sync", "fs"] }
-reqwest = { version = "=0.13.5", default-features = false, features = ["json", "stream", "rustls"] }
+reqwest = { version = "=0.13.5", default-features = false, features = ["json", "form", "query", "stream", "rustls"] }
 sqlx = { version = "=0.9.0", default-features = false, features = ["mysql", "postgres", "runtime-tokio", "tls-rustls-aws-lc-rs", "mysql-rsa"] }
 sysinfo = { version = "=0.40.3", default-features = false, features = ["system", "disk"] }
 dirs = "=7.0.0"
 libc = "=0.2.191"
 tar = "0.4"
+quick-xml = "=0.42.0"
 tauri = { version = "=2.12.5", optional = true }
+
+tauri-plugin-dialog = { version = "=2.8.4", optional = true }
+tauri-plugin-opener = { version = "=2.7.3", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

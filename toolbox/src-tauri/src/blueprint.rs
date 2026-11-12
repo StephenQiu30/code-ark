@@ -207,7 +207,7 @@ pub fn render_override(
     if networks.is_empty() {
         networks.insert(
             "default".into(),
-            json!({"name":format!("{}-default",instance.project_name),"driver":"bridge"}),
+            json!({"name":format!("{}-default",instance.project_name),"driver":"bridge","labels":{"io.codeark.workspace-id":instance.workspace_id,"io.codeark.instance-id":instance.instance_id,"io.codeark.service-id":service.id,"io.codeark.blueprint-sha":source_sha}}),
         );
     }
     for (index, binding) in bindings.iter().enumerate() {
@@ -307,6 +307,9 @@ pub fn render_override(
             ));
             application["seata"]["store"]["db"]["user"] = json!(required("MYSQL_USERNAME")?);
             application["seata"]["store"]["db"]["password"] = json!(required("MYSQL_PASSWORD")?);
+            application["console"]["user"]["password"] = json!(required("SEATA_CONSOLE_PASSWORD")?);
+            application["seata"]["security"]["secretKey"] =
+                json!(required("SEATA_SECURITY_SECRET")?);
             let path = runtime.join("application.toolbox.yml");
             atomic_write(
                 &path,
@@ -355,6 +358,12 @@ pub fn render_override(
             );
         }
         if service.id == "nacos" {
+            environment.insert(
+                "NACOS_AUTH_PASSWORD".into(),
+                json!(literal(&required("NACOS_AUTH_PASSWORD")?)),
+            );
+            environment.insert("NACOS_AUTH_ADMIN_ENABLE".into(), json!("true"));
+            environment.insert("NACOS_AUTH_CONSOLE_ENABLE".into(), json!("true"));
             for key in ["NACOS_AUTH_IDENTITY_KEY", "NACOS_AUTH_IDENTITY_VALUE"] {
                 environment.insert(key.into(), json!(literal(&required(key)?)));
             }
@@ -849,6 +858,7 @@ pub fn materialize_blueprint(
     {
         return Err(error("SchemaIncompatible"));
     }
+    crate::managed_data::prepare(stack, service, identity)?;
     for (file, bytes) in assets {
         let path = stack.join(file);
         if path.exists() {
@@ -860,11 +870,29 @@ pub fn materialize_blueprint(
         }
         private_dir(path.parent().ok_or_else(|| error("UnsafePath"))?)?;
         atomic_write(&path, &bytes)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(
+                &path,
+                fs::Permissions::from_mode(if file.ends_with(".sh") { 0o755 } else { 0o644 }),
+            )
+            .map_err(|_| error("PermissionDenied"))?;
+            let mut parent = path.parent();
+            while let Some(dir) = parent {
+                if dir == stack {
+                    break;
+                }
+                fs::set_permissions(dir, fs::Permissions::from_mode(0o755))
+                    .map_err(|_| error("PermissionDenied"))?;
+                parent = dir.parent();
+            }
+        }
         created_paths.push(file.clone());
     }
     for data in &service.data_paths {
         declared_path(data)?;
-        private_dir(&stack.join(data))?;
+        reject_links(&stack.join(data))?;
     }
     if previous.is_none() && conflicts.is_empty() {
         atomic_write(

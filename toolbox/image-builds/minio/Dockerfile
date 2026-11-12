@@ -9,12 +9,13 @@ RUN curl --fail --location --silent --show-error "$SOURCE_URL" -o /tmp/source.ta
     && tar -xzf /tmp/source.tar.gz --strip-components=1
 ENV CGO_ENABLED=0 GOMAXPROCS=2 GOMEMLIMIT=1GiB GOFLAGS=-p=2
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    attempts=0; until go mod download; do attempts=$((attempts + 1)); [ "$attempts" -lt 3 ] || exit 1; sleep 2; done; \
-    go build -trimpath -ldflags='-s -w' -o /out/minio .
+    attempts=0; until timeout 240s go mod download; do attempts=$((attempts + 1)); [ "$attempts" -lt 3 ] || exit 1; sleep 2; done; \
+    timeout 900s go build -trimpath -ldflags='-s -w' -o /out/minio .
 
 FROM ${RUNTIME_IMAGE}
 COPY --from=build /out/minio /usr/local/bin/minio
 COPY --from=build /source/LICENSE /usr/share/licenses/minio/LICENSE
+RUN mkdir -p /data && chown -R 1000:1000 /data
 USER 1000:1000
 EXPOSE 9000 9001
 ENTRYPOINT ["/usr/local/bin/minio"]

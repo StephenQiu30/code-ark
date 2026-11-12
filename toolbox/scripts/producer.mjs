@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, copyFile, mkdtemp } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, copyFile, mkdtemp, rename, rm } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -16,9 +16,46 @@ export function validateProducer(recipe,platform,daemon){
   for(const kind of ['builder','runtime'])if(!recipe.platforms?.[platform]?.[kind]?.includes('@sha256:')||!/@sha256:[a-f0-9]{64}$/.test(recipe.platforms[platform][kind]))throw new Error('BuilderNotLocked');
   return true;
 }
+export function verifyProducerBuildInputs(recipe,dockerfile,entrypoint){
+  if(sha(dockerfile)!==recipe.recipeSha256)throw new Error('RecipeChanged');
+  if(recipe.entrypointSha256&&sha(entrypoint??'')!==recipe.entrypointSha256)throw new Error('EntrypointChanged');
+  return true;
+}
+export async function runProducerProcess(command,args,{env=process.env,timeoutMs=30*60*1000,killGraceMs=2000,maxOutputBytes=2*1024*1024}={}){
+  return await new Promise((done,fail)=>{
+    const child=spawn(command,args,{env,stdio:['ignore','pipe','pipe'],windowsHide:true});
+    let out='',err='',failure=null,killTimer;
+    const stop=reason=>{if(failure)return;failure=reason;child.kill('SIGTERM');killTimer=setTimeout(()=>child.kill('SIGKILL'),killGraceMs);};
+    const timer=setTimeout(()=>stop('ProducerCommandTimeout'),timeoutMs);
+    const clear=()=>{clearTimeout(timer);clearTimeout(killTimer);};
+    child.stdout.on('data',b=>{if(failure)return;out+=b;if(Buffer.byteLength(out)>maxOutputBytes){out='';stop('ProducerOutputLimit');}});
+    child.stderr.on('data',b=>{err=(err+b).slice(-16384);});
+    child.on('error',error=>{clear();fail(error);});
+    child.on('close',code=>{clear();failure?fail(new Error(`${failure}: ${err.slice(-4000)}`)):code===0?done(out):fail(new Error(`ProducerCommandFailed (${code}): ${err.slice(-4000)}`));});
+  });
+}
 async function cli(context,args){
   const env={...process.env};for(const key of Object.keys(env))if(key.startsWith('COMPOSE_')||(key.startsWith('DOCKER_')&&key!=='DOCKER_CONFIG'))delete env[key];
-  return await new Promise((done,fail)=>{const child=spawn('docker',['--context',context,...args],{env,stdio:['ignore','pipe','pipe'],windowsHide:true});const timer=setTimeout(()=>child.kill(),30*60*1000);let out='',err='';child.stdout.on('data',b=>{out+=b;if(out.length>2*1024*1024)child.kill();});child.stderr.on('data',b=>{err=(err+b).slice(-16384);});child.on('error',error=>{clearTimeout(timer);fail(error);});child.on('close',code=>{clearTimeout(timer);code===0?done(out):fail(new Error(`ProducerDockerFailed (${code}): ${err.slice(-4000)}`));});});
+  return runProducerProcess('docker',['--context',context,...args],{env});
+}
+export async function downloadProducerSource(url,recipe,{timeoutMs=120000}={}){
+  const signal=AbortSignal.timeout(timeoutMs);
+  try{
+    const response=await fetch(url,{signal});if(!response.ok)throw new Error(`SourceDownloadFailed (${response.status})`);
+    const chunks=[];let size=0;
+    for await(const chunk of response.body){size+=chunk.length;if(size>recipe.sourceBytes)throw new Error('SourceSizeMismatch');chunks.push(chunk);}
+    if(size!==recipe.sourceBytes)throw new Error('SourceSizeMismatch');
+    const bytes=Buffer.concat(chunks);if(sha(bytes)!==recipe.sourceSha256)throw new Error('SourceHashMismatch');return bytes;
+  }catch(error){if(signal.aborted)throw new Error('SourceDownloadTimeout');throw error;}
+}
+export async function saveProducerArchive(archive,save){
+  const temporary=await mkdtemp(join(dirname(archive),'.codeark-export-'));
+  const partial=join(temporary,'image.tar');
+  try{
+    await save(partial);
+    const hash=createHash('sha256');for await(const chunk of createReadStream(partial))hash.update(chunk);
+    const digest=hash.digest('hex');await rename(partial,archive);return digest;
+  }finally{await rm(temporary,{recursive:true,force:true});}
 }
 async function main(){
   const args=process.argv.slice(2);const arg=n=>args[args.indexOf(n)+1];
@@ -31,24 +68,26 @@ async function main(){
   const build=await mkdtemp(join(tmpdir(),'codeark-producer-'));
   if(id==='es-ik'){
     const source=await readFile(join(root,'services/elastic-start-local/elasticsearch/Dockerfile'),'utf8');
-    if(sha(source)!==recipe.recipeSha256)throw new Error('RecipeChanged');
-    const response=await fetch(recipe.sourceUrl);if(!response.ok)throw new Error('SourceDownloadFailed');
-    const bytes=Buffer.from(await response.arrayBuffer());if(sha(bytes)!==recipe.sourceSha256)throw new Error('SourceHashMismatch');
+    verifyProducerBuildInputs(recipe,source);
+    const bytes=await downloadProducerSource(recipe.sourceUrl,recipe);
     await writeFile(join(build,'analysis-ik.zip'),bytes);
     const adapted=source.replace('FROM docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}',`FROM ${recipe.platforms[platform].runtime}`).replace('https://release.infinilabs.com/analysis-ik/stable/elasticsearch-analysis-ik-${IK_VERSION}.zip','file:///tmp/analysis-ik.zip').replace('ARG IK_VERSION=9.3.0','COPY analysis-ik.zip /tmp/analysis-ik.zip\nARG IK_VERSION=9.3.0');
     await writeFile(join(build,'Dockerfile'),adapted);
   }else{
-    await copyFile(join(root,`toolbox/image-builds/${id}/Dockerfile`),join(build,'Dockerfile'));
+    const dockerfile=await readFile(join(root,`toolbox/image-builds/${id}/Dockerfile`),'utf8');
+    const entrypoint=id==='xxjob'?await readFile(join(root,'toolbox/image-builds/xxjob/entrypoint.sh'),'utf8'):undefined;
+    verifyProducerBuildInputs(recipe,dockerfile,entrypoint);
+    await writeFile(join(build,'Dockerfile'),dockerfile);
     if(id==='xxjob')await copyFile(join(root,'toolbox/image-builds/xxjob/entrypoint.sh'),join(build,'entrypoint.sh'));
   }
   const tag=`codeark/${id}:producer-${recipe.sourceCommit.slice(0,12)}-${platform.split('/')[1]}`;
   if(JSON.parse(await cli(context,['info','--format','{{json .}}'])).ID!==daemon.ID)throw new Error('TargetChanged');
   await cli(context,['build','--platform',platform,'--build-arg',`BUILDER_IMAGE=${recipe.platforms[platform].builder}`,'--build-arg',`RUNTIME_IMAGE=${recipe.platforms[platform].runtime}`,'--build-arg',`SOURCE_URL=${recipe.sourceUrl}`,'--build-arg',`SOURCE_SHA256=${recipe.sourceSha256}`,'--tag',tag,build]);
-  const info=JSON.parse(await cli(context,['image','inspect',tag]))[0];if(`linux/${info.Architecture}`!==platform)throw new Error('ImageArchitectureMismatch');
+  const info=JSON.parse(await cli(context,['image','inspect',tag]))[0];if(info.Os!=='linux'||`linux/${info.Architecture}`!==platform)throw new Error('ImageArchitectureMismatch');
   const contentTag=`codeark/${id}:sha256-${info.Id.replace('sha256:','')}`;await cli(context,['image','tag',info.Id,contentTag]);
   const output=resolve(root,'.tools/artifacts');await mkdir(output,{recursive:true});const archive=join(output,`${id}-${platform.split('/')[1]}.tar`);
-  await cli(context,['image','save','--output',archive,contentTag]);
-  const receipt={sourceId:id,kind:'release-image-archive',platform,sourceCommit:recipe.sourceCommit,sourceSha256:recipe.sourceSha256,expectedImageId:info.Id,localContentTag:contentTag,archiveSha256:await (async()=>{const h=createHash('sha256');for await(const chunk of createReadStream(archive))h.update(chunk);return h.digest('hex');})(),archivePath:archive,functionalAcceptance:'pending',archiveUrl:null};
+  const archiveSha256=await saveProducerArchive(archive,partial=>cli(context,['image','save','--output',partial,contentTag]));
+  const receipt={sourceId:id,kind:'release-image-archive',platform,sourceCommit:recipe.sourceCommit,sourceSha256:recipe.sourceSha256,recipeSha256:recipe.recipeSha256,builder:recipe.platforms[platform].builder,runtime:recipe.platforms[platform].runtime,nativeDaemon:{id:daemon.ID,os:daemon.OSType,architecture:daemon.Architecture},expectedImageId:info.Id,imageDescriptor:info.Descriptor??null,identityFormat:'docker-inspect-id',localContentTag:contentTag,archiveSha256,archivePath:archive,functionalAcceptance:'pending',archiveUrl:null};
   await writeFile(archive+'.json',JSON.stringify(receipt,null,2)+'\n');
   console.log('Image archive produced. Functional acceptance, license review and a public immutable URL are still required; image lock not auto-approved.');
 }

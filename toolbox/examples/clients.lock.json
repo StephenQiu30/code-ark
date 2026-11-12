@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "toolchain": {
+    "javaRelease": 17,
+    "maven": "3.9.16"
+  },
+  "modules": {
+    "common": [],
+    "sql-mysql": [
+      {
+        "group": "com.mysql",
+        "artifact": "mysql-connector-j",
+        "version": "26.10.0"
+      }
+    ],
+    "sql-pgsql": [
+      {
+        "group": "org.postgresql",
+        "artifact": "postgresql",
+        "version": "42.7.8"
+      }
+    ],
+    "s3": [
+      {
+        "group": "io.minio",
+        "artifact": "minio",
+        "version": "9.0.4"
+      },
+      {
+        "group": "com.squareup.okhttp3",
+        "artifact": "okhttp-jvm",
+        "version": "5.5.1"
+      }
+    ],
+    "nacos-sentinel": [
+      {
+        "group": "com.alibaba.nacos",
+        "artifact": "nacos-client",
+        "version": "3.3.0"
+      },
+      {
+        "group": "com.alibaba.csp",
+        "artifact": "sentinel-core",
+        "version": "1.8.10"
+      },
+      {
+        "group": "com.alibaba.csp",
+        "artifact": "sentinel-transport-simple-http",
+        "version": "1.8.10"
+      }
+    ],
+    "seata-rollback": [
+      {
+        "group": "io.seata",
+        "artifact": "seata-all",
+        "version": "1.8.0"
+      },
+      {
+        "group": "com.mysql",
+        "artifact": "mysql-connector-j",
+        "version": "26.10.0"
+      },
+      {
+        "group": "com.alibaba",
+        "artifact": "druid",
+        "version": "1.2.21"
+      }
+    ],
+    "xxl-executor": [
+      {
+        "group": "com.xuxueli",
+        "artifact": "xxl-job-core",
+        "version": "3.5.0"
+      }
+    ],
+    "temporal": [
+      {
+        "group": "io.temporal",
+        "artifact": "temporal-sdk",
+        "version": "1.31.0"
+      }
+    ],
+    "kafka": [
+      {
+        "group": "org.apache.kafka",
+        "artifact": "kafka-clients",
+        "version": "4.4.0"
+      }
+    ],
+    "canal": [
+      {
+        "group": "com.alibaba.otter",
+        "artifact": "canal.client",
+        "version": "1.1.8"
+      },
+      {
+        "group": "com.alibaba.otter",
+        "artifact": "canal.protocol",
+        "version": "1.1.8"
+      }
+    ],
+    "amqp": [
+      {
+        "group": "com.rabbitmq",
+        "artifact": "amqp-client",
+        "version": "5.37.1"
+      }
+    ],
+    "rocketmq": [
+      {
+        "group": "org.apache.rocketmq",
+        "artifact": "rocketmq-client-java",
+        "version": "5.2.2"
+      }
+    ],
+    "http-query": []
+  },
+  "runtimeStatus": "pending"
+}

@@ -1,7 +1,9 @@
 # 02 跨平台 Docker 探测与自动化编排设计
 
-状态：**审查修订版，技术合同待实现与实机验证**（2026-11-12）。来源：[需求 02](../requirement/02-服务依赖与新手使用场景清单.md)、[审查报告](../research/04-一键启动工具箱设计完整性审查.md) `ARK-01/03/04/07/08/09/10/11/12`。实例、覆盖层和有效配置遵循设计 01；本文件是运行语义的权威来源。
+状态：**源码实施中，完整实机与发行验收待完成**（2026-11-12）。来源：[需求 02](../requirement/02-服务依赖与新手使用场景清单.md)、[审查报告](../research/04-一键启动工具箱设计完整性审查.md) `ARK-01/03/04/07/08/09/10/11/12`。实例、覆盖层和有效配置遵循设计 01；本文件是运行语义的权威来源。
 
+
+实施状态：已开始按本合同开发，当前实现、验证和剩余项见 [首阶段执行记录](../research/06-工作箱首阶段实施与验证记录.md)。源码检查、隔离 Redis 和最终安装包是独立证据，不表示全量功能已交付。
 ## 1. 摘要
 
 编排器在固定的本地 Docker 目标上，完成发现、预检、依赖复用、初始化、部署、业务探针与可恢复操作。所有动作受资源所有权和权限范围约束；实际可连接才成为 Ready。外部观察不授予写权限，选择复用也不授予容器生命周期和整库删除权限。
@@ -120,6 +122,8 @@ v1不执行已初始化数据库账号轮换；更新连接凭据必须先证明
 
 就绪默认只做授权范围内非破坏性读取/连接；发行写读探针在明确隔离的测试实例和测试标识下运行，并清理其自建资源。对于框架客户端缺失，显示“基础服务就绪，等待应用接入”，不声称用户业务已跑通；SDK/协议探针工具、版本与镜像由 catalog 声明并锁定，安装包不依赖用户开发工具。
 
+就绪观察每20秒受限刷新，55秒过期；刷新失败或证据过期降为未验证，不回写旧成功时间。当前 daemon 存储路径不能证实与宿主同一文件系统时，一律 UnknownCapacity。
+
 ### 7.6 状态机、步骤与错误
 
 `ServicePhase = Uninitialized | Stopped | Starting | RunningUnverified | Ready | Degraded | Failed | AwaitingAction | ExternalObserve`。只有全部必需job和探针通过才为 Ready；外部只观察不冒充托管就绪。探针失效后撤销Ready，快照注明采样时间和最后成功时间。
@@ -147,20 +151,22 @@ v1不执行已初始化数据库账号轮换；更新连接凭据必须先证明
 
 取消下载停止网络流并处理受控临时文件；取消pull/load可终止CLI，但daemon可能继续内部任务，须重新inspect展示实际状态。SQL不强制中断未知事务，在步骤边界停止，不确定结果标RecoveryRequired。不自动回滚迁移或删除已有依赖；失败保留成功步骤，提供复检重试与停止本次新建且未被其他场景使用的服务。
 
-配置流程：`Draft → Validated → Applying → Ready | Failed | RecoveryRequired`。预览差异，候选配置校验后使用 `compose up -d` 应用必要重建，**不能用restart代替配置重建**；就绪后提交`.env`更改和last_ready。保存草稿不改变运行服务。失败且无数据格式变更可按记录恢复上一配置并重新探针；有Schema/数据变更时禁止自动降级。崩溃后用actual inspect判定applied_generation，而非强行回写旧指针。
+配置流程：`Draft → Validated → Applying → Ready | Failed | RecoveryRequired`。Validated 绑定 workspace/target、base generation、文档摘要和有效期；展示真实预检及本次未知容量同意。候选秘密只写入代际内 `draft.env`，已应用探针读取代际 `effective.env`；拒绝或失败保留当前 `.env`。重试同时核验请求摘要与 desired generation，不复用旧同意到新草稿；配置重建保留原场景引用。预览差异，候选配置校验后使用 `compose up -d` 应用必要重建，**不能用restart代替配置重建**；就绪后提交`.env`更改和last_ready。保存草稿不改变运行服务。失败且无数据格式变更可按记录恢复上一配置并重新探针；有Schema/数据变更时禁止自动降级。崩溃后用actual inspect判定applied_generation，而非强行回写旧指针。
 
 ### 7.8 停止、拆除、重置和外部迁移
 
 - `stop_service/stop_preset` 计算反向依赖及场景使用记录。停止场景默认只停止该场景独占并由它启动的托管实例；共用依赖和启动前就运行的服务保留，影响其他场景时明确列出并确认。外部数据库永不自动停止。
 - `down_service` 先检查依赖与所有权，仅移除本实例容器/网络，保留数据；不使用全局prune或删除孤立资源选项。
 - `plan_reset` 返回不可变 `ResetPlan { plan_id, target_id, instance_id, exact_resource_ids, database_claims, impact, fingerprint, expires_at }`，有效5分钟。用户输入服务名并确认准确资源后，后端携plan_id复核目标、ID、归属和依赖，再执行；前端确认不是唯一保护。
+- 变更前先持久化精确组件/镜像/挂载/代际恢复意图，部分 up 失败或应用重开后主动发现并核验实际容器；登记缺失不能被解释为已停止。失去执行者的旧操作转 RecoveryRequired，核验后才提供重试。
+- bind 数据在计划和执行时检查所有容器父/子目录交叠，命名卷同样核对实际消费者；删除前复核最后身份，替换或未知共享均拒绝。
 - 本地清理只针对catalog声明且位于实例边界内的真实目录、明确登记的自有卷。禁止顺着symlink越界，禁止按名称前缀批量删。执行清单化的容器/卷删除，不把宽泛 `down -v` 当所有权证明。
 - 数据库重置要求 `created_by_codeark=true`、registry和库内claim双重吻合、服务器指纹一致、独占且非系统/外部库；否则禁用整库删除。Temporal只处理其已claim双库；外部连接库即使有初始化授权也默认禁止整库重置。基础数据库重置要列出**全部**已登记使用者，不能承诺整实例重置还保留该实例其他库；存在外部/未知业务库时拒绝整实例重置，改用单服务清理或导出指引。
 - 原“停止并删除外部容器后接管”入口取消。提供只读观察、显式绑定、创建新托管实例三条路径；数据迁移使用逻辑导出/导入指南，并明确原数据不会自动出现在新实例。外部容器自动移除和自动恢复重建均不属于v1。
 
 ### 7.9 后端库、协议工具与兼容门禁
 
-依据[技术选型核验](../research/05-完整技术选型与服务制品核验.md)，候选后端为Tokio1.54.1、serde1.0.229/serde_json1.0.154、SQLx0.9.0、Reqwest0.13.5、sysinfo0.40.3、dirs7.0.0、uuid1.29.2、thiserror2.0.21、tracing0.1.44、secrecy0.10.3/zeroize1.9.1。编译候选Rust1.99.1；各版本存在性/声明MSRV已查，联合编译与依赖树未验，不提前写锁或创建源码。
+依据[技术选型核验](../research/05-完整技术选型与服务制品核验.md)，候选后端为Tokio1.54.1、serde1.0.229/serde_json1.0.154、SQLx0.9.0、Reqwest0.13.5、sysinfo0.40.3、dirs7.0.0、uuid1.29.2、thiserror2.0.21、tracing0.1.44、secrecy0.10.3/zeroize1.9.1。编译候选Rust1.99.1；各版本存在性/声明MSRV已查，当前锁定依赖已在本机联合编译；完整平台与真实服务结果按执行记录单独验收。
 
 SQLx关闭默认Any/SQLite/编译期查询宏，只启用MySQL/PG、Tokio及选定rustls；本地允许范围内的无TLS MySQL需要显式mysql-rsa以适配现有认证。Reqwest采用0.13的json/stream/rustls特性，SQLx使用同路线AWS-LC后端，验证依赖树无provider歧义及构建原生依赖；不用旧版本特性名拼凑。编译不连接业务库，运行凭据显式注入；健康探针不经过继承的公共HTTP代理，发行资源下载另使用受控网络配置，TLS不因方便被禁用。
 
@@ -168,7 +174,7 @@ SQLx关闭默认Any/SQLite/编译期查询宏，只启用MySQL/PG、Tokio及选�
 
 镜像保证器先解析ImageArtifactRef：registry走不可变manifest；原生重打包归档按设计01校验/加载并核对实际image ID及CPU，所有步骤加入operation journal、下载/加载超时、容量与错误分类；401表示本次认证失败，不能自动认定镜像不存在、删除服务或改为未登记镜像站。
 
-复杂协议工具为原生Java17短命镜像，按协议独立模块/classpath，统一受控JSON输入/ProbeResult输出，秘密经受限stdin/短期只读文件传递。候选SDK：Rocket gRPC5.2.2、Canal1.1.8、Seata1.8.0、XXL3.5.0、Nacos3.3.0、Sentinel1.8.10、Rabbit AMQP5.37.1、MinIO9.0.4、PG JDBC42.7.14/MySQL JDBC26.10.0；JRE/SDK/传递依赖/双架构按锁验证，不把镜像1.8.0.2当Seata Maven版本。用户只需Docker，工具镜像包含所需运行时，执行结束清理自有短命任务，不增加常驻中间件。
+复杂协议工具采用随包锁定的分模块Java17 JAR，在按架构锁定的原生JRE17镜像中作为短命任务运行，按协议独立模块/classpath，统一受控JSON输入/ProbeResult输出，秘密经受限stdin/短期只读文件传递。候选SDK：Rocket gRPC5.2.2、Canal1.1.8、Seata1.8.0、XXL3.5.0、Nacos3.3.0、Sentinel1.8.10、Rabbit AMQP5.37.1、MinIO9.0.4、PG JDBC42.7.14/MySQL JDBC26.10.0；JRE/SDK/传递依赖/双架构按锁验证，不把镜像1.8.0.2当Seata Maven版本。用户只需Docker，工具镜像包含所需运行时，执行结束清理自有短命任务，不增加常驻中间件。
 
 Temporal1.32.2与既定PG18.6复用关系保持。官方文档的PG12+ Visibility条件及列举的测试版本不能证明PG18已认证；Schema工具、双库、账号、cluster health、Namespace和保留数据重建必须实测，不为绕过失败另起PG16或降级现有数据。Kafka新UI、Rocket Dashboard8082及MinIO/XXL/ES-IK新制品均需更新对应探针/默认端口映射后验证，架构清单不代表功能已通过。
 
@@ -176,6 +182,6 @@ Temporal1.32.2与既定PG18.6复用关系保持。官方文档的PG12+ Visibilit
 
 唯一承接：[PRD 02](../prd/02-跨平台环境预检与服务自动化编排PRD.md) → [Plan 02](../plan/02-跨平台Docker探测与编排引擎实施计划.md)。先完成Redis闭环，再完成已认证MySQL依赖组和PG→Temporal，再扩展全量探针；最终范围仍为17套服务。
 
-必须覆盖每一步故障注入、已存在账号、部分DDL/种子、错误凭据、跨进程并发、远端/切换context、中文路径、数据库误指、外部库、共用场景、保留数据重建、恢复及重置竞态。源码/Mock通过不替代设计03的安装包发行验收。所有运行检查当前均未执行。
+必须覆盖每一步故障注入、已存在账号、部分DDL/种子、错误凭据、跨进程并发、远端/切换context、中文路径、数据库误指、外部库、共用场景、保留数据重建、恢复及重置竞态。源码/Mock通过不替代设计03的安装包发行验收。隔离Redis扩展闭环已有真实证据；其余运行矩阵未完成，精确范围见首阶段执行记录。
 
 [返回设计导航](00-设计导航.md)

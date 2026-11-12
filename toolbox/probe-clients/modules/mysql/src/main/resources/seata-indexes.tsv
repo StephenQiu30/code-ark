@@ -1,0 +1,11 @@
+global_table	PRIMARY	1	xid	0
+global_table	idx_status_gmt_modified	1	status	1
+global_table	idx_status_gmt_modified	2	gmt_modified	1
+global_table	idx_transaction_id	1	transaction_id	1
+branch_table	PRIMARY	1	branch_id	0
+branch_table	idx_xid	1	xid	1
+lock_table	PRIMARY	1	row_key	0
+lock_table	idx_status	1	status	1
+lock_table	idx_branch_id	1	branch_id	1
+lock_table	idx_xid	1	xid	1
+distributed_lock	PRIMARY	1	lock_key	0

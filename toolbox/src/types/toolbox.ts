@@ -1,0 +1,31 @@
+// Public DTOs are generated from Rust contracts.rs; never duplicate their shapes here.
+export type { ServiceCatalog } from "./generated/ServiceCatalog";
+export type { ServiceSpec } from "./generated/ServiceSpec";
+export type { SceneSpec } from "./generated/SceneSpec";
+export type { ServiceSnapshot } from "./generated/ServiceSnapshot";
+export type { ServicePhase } from "./generated/ServicePhase";
+export type { DashboardSnapshot } from "./generated/DashboardSnapshot";
+export type { OperationRecord } from "./generated/OperationRecord";
+export type { StepProgressEvent } from "./generated/StepProgressEvent";
+export type { StartRequest } from "./generated/StartRequest";
+export type { StopRequest } from "./generated/StopRequest";
+export type { ConnectionView } from "./generated/ConnectionView";
+export type { ConfigDraft } from "./generated/ConfigDraft";
+export type { ConfigDraftView } from "./generated/ConfigDraftView";
+export type { ResetPlan } from "./generated/ResetPlan";
+export type { ResetConfirmation } from "./generated/ResetConfirmation";
+export type { DiagnosticsPreview } from "./generated/DiagnosticsPreview";
+export type { DiagnosticsConfirmation } from "./generated/DiagnosticsConfirmation";
+export type { ExportResult } from "./generated/ExportResult";
+export type { GuideSpec } from "./generated/GuideSpec";
+export type { LogBatch } from "./generated/LogBatch";
+export type { LogAck } from "./generated/LogAck";
+export type { LogStreamRequest } from "./generated/LogStreamRequest";
+export type { LogStreamHandle } from "./generated/LogStreamHandle";
+export type { DatabaseBinding } from "./generated/DatabaseBinding";
+export type { DatabaseCandidate } from "./generated/DatabaseCandidate";
+export type { VerifyBindingRequest } from "./generated/VerifyBindingRequest";
+export type { BindingGrantPreview } from "./generated/BindingGrantPreview";
+export type { PreflightReport } from "./generated/PreflightReport";
+
+export type { LogStreamStateEvent } from "./generated/LogStreamStateEvent";

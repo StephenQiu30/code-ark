@@ -1,0 +1,14 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+  <parent><groupId>io.codeark</groupId><artifactId>protocol-probes</artifactId><version>1.0.0</version><relativePath>../../pom.xml</relativePath></parent>
+  <artifactId>mysql</artifactId>
+  <dependencies>
+    <dependency><groupId>io.codeark</groupId><artifactId>common</artifactId><version>1.0.0</version></dependency>
+    <dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><version>26.10.0</version></dependency>
+  </dependencies>
+  <build><finalName>probe</finalName><plugins><plugin>
+    <groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId>
+    <executions><execution><id>runtime-classpath</id><phase>package</phase><goals><goal>copy-dependencies</goal></goals>
+      <configuration><includeScope>runtime</includeScope><outputDirectory>${project.build.directory}/lib</outputDirectory><prependGroupId>true</prependGroupId></configuration>
+    </execution></executions>
+  </plugin></plugins></build>
+</project>

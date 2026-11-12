@@ -83,24 +83,38 @@ pub async fn run_preflight(
     effective: &EffectiveConfig,
     workspace: &Path,
     verified_owned_ports: &BTreeSet<(u16, String)>,
+    verified_owned_ids: &BTreeSet<String>,
 ) -> Result<PreflightReport, ToolboxError> {
     runner.verify_identity().await?;
     let info = runner.run_read(&["info", "--format", "{{json .}}"]).await?;
     let info: serde_json::Value =
         serde_json::from_slice(&info).map_err(|_| error("DockerOutputInvalid"))?;
-    let local_root = if cfg!(target_os = "linux") {
-        info["DockerRootDir"].as_str().map(Path::new)
-    } else {
-        None
-    };
-    let capacity = crate::storage_probe::capacity(workspace, local_root)?;
+    // A local socket can front a Desktop VM or proxy. Until the daemon's host namespace
+    // is positively identified, a host DockerRootDir never proves daemon free space.
+    let capacity = crate::storage_probe::capacity(workspace, None)?;
+    let stats = runner
+        .run_read(&[
+            "stats",
+            "--no-stream",
+            "--no-trunc",
+            "--format",
+            "{{json .}}",
+        ])
+        .await?;
+    let used = running_memory_bytes(
+        std::str::from_utf8(&stats).map_err(|_| error("DockerOutputInvalid"))?,
+        verified_owned_ids,
+    )?;
+    let available = info["MemTotal"]
+        .as_u64()
+        .ok_or_else(|| error("UnknownMemory"))?
+        .saturating_sub(used)
+        .saturating_sub(512 * 1024 * 1024);
     Ok(assess(
         service,
         effective,
         &capacity,
-        info["MemTotal"]
-            .as_u64()
-            .ok_or_else(|| error("UnknownMemory"))?,
+        available,
         verified_owned_ports,
     ))
 }
@@ -142,7 +156,14 @@ mod tests {
             .unwrap()
             .services
             .remove(0);
-        let tcp = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        // Reserve both protocols: a free TCP port says nothing about UDP occupancy.
+        let (tcp, udp) = (0..32)
+            .find_map(|_| {
+                let tcp = std::net::TcpListener::bind("127.0.0.1:0").ok()?;
+                let udp = std::net::UdpSocket::bind(tcp.local_addr().ok()?).ok()?;
+                Some((tcp, udp))
+            })
+            .expect("an isolated TCP/UDP pair");
         let port = tcp.local_addr().unwrap().port();
         let mut c = config();
         c.ports.push(PortMapping {
@@ -159,12 +180,99 @@ mod tests {
         };
         let r = assess(&s, &c, &capacity, 64 * 1024 * 1024 * 1024, &BTreeSet::new());
         assert!(r.issues.iter().any(|i| i.code == "PortConflict"));
-        c.ports[0].protocol = "udp".into();
+        let tcp_owned = BTreeSet::from([(port, "tcp".into())]);
         assert!(
-            !assess(&s, &c, &capacity, 64 * 1024 * 1024 * 1024, &BTreeSet::new())
+            !assess(&s, &c, &capacity, 64 * 1024 * 1024 * 1024, &tcp_owned)
                 .issues
                 .iter()
                 .any(|i| i.code == "PortConflict")
         );
+        c.ports[0].protocol = "udp".into();
+        assert!(
+            assess(&s, &c, &capacity, 64 * 1024 * 1024 * 1024, &tcp_owned)
+                .issues
+                .iter()
+                .any(|i| i.code == "PortConflict")
+        );
+        assert!(
+            !assess(
+                &s,
+                &c,
+                &capacity,
+                64 * 1024 * 1024 * 1024,
+                &BTreeSet::from([(port, "udp".into())])
+            )
+            .issues
+            .iter()
+            .any(|i| i.code == "PortConflict")
+        );
+        assert_eq!(udp.local_addr().unwrap().port(), port);
+    }
+}
+
+pub fn running_memory_bytes(stats: &str, owned: &BTreeSet<String>) -> Result<u64, ToolboxError> {
+    let mut total = 0u64;
+    let mut seen = BTreeSet::new();
+    for line in stats.lines().filter(|l| !l.trim().is_empty()) {
+        let value: serde_json::Value =
+            serde_json::from_str(line).map_err(|_| error("UnknownMemory"))?;
+        let id = value["ID"]
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| error("UnknownMemory"))?;
+        if !seen.insert(id.to_string()) {
+            return Err(error("UnknownMemory"));
+        }
+        if owned.contains(id) {
+            continue;
+        }
+        let used = value["MemUsage"]
+            .as_str()
+            .and_then(|s| s.split('/').next())
+            .ok_or_else(|| error("UnknownMemory"))?
+            .trim();
+        let at = used
+            .find(|c: char| !c.is_ascii_digit() && c != '.')
+            .ok_or_else(|| error("UnknownMemory"))?;
+        let amount = used[..at]
+            .parse::<f64>()
+            .map_err(|_| error("UnknownMemory"))?;
+        let unit = match used[at..].trim() {
+            "B" => 1f64,
+            "kB" => 1000.,
+            "MB" => 1e6,
+            "GB" => 1e9,
+            "TB" => 1e12,
+            "KiB" => 1024.,
+            "MiB" => 1048576.,
+            "GiB" => 1073741824.,
+            "TiB" => 1099511627776.,
+            _ => return Err(error("UnknownMemory")),
+        };
+        let bytes = (amount * unit).ceil();
+        if !bytes.is_finite() || bytes < 0. || bytes >= u64::MAX as f64 {
+            return Err(error("UnknownMemory"));
+        }
+        total = total
+            .checked_add(bytes as u64)
+            .ok_or_else(|| error("UnknownMemory"))?;
+    }
+    Ok(total)
+}
+#[cfg(test)]
+mod load_tests {
+    use super::*;
+    #[test]
+    fn active_container_memory_is_not_available_to_new_services() {
+        let stats = "{\"ID\":\"external\",\"MemUsage\":\"1.5GiB / 8GiB\"}\n{\"ID\":\"owned\",\"MemUsage\":\"512MiB / 8GiB\"}";
+        assert_eq!(
+            running_memory_bytes(stats, &BTreeSet::new()).unwrap(),
+            2 * 1024 * 1024 * 1024
+        );
+        assert_eq!(
+            running_memory_bytes(stats, &BTreeSet::from(["owned".into()])).unwrap(),
+            1536 * 1024 * 1024
+        );
+        assert!(running_memory_bytes("invalid-json", &BTreeSet::new()).is_err());
     }
 }

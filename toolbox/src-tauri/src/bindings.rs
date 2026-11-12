@@ -20,6 +20,9 @@ impl std::fmt::Debug for Credentials {
         f.write_str("Credentials([REDACTED])")
     }
 }
+pub fn server_fingerprint(engine: &str, daemon: &str, id: &str) -> String {
+    format!("{engine}:{daemon}:{}", id.trim())
+}
 pub struct VerifiedBinding {
     pub(crate) binding: DatabaseBinding,
 }
@@ -184,11 +187,15 @@ impl SqlConnection {
             .map_err(|_| error("CredentialMismatch"))
     }
     pub(crate) async fn scalar(&mut self, sql: &'static str) -> Result<String, ToolboxError> {
-        let result = match self {
-            Self::Mysql(c) => sqlx::query_scalar::<_, String>(sql).fetch_one(c).await,
-            Self::Postgres(c) => sqlx::query_scalar::<_, String>(sql).fetch_one(c).await,
-        };
-        result.map_err(|_| error("DatabaseQueryFailed"))
+        tokio::time::timeout(Duration::from_secs(5), async {
+            match self {
+                Self::Mysql(c) => sqlx::query_scalar::<_, String>(sql).fetch_one(c).await,
+                Self::Postgres(c) => sqlx::query_scalar::<_, String>(sql).fetch_one(c).await,
+            }
+        })
+        .await
+        .map_err(|_| error("TimedOut"))?
+        .map_err(|_| error("DatabaseQueryFailed"))
     }
 }
 pub(crate) async fn network_query(
@@ -204,6 +211,15 @@ pub(crate) async fn network_query(
         .cache_root
         .join(format!("sql-client-{}", random_id()?));
     private_dir(&temporary)?;
+    let nonce = random_id()?;
+    let mut cleanup = SqlClientCleanup {
+        runner: DockerRunner {
+            target: runner.target.clone(),
+        },
+        nonce: nonce.clone(),
+        directory: temporary.clone(),
+        started: false,
+    };
     let env = temporary.join("client.env");
     if credentials.password.contains(['\n', '\r', '\0']) {
         return Err(error("UnsupportedCredentialValue"));
@@ -226,7 +242,7 @@ pub(crate) async fn network_query(
         "--name".into(),
         name.into(),
         "--network".into(),
-        binding.network_name.clone().into(),
+        format!("container:{}", binding.container_id).into(),
         "--env-file".into(),
         env.into_os_string(),
         "--mount".into(),
@@ -237,6 +253,8 @@ pub(crate) async fn network_query(
         .into(),
         "--label".into(),
         "io.codeark.role=sql-probe".into(),
+        "--label".into(),
+        format!("io.codeark.sql-owner={nonce}").into(),
         image.runtime_reference.into(),
     ];
     if binding.engine == "pgsql" {
@@ -245,7 +263,8 @@ pub(crate) async fn network_query(
             "--no-psqlrc".into(),
             "--tuples-only".into(),
             "--no-align".into(),
-            format!("--host={}", binding.network_alias).into(),
+            "--set=ON_ERROR_STOP=1".into(),
+            "--host=127.0.0.1".into(),
             format!("--port={}", binding.container_port).into(),
             format!("--username={}", credentials.username).into(),
             "--dbname=postgres".into(),
@@ -255,17 +274,19 @@ pub(crate) async fn network_query(
         args.extend([
             "mysql".into(),
             "--batch".into(),
+            "--raw".into(),
             "--skip-column-names".into(),
             "--connect-timeout=5".into(),
-            format!("--host={}", binding.network_alias).into(),
+            "--host=127.0.0.1".into(),
             format!("--port={}", binding.container_port).into(),
             format!("--user={}", credentials.username).into(),
             "--execute=source /run/codeark/query.sql".into(),
         ]);
     }
     runner.verify_identity().await?;
+    cleanup.started = true;
     let result = runner.run_args(&args, Duration::from_secs(30)).await;
-    let _ = std::fs::remove_dir_all(&temporary);
+    cleanup.finish().await?;
     let result = result.map_err(|_| error("DatabaseQueryFailed"))?;
     String::from_utf8(result)
         .map(|s| s.trim().to_owned())
@@ -327,7 +348,7 @@ pub async fn verify_binding(
     };
     let mut verified = binding.clone();
     verified.server_fingerprint = fingerprint
-        .map(|id| format!("{}:{}:{id}", binding.engine, runner.target.daemon_id))
+        .map(|id| server_fingerprint(&binding.engine, &runner.target.daemon_id, &id))
         .unwrap_or_default();
     if !binding.server_fingerprint.is_empty()
         && binding.server_fingerprint != verified.server_fingerprint
@@ -532,5 +553,107 @@ mod ownership_tests {
         let mut wrong_record = record;
         wrong_record.container_id = "old-container-id".into();
         assert!(verify_ownership(&json, &wrong_record, &target).is_err());
+    }
+}
+
+struct SqlClientCleanup {
+    runner: DockerRunner,
+    nonce: String,
+    directory: std::path::PathBuf,
+    started: bool,
+}
+impl SqlClientCleanup {
+    async fn finish(&mut self) -> Result<(), ToolboxError> {
+        if self.nonce.is_empty() {
+            return Ok(());
+        }
+        let result = if self.started {
+            tokio::time::timeout(Duration::from_secs(15), async {
+                self.runner.verify_identity().await?;
+                let filter = format!("label=io.codeark.sql-owner={}", self.nonce);
+                let raw = self
+                    .runner
+                    .run_read(&[
+                        "ps",
+                        "-aq",
+                        "--no-trunc",
+                        "--filter",
+                        &filter,
+                        "--filter",
+                        "label=io.codeark.role=sql-probe",
+                    ])
+                    .await?;
+                let ids = std::str::from_utf8(&raw).map_err(|_| error("DockerOutputInvalid"))?;
+                for id in ids.lines() {
+                    if !crate::probes::valid_id(id) {
+                        return Err(error("CleanupPending"));
+                    }
+                    let raw = self
+                        .runner
+                        .run_read(&[
+                            "container",
+                            "inspect",
+                            "--format",
+                            "{{json .Config.Labels}}",
+                            id,
+                        ])
+                        .await?;
+                    let labels: Value =
+                        serde_json::from_slice(&raw).map_err(|_| error("DockerOutputInvalid"))?;
+                    if labels["io.codeark.sql-owner"] != self.nonce
+                        || labels["io.codeark.role"] != "sql-probe"
+                    {
+                        return Err(error("OwnershipConflict"));
+                    }
+                    self.runner.verify_identity().await?;
+                    self.runner.run_read(&["container", "rm", "-f", id]).await?;
+                }
+                Ok::<(), ToolboxError>(())
+            })
+            .await
+            .unwrap_or_else(|_| Err(error("CleanupPending")))
+        } else {
+            Ok(())
+        };
+        if result.is_err()
+            && let Some(parent) = self.directory.parent()
+        {
+            let receipt = serde_json::json!({"schemaVersion":1,"targetId":self.runner.target.target_id,"daemonId":self.runner.target.daemon_id,"owner":self.nonce,"role":"sql-probe","status":"CleanupPending"});
+            let _ = atomic_write(
+                &parent.join(format!("cleanup-{}.json", self.nonce)),
+                &serde_json::to_vec(&receipt).map_err(|_| error("StateWriteFailed"))?,
+            );
+        }
+        if crate::workspace::reject_links(&self.directory).is_ok() {
+            let _ = std::fs::remove_dir_all(&self.directory);
+        }
+        self.nonce.clear();
+        result
+    }
+}
+impl Drop for SqlClientCleanup {
+    fn drop(&mut self) {
+        if self.nonce.is_empty() {
+            return;
+        }
+        if !self.started {
+            if crate::workspace::reject_links(&self.directory).is_ok() {
+                let _ = std::fs::remove_dir_all(&self.directory);
+            }
+            return;
+        }
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            let mut owned = Self {
+                runner: DockerRunner {
+                    target: self.runner.target.clone(),
+                },
+                nonce: std::mem::take(&mut self.nonce),
+                directory: self.directory.clone(),
+                started: self.started,
+            };
+            handle.spawn(async move {
+                let _ = owned.finish().await;
+            });
+        }
     }
 }

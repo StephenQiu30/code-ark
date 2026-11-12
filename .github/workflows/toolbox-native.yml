@@ -1,0 +1,133 @@
+name: Toolbox native candidate builds
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: toolbox-native-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source:
+    uses: ./.github/workflows/toolbox-ci.yml
+  native-candidate:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: mac-arm64
+            runner: codeark-mac-arm64
+            platform: darwin
+            arch: arm64
+            triple: aarch64-apple-darwin
+            bundles: dmg
+          - target: mac-x64
+            runner: codeark-mac-x64
+            platform: darwin
+            arch: x64
+            triple: x86_64-apple-darwin
+            bundles: dmg
+          - target: win-x64
+            runner: codeark-win11-x64
+            platform: win32
+            arch: x64
+            triple: x86_64-pc-windows-msvc
+            bundles: nsis
+          - target: linux-x64
+            runner: codeark-ubuntu2204-x64
+            platform: linux
+            arch: x64
+            triple: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
+    runs-on: [self-hosted, codeark-native-build, "${{ matrix.runner }}"]
+    timeout-minutes: 90
+    env:
+      EXPECTED_PLATFORM: ${{ matrix.platform }}
+      EXPECTED_ARCH: ${{ matrix.arch }}
+      CODEARK_TARGET: ${{ matrix.target }}
+      CODEARK_TRIPLE: ${{ matrix.triple }}
+      CODEARK_BUNDLES: ${{ matrix.bundles }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.3
+      - name: Verify actual native OS/CPU and build baseline
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import os from 'node:os';
+          if(process.platform!==process.env.EXPECTED_PLATFORM||process.arch!==process.env.EXPECTED_ARCH)throw Error('NativeMachineMismatch');
+          if(process.platform==='linux'){const release=readFileSync('/etc/os-release','utf8');if(!/^ID=ubuntu$/m.test(release)||!/^VERSION_ID="22\.04"$/m.test(release))throw Error('BuildOnOldestUbuntuBaselineRequired');}
+          if(process.platform==='win32'&&Number(os.release().split('.')[2])<22000)throw Error('Windows11Required');
+          if(process.platform==='darwin'&&Number(os.release().split('.')[0])<23)throw Error('MacOS14BaselineRequired');
+          console.log(JSON.stringify({platform:process.platform,arch:process.arch,node:process.version,acceptance:'build-only; native runtime pending'}));
+          JS
+      - name: Install locked build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global pnpm@12.18.0
+          rustup toolchain install 1.99.1 --profile minimal
+          rustup default 1.99.1
+          rustup target add "$CODEARK_TRIPLE"
+          pnpm --dir toolbox install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: toolbox-protocol-clients-${{ github.sha }}
+          path: toolbox/probe-clients/target/bundle/
+      - name: Verify downloaded protocol artifacts against the reviewed lock
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync,readdirSync} from 'node:fs';
+          import {join,relative} from 'node:path';
+          import {createHash} from 'node:crypto';
+          const root='toolbox/probe-clients/target/bundle';
+          const lock=JSON.parse(readFileSync('toolbox/probe-clients/artifacts.lock.json','utf8'));
+          const expected=new Set();
+          for(const [module,files]of Object.entries(lock))for(const [file,sha]of Object.entries(files)){const name=`${module}/${file}`;expected.add(name);if(createHash('sha256').update(readFileSync(join(root,name))).digest('hex')!==sha)throw Error('ProtocolArtifactMismatch');}
+          const walk=directory=>readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?walk(join(directory,entry.name)):[join(directory,entry.name)]);
+          if(walk(root).some(file=>!expected.has(relative(root,file).split('\\').join('/'))))throw Error('UnexpectedProtocolArtifact');
+          JS
+      - name: Candidate image and guide gates (pending archives fail closed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node toolbox/scripts/sync-blueprints.mjs
+          node toolbox/scripts/verify-blueprints.mjs --mode candidate --target "$CODEARK_TARGET"
+          node toolbox/scripts/verify-guides.mjs --mode candidate
+      - name: Build native package using canonical preparation and candidate gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir toolbox exec tauri build --ci --target "$CODEARK_TRIPLE" --bundles "$CODEARK_BUNDLES"
+      - name: Require package formats and write immutable build receipt
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readdirSync,readFileSync,writeFileSync,mkdirSync,copyFileSync} from 'node:fs';
+          import {join} from 'node:path';
+          import {createHash} from 'node:crypto';
+          import os from 'node:os';
+          const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+          const source=join('toolbox/src-tauri/target',process.env.CODEARK_TRIPLE,'release/bundle');
+          const walk=directory=>readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?walk(join(directory,entry.name)):[join(directory,entry.name)]);
+          const files=walk(source).filter(file=>/\.(dmg|exe|deb|AppImage)$/.test(file));
+          const wanted={darwin:['.dmg'],win32:['.exe'],linux:['.deb','.AppImage']}[process.platform];
+          if(wanted.some(suffix=>!files.some(file=>file.endsWith(suffix))))throw Error('MissingTargetArtifact');
+          const output=join('toolbox/candidate-artifacts',process.env.CODEARK_TARGET);mkdirSync(output,{recursive:true});
+          const artifacts=files.map((file,index)=>{const bytes=readFileSync(file);const name=`${index}-${file.split(/[\\/]/).at(-1)}`;copyFileSync(file,join(output,name));return{name,sha256:digest(bytes),bytes:bytes.length};});
+          const receipt={schemaVersion:1,targetId:process.env.CODEARK_TARGET,sourceCommit:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,osRelease:os.release(),locks:{pnpm:digest(readFileSync('toolbox/pnpm-lock.yaml')),cargo:digest(readFileSync('toolbox/src-tauri/Cargo.lock')),images:digest(readFileSync('toolbox/catalog/images.lock.json'))},artifacts,buildStatus:'passed',signatureStatus:'not-configured',runtimeAcceptance:'pending',installerAcceptance:'pending',sdkExamplesAcceptance:'pending'};
+          writeFileSync(join(output,'build-receipt.json'),JSON.stringify(receipt,null,2)+'\n');
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: toolbox-candidate-${{ matrix.target }}-${{ github.sha }}
+          path: toolbox/candidate-artifacts/${{ matrix.target }}
+          if-no-files-found: error
+      - name: Preserve independent native acceptance gate
+        shell: bash
+        run: |
+          printf '%s\n' 'Candidate build only. Missing self-hosted runners remain queued, never passed. Run final packages on macOS arm64/x64, Windows11 and Ubuntu22.04/24.04 separately; preserve the exact candidate SHA and submit external acceptance before release.' >> "$GITHUB_STEP_SUMMARY"

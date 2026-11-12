@@ -1,0 +1,7 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+  <parent><groupId>io.codeark</groupId><artifactId>protocol-probes</artifactId><version>1.0.0</version><relativePath>../pom.xml</relativePath></parent>
+  <artifactId>common</artifactId>
+  <dependencies>
+    <dependency><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId><version>2.13.2</version></dependency>
+  </dependencies>
+</project>

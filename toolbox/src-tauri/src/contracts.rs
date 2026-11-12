@@ -138,3 +138,88 @@ dto!(PreflightReport { issues:Vec<PreflightIssue>, capacity:StorageCapacity, #[t
 
 dto!(InitializationGrant { target_id:String,server_fingerprint:String,allowed_databases:Vec<String>,allowed_accounts:Vec<String>,operations:Vec<String>,#[ts(type="number")] confirmed_at:u64 });
 dto!(DatabaseClaim {claim_id:String,binding_id:String,daemon_id:String,server_fingerprint:String,database_names:Vec<String>,owner_instance_id:String,created_by_codeark:bool,ddl_version:String,ddl_checksum:String,status:String});
+
+dto!(ServiceSnapshot {service_id:String,instance_id:Option<String>,phase:ServicePhase,ownership:String,desired_generation:Option<String>,applied_generation:Option<String>,last_ready_generation:Option<String>,message_code:Option<String>});
+dto!(OperationStep {step_id:String,phase:String,message_code:String,#[ts(type="number")] elapsed_ms:u64,#[ts(type="number | null")] deadline_at:Option<u64>});
+dto!(OperationRecord {operation_id:String,target_id:String,instance_ids:Vec<String>,request_digest:String,desired_generation:Option<String>,applied_generation:Option<String>,last_ready_generation:Option<String>,phase:String,steps:Vec<OperationStep>,created_resource_ids:Vec<String>,error_code:Option<String>,allowed_actions:Vec<String>,#[ts(type="number")] created_at:u64,#[ts(type="number")] seq:u64});
+dto!(DashboardSnapshot {workspace:WorkspaceIdentity,target:Option<DockerTarget>,services:Vec<ServiceSnapshot>,operations:Vec<OperationRecord>,bindings:Vec<DatabaseBinding>,#[ts(type="number")] sampled_at:u64,environment_error:Option<String>});
+dto!(StartRequest {workspace_id:String,target_id:String,service_ids:Vec<String>,scene_id:Option<String>,accept_unknown_capacity:bool});
+dto!(StopRequest {workspace_id:String,target_id:String,instance_ids:Vec<String>,scene_id:Option<String>});
+dto!(CredentialHandle {
+    handle: String,
+    label: String,
+    sensitive: bool
+});
+dto!(ConnectionSnippet {
+    label: String,
+    body: String
+});
+dto!(ConnectionView {instance_id:String,applied_generation:String,host_endpoints:Vec<Endpoint>,container_endpoints:Vec<Endpoint>,required_networks:Vec<String>,credential_handles:Vec<CredentialHandle>,snippets:Vec<ConnectionSnippet>});
+dto!(DraftField {key:String,value:Option<String>,sensitive:bool,editable:bool});
+dto!(ConfigDraftView {draft_id:String,instance_id:String,base_generation:String,fields:Vec<DraftField>,validation_errors:Vec<String>,apply_impact:Vec<String>,requires_rebuild:bool,preflight:Option<PreflightReport>});
+#[derive(Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/types/generated/")]
+pub struct ConfigDraft {
+    pub draft_id: String,
+    pub instance_id: String,
+    pub base_generation: String,
+    pub values: std::collections::BTreeMap<String, String>,
+}
+dto!(ResetPlan {plan_id:String,target_id:String,instance_id:String,service_id:String,exact_resource_ids:Vec<String>,database_claims:Vec<DatabaseClaim>,impact:Vec<String>,fingerprint:String,#[ts(type="number")] expires_at:u64});
+dto!(ResetConfirmation {
+    plan_id: String,
+    fingerprint: String,
+    typed_service_id: String
+});
+dto!(DiagnosticsPreview {preview_id:String,sections:std::collections::BTreeMap<String,String>,excluded_fields:Vec<String>,risk_flags:Vec<String>});
+dto!(DiagnosticsConfirmation {preview_id:String,excluded_sections:Vec<String>,include_logs:bool});
+dto!(ExportResult {
+    export_id: String,
+    path: String
+});
+dto!(GuideSpec {guide_id:String,service_id:Option<String>,title:String,client_family:String,locked_client_version:Option<String>,required_tools:Vec<String>,source_files:Vec<String>,invocation:String,expected_output:String,cleanup:String,scope_notice:String,status:String});
+dto!(LogStreamRequest {
+    instance_id: String,
+    tail_lines: u32
+});
+dto!(LogBatch {stream_id:String,#[ts(type="number")] batch_id:u64,#[ts(type="number")] from_seq:u64,lines:Vec<String>,#[ts(type="number")] dropped_count:u64});
+dto!(LogAck {
+    stream_id: String,
+    #[ts(type = "number")]
+    batch_id: u64
+});
+dto!(LogStreamHandle {
+    stream_id: String,
+    phase: String
+});
+dto!(DatabaseCandidate {candidate_id:String,container_id:String,name:String,engine:String,network_names:Vec<String>,host_endpoints:Vec<Endpoint>});
+#[derive(Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/types/generated/")]
+pub struct VerifyBindingRequest {
+    pub candidate_id: String,
+    pub username: String,
+    pub password: String,
+    pub allowed_databases: Vec<String>,
+}
+dto!(BindingGrantPreview {
+    preview_id: String,
+    binding_id: String,
+    service_id: String,
+    grant: InitializationGrant,
+    scope_notice: String
+});
+
+dto!(ProbeResult {probe_id:String,component_id:String,success:bool,error_code:Option<String>,warning_code:Option<String>,#[ts(type="number")] sampled_at:u64});
+dto!(StepProgressEvent {
+    operation_id: String,
+    #[ts(type = "number")]
+    seq: u64,
+    service_id: String,
+    step_id: String,
+    phase: String,
+    message_code: String
+});
+
+dto!(LogStreamStateEvent {stream_id:String,phase:String,message_code:Option<String>});

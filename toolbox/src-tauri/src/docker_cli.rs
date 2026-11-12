@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    io::{AsyncRead, AsyncReadExt},
+    io::{AsyncRead, AsyncReadExt, AsyncWriteExt},
     process::Command,
 };
 
@@ -19,11 +19,30 @@ pub struct DockerRunner {
 fn command(cli: &Path, args: &[OsString]) -> Command {
     let mut cmd = Command::new(cli);
     cmd.args(args).stdin(Stdio::null()).kill_on_drop(true);
-    for (key, _) in std::env::vars_os() {
-        let name = key.to_string_lossy();
-        if name.starts_with("COMPOSE_") || (name.starts_with("DOCKER_") && name != "DOCKER_CONFIG")
-        {
-            cmd.env_remove(key);
+    cmd.env_clear();
+    for (key, value) in std::env::vars_os() {
+        let name = key.to_string_lossy().to_ascii_uppercase();
+        if matches!(
+            name.as_str(),
+            "HOME"
+                | "PATH"
+                | "DOCKER_CONFIG"
+                | "SSH_AUTH_SOCK"
+                | "XDG_RUNTIME_DIR"
+                | "DBUS_SESSION_BUS_ADDRESS"
+                | "LANG"
+                | "LC_ALL"
+                | "TMPDIR"
+                | "TMP"
+                | "TEMP"
+                | "USERPROFILE"
+                | "APPDATA"
+                | "LOCALAPPDATA"
+                | "SYSTEMROOT"
+                | "WINDIR"
+                | "PATHEXT"
+        ) {
+            cmd.env(key, value);
         }
     }
     for key in [
@@ -36,6 +55,8 @@ fn command(cli: &Path, args: &[OsString]) -> Command {
     ] {
         cmd.env_remove(key);
     }
+    #[cfg(unix)]
+    cmd.process_group(0);
     #[cfg(windows)]
     {
         cmd.creation_flags(0x08000000);
@@ -54,16 +75,69 @@ async fn read_bounded(reader: impl AsyncRead + Unpin) -> Result<Vec<u8>, Toolbox
     }
     Ok(bytes)
 }
-pub(crate) async fn invoke_cli(
+// Only an ID spawned into our fresh Unix process group is ever signalled.
+// Windows currently retains leader kill_on_drop; JobObject tree cleanup is
+// pending native verification and must not be advertised as equivalent.
+struct OwnedProcessGroup {
+    #[cfg(unix)]
+    id: Option<i32>,
+}
+impl OwnedProcessGroup {
+    fn new(_child: &tokio::process::Child) -> Self {
+        Self {
+            #[cfg(unix)]
+            id: _child
+                .id()
+                .and_then(|id| i32::try_from(id).ok())
+                .filter(|id| *id > 0),
+        }
+    }
+    fn disarm(&mut self) {
+        #[cfg(unix)]
+        {
+            self.id = None;
+        }
+    }
+    fn terminate(&mut self) {
+        #[cfg(unix)]
+        if let Some(id) = self.id.take() {
+            // command() sets process_group(0), so this is precisely our child
+            // and its descendants, never the caller's or a global Docker group.
+            unsafe {
+                libc::kill(-id, libc::SIGKILL);
+            }
+        }
+    }
+}
+impl Drop for OwnedProcessGroup {
+    fn drop(&mut self) {
+        self.terminate();
+    }
+}
+async fn invoke_cli_capture(
     cli: &Path,
     args: &[OsString],
+    input: Option<&[u8]>,
     deadline: Duration,
+    include_stderr: bool,
 ) -> Result<Vec<u8>, ToolboxError> {
+    if input.is_some_and(|input| input.len() > 128 * 1024) {
+        return Err(error("InputTooLarge"));
+    }
     let mut child = command(cli, args)
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|_| error("DockerMissing"))?;
+    // This guard is declared after child, so cancellation/drop kills the group
+    // while the leader is still owned and has not been reaped by Child::drop.
+    let mut group = OwnedProcessGroup::new(&child);
+    let stdin = child.stdin.take();
     let stdout = child
         .stdout
         .take()
@@ -73,28 +147,66 @@ pub(crate) async fn invoke_cli(
         .take()
         .ok_or_else(|| error("DockerOutputUnavailable"))?;
     let result = tokio::time::timeout(deadline, async {
-        let (output, _stderr) = tokio::try_join!(read_bounded(stdout), read_bounded(stderr))?;
+        let write = async {
+            if let Some(input) = input {
+                let mut stdin = stdin.ok_or_else(|| error("DockerInputUnavailable"))?;
+                stdin
+                    .write_all(input)
+                    .await
+                    .map_err(|_| error("DockerInputUnavailable"))?;
+                stdin
+                    .shutdown()
+                    .await
+                    .map_err(|_| error("DockerInputUnavailable"))?;
+            }
+            Ok(())
+        };
+        let (_, mut output, errors) =
+            tokio::try_join!(write, read_bounded(stdout), read_bounded(stderr))?;
         let status = child
             .wait()
             .await
             .map_err(|_| error("DockerCommandFailed"))?;
+        // No pending process work remains after normal completion. Disarm
+        // immediately after reaping, before the PID could ever be reused.
+        group.disarm();
         if !status.success() {
             return Err(error("DockerCommandFailed"));
+        }
+        if include_stderr {
+            let separator =
+                usize::from(!output.is_empty() && !errors.is_empty() && !output.ends_with(b"\n"));
+            if output.len() + errors.len() + separator > 2 * 1024 * 1024 {
+                return Err(error("DockerOutputTooLarge"));
+            }
+            if separator != 0 {
+                output.push(b'\n');
+            }
+            output.extend_from_slice(&errors);
         }
         Ok(output)
     })
     .await;
     match result {
-        Ok(Ok(bytes)) => Ok(bytes),
-        Ok(Err(e)) => {
+        Ok(Ok(output)) => Ok(output),
+        Ok(Err(error)) => {
+            group.terminate();
             let _ = child.kill().await;
-            Err(e)
+            Err(error)
         }
         Err(_) => {
+            group.terminate();
             let _ = child.kill().await;
             Err(error("TimedOut"))
         }
     }
+}
+pub(crate) async fn invoke_cli(
+    cli: &Path,
+    args: &[OsString],
+    deadline: Duration,
+) -> Result<Vec<u8>, ToolboxError> {
+    invoke_cli_capture(cli, args, None, deadline, false).await
 }
 fn args(values: &[&str]) -> Vec<OsString> {
     values.iter().map(OsString::from).collect()
@@ -424,9 +536,11 @@ mod tests {
             "COMPOSE_PROJECT_NAME",
             "COMPOSE_ENV_FILES",
         ] {
+            // env_clear omits inherited removals from get_envs; absence is also safe.
             assert!(
-                vars.iter()
-                    .any(|(name, value)| *name == OsStr::new(key) && value.is_none())
+                !vars
+                    .iter()
+                    .any(|(name, value)| *name == OsStr::new(key) && value.is_some())
             );
         }
     }
@@ -485,6 +599,345 @@ if [ "$3" = "info" ]; then printf '%s' '{"ID":"original","OSType":"linux","Archi
         assert_eq!(
             runner.verify_identity().await.unwrap_err().code,
             "TargetChanged"
+        );
+    }
+}
+
+pub(crate) async fn invoke_cli_input(
+    cli: &Path,
+    args: &[OsString],
+    input: &[u8],
+    deadline: Duration,
+) -> Result<Vec<u8>, ToolboxError> {
+    invoke_cli_capture(cli, args, Some(input), deadline, false).await
+}
+impl DockerRunner {
+    #[cfg_attr(not(feature = "desktop"), allow(dead_code))]
+    pub(crate) async fn container_logs(
+        &self,
+        proof: &crate::bindings::VerifiedOwnedContainer,
+        tail: u32,
+        since: Option<&str>,
+    ) -> Result<Vec<u8>, ToolboxError> {
+        if proof.record.target_id != self.target.target_id
+            || proof.record.daemon_id != self.target.daemon_id
+            || proof.container_id().len() != 64
+            || !proof
+                .container_id()
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+        {
+            return Err(error("OwnershipConflict"));
+        }
+        if tail > 2000 {
+            return Err(error("InvalidLogLimit"));
+        }
+        if since.is_some_and(|value| {
+            value.is_empty()
+                || value.len() > 64
+                || !value
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || b"-:+.TZ".contains(&b))
+        }) {
+            return Err(error("InvalidLogCursor"));
+        }
+        tokio::time::timeout(Duration::from_secs(15), async {
+            self.verify_identity().await?;
+            let mut values: Vec<OsString> = vec![
+                "--context".into(),
+                self.target.context_name.clone().into(),
+                "container".into(),
+                "logs".into(),
+                "--timestamps".into(),
+                "--tail".into(),
+                tail.to_string().into(),
+            ];
+            if let Some(since) = since {
+                values.extend(["--since".into(), since.into()]);
+            }
+            values.extend(["--".into(), proof.container_id().into()]);
+            // Each pipe is bounded by read_bounded; merged total is also 2 MiB.
+            // Failure diagnostics are deliberately discarded and expose only codes.
+            invoke_cli_capture(
+                Path::new(&self.target.cli_path),
+                &values,
+                None,
+                Duration::from_secs(15),
+                true,
+            )
+            .await
+        })
+        .await
+        .map_err(|_| error("TimedOut"))?
+    }
+    pub(crate) async fn run_probe_input(
+        &self,
+        values: &[OsString],
+        input: &[u8],
+        deadline: Duration,
+    ) -> Result<Vec<u8>, ToolboxError> {
+        self.verify_identity().await?;
+        let mut args = vec!["--context".into(), self.target.context_name.clone().into()];
+        args.extend_from_slice(values);
+        invoke_cli_input(Path::new(&self.target.cli_path), &args, input, deadline).await
+    }
+}
+#[cfg(all(test, unix))]
+mod stdin_tests {
+    use super::*;
+    #[tokio::test]
+    async fn bounded_stdin_is_delivered_without_shell_or_secret_arguments() {
+        let root = tempfile::tempdir().unwrap();
+        let program = root.path().join("fake docker");
+        std::fs::write(&program, "#!/bin/sh\ncat\n").unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(
+            invoke_cli_input(
+                &program,
+                &[],
+                b"private-test-payload",
+                Duration::from_secs(2)
+            )
+            .await
+            .unwrap(),
+            b"private-test-payload"
+        );
+        assert_eq!(
+            invoke_cli_input(
+                &program,
+                &[],
+                &vec![0; 128 * 1024 + 1],
+                Duration::from_secs(2)
+            )
+            .await
+            .unwrap_err()
+            .code,
+            "InputTooLarge"
+        );
+    }
+}
+#[cfg(all(test, unix))]
+mod environment_tests {
+    use super::*;
+    #[tokio::test]
+    async fn child_environment_does_not_leak_unlisted_compose_variables() {
+        let out = command(Path::new("/usr/bin/env"), &[])
+            .output()
+            .await
+            .unwrap();
+        let text = String::from_utf8(out.stdout).unwrap();
+        for line in text.lines() {
+            let key = line.split_once('=').unwrap().0;
+            assert!(
+                matches!(
+                    key,
+                    "HOME"
+                        | "PATH"
+                        | "DOCKER_CONFIG"
+                        | "SSH_AUTH_SOCK"
+                        | "XDG_RUNTIME_DIR"
+                        | "DBUS_SESSION_BUS_ADDRESS"
+                        | "LANG"
+                        | "LC_ALL"
+                        | "TMPDIR"
+                        | "TMP"
+                        | "TEMP"
+                ),
+                "unexpected child environment key {key}"
+            );
+        }
+    }
+}
+
+#[cfg(all(test, unix))]
+mod process_group_tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+    fn program(root: &Path) -> PathBuf {
+        let cli = root.join("owned cli");
+        std::fs::write(&cli,format!("#!/bin/sh\n(sh -c 'printf started > \"{}/started\"; sleep 1.5; printf continued > \"{}/escaped\"') &\nwait\n",root.display(),root.display())).unwrap();
+        std::fs::set_permissions(&cli, std::fs::Permissions::from_mode(0o700)).unwrap();
+        cli
+    }
+    #[tokio::test]
+    async fn timeout_kills_the_owned_plugin_process_group() {
+        let root = tempfile::tempdir().unwrap();
+        let cli = program(root.path());
+        assert_eq!(
+            invoke_cli(&cli, &[], Duration::from_millis(750))
+                .await
+                .unwrap_err()
+                .code,
+            "TimedOut"
+        );
+        assert!(root.path().join("started").exists());
+        tokio::time::sleep(Duration::from_millis(1700)).await;
+        assert!(
+            !root.path().join("escaped").exists(),
+            "the CLI's child plugin must not continue after timeout"
+        );
+    }
+    #[tokio::test]
+    async fn aborting_a_stdin_cli_future_kills_its_owned_plugin_group() {
+        let root = tempfile::tempdir().unwrap();
+        let cli = program(root.path());
+        let job = tokio::spawn(async move {
+            invoke_cli_input(&cli, &[], b"test", Duration::from_secs(5)).await
+        });
+        for _ in 0..100 {
+            if root.path().join("started").exists() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert!(root.path().join("started").exists());
+        job.abort();
+        let _ = job.await;
+        tokio::time::sleep(Duration::from_millis(1700)).await;
+        assert!(
+            !root.path().join("escaped").exists(),
+            "dropping the future must kill its descendants"
+        );
+    }
+    #[tokio::test]
+    async fn ordinary_cli_output_does_not_include_stderr() {
+        let root = tempfile::tempdir().unwrap();
+        let cli = root.path().join("cli");
+        std::fs::write(&cli, "#!/bin/sh\nprintf stdout; printf stderr >&2\n").unwrap();
+        std::fs::set_permissions(&cli, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(
+            invoke_cli(&cli, &[], Duration::from_secs(2)).await.unwrap(),
+            b"stdout"
+        );
+    }
+}
+
+#[cfg(all(test, unix))]
+mod container_log_tests {
+    use super::*;
+    use crate::bindings::{OwnedContainerRecord, VerifiedOwnedContainer, verify_ownership};
+    use std::os::unix::fs::PermissionsExt;
+    fn fixture(root: &Path, body: &str) -> (DockerRunner, VerifiedOwnedContainer) {
+        let cli = root.join("log cli");
+        let cid = "c".repeat(64);
+        let source = format!(
+            "#!/bin/sh\nif [ \"$3\" = info ]; then printf '%s' '{{\"ID\":\"daemon\",\"OSType\":\"linux\"}}'; elif [ \"$3\" = context ]; then printf '%s' '[{{\"Endpoints\":{{\"docker\":{{\"Host\":\"unix:///fixture\"}}}}}}]'; else\n{body}\nfi\n"
+        );
+        std::fs::write(&cli, source).unwrap();
+        std::fs::set_permissions(&cli, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let target = DockerTarget {
+            target_id: "target".into(),
+            daemon_id: "daemon".into(),
+            cli_path: cli.to_str().unwrap().into(),
+            context_name: "local-fixture".into(),
+            endpoint_kind: "unix".into(),
+            os_type: "linux".into(),
+            architecture: "arm64".into(),
+        };
+        let record = OwnedContainerRecord {
+            container_id: cid.clone(),
+            daemon_id: "daemon".into(),
+            target_id: "target".into(),
+            workspace_id: "workspace".into(),
+            instance_id: "instance".into(),
+            service_id: "redis".into(),
+            blueprint_sha: "blueprint".into(),
+            bind_sources: vec![],
+        };
+        let container = serde_json::json!({"Id":cid,"Config":{"Labels":{"io.codeark.workspace-id":"workspace","io.codeark.instance-id":"instance","io.codeark.service-id":"redis","io.codeark.blueprint-sha":"blueprint"}},"Mounts":[]});
+        let proof = verify_ownership(&container, &record, &target).unwrap();
+        (DockerRunner { target }, proof)
+    }
+    #[tokio::test]
+    async fn log_deadline_covers_identity_checks_as_well_as_the_log_process() {
+        let root = tempfile::tempdir().unwrap();
+        let (runner, proof) = fixture(root.path(), "printf output");
+        let text = std::fs::read_to_string(&runner.target.cli_path)
+            .unwrap()
+            .replace(
+                "if [ \"$3\" = info ]; then printf",
+                "if [ \"$3\" = info ]; then sleep 17; printf",
+            );
+        std::fs::write(&runner.target.cli_path, text).unwrap();
+        let started = std::time::Instant::now();
+        assert_eq!(
+            runner
+                .container_logs(&proof, 10, None)
+                .await
+                .unwrap_err()
+                .code,
+            "TimedOut"
+        );
+        assert!(started.elapsed() < Duration::from_secs(16));
+    }
+    #[tokio::test]
+    async fn owned_logs_merge_both_streams_using_only_fixed_context_and_container_arguments() {
+        let root = tempfile::tempdir().unwrap();
+        let cid = "c".repeat(64);
+        let body = format!(
+            "[ \"$1\" = --context ] && [ \"$2\" = local-fixture ] && [ \"$3\" = container ] && [ \"$4\" = logs ] && [ \"$5\" = --timestamps ] && [ \"$6\" = --tail ] && [ \"$7\" = 7 ] && [ \"$8\" = --since ] && [ \"$9\" = 2026-11-12T10:00:00Z ] && [ \"${{10}}\" = -- ] && [ \"${{11}}\" = {cid} ] || exit 9\nprintf stdout-log; printf stderr-log >&2"
+        );
+        let (runner, proof) = fixture(root.path(), &body);
+        let output = runner
+            .container_logs(&proof, 7, Some("2026-11-12T10:00:00Z"))
+            .await
+            .unwrap();
+        let text = String::from_utf8(output).unwrap();
+        assert!(text.contains("stdout-log"));
+        assert!(text.contains("stderr-log"));
+        assert!(text.contains('\n'));
+    }
+    #[tokio::test]
+    async fn owned_logs_reject_cross_target_limits_and_unsafe_cursors() {
+        let root = tempfile::tempdir().unwrap();
+        let (runner, mut proof) = fixture(root.path(), "exit 77");
+        assert_eq!(
+            runner
+                .container_logs(&proof, 2001, None)
+                .await
+                .unwrap_err()
+                .code,
+            "InvalidLogLimit"
+        );
+        assert_eq!(
+            runner
+                .container_logs(&proof, 10, Some("now\n--follow"))
+                .await
+                .unwrap_err()
+                .code,
+            "InvalidLogCursor"
+        );
+        proof.record.target_id = "foreign".into();
+        assert_eq!(
+            runner
+                .container_logs(&proof, 10, None)
+                .await
+                .unwrap_err()
+                .code,
+            "OwnershipConflict"
+        );
+    }
+    #[tokio::test]
+    async fn owned_log_overflow_and_command_errors_never_return_raw_error_text() {
+        let root = tempfile::tempdir().unwrap();
+        let (runner, proof) = fixture(root.path(), "printf PRIVATE_ERROR >&2; exit 8");
+        let error = runner.container_logs(&proof, 10, None).await.unwrap_err();
+        assert_eq!(error.code, "DockerCommandFailed");
+        assert!(error.redacted_context.is_empty());
+        assert!(!error.to_string().contains("PRIVATE_ERROR"));
+        let root = tempfile::tempdir().unwrap();
+        let (runner, proof) = fixture(
+            root.path(),
+            "head -c 1200000 /dev/zero; head -c 1200000 /dev/zero >&2",
+        );
+        assert_eq!(
+            runner
+                .container_logs(&proof, 10, None)
+                .await
+                .unwrap_err()
+                .code,
+            "DockerOutputTooLarge"
         );
     }
 }

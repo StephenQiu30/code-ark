@@ -576,6 +576,28 @@
       "manifestDigest": "sha256:3589ed1674553a230d25ba1c79beb0c77bfa29172d7ee23ec870f91bc6e25808",
       "verifiedAt": "2026-11-12",
       "evidence": "Registry platform manifest only; native runtime acceptance pending."
+    },
+    {
+      "sourceId": "probe-jre17",
+      "kind": "registry",
+      "platform": "linux/amd64",
+      "sourceImage": "eclipse-temurin:17-jre-noble",
+      "status": "resolved",
+      "registryRef": "eclipse-temurin:17-jre-noble",
+      "manifestDigest": "sha256:75de746e1d782bd75704debd2b76f82f3d60c72c4c7818c288ad3ae2522bd8d3",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Temurin17 native platform descriptor locked; runtime acceptance pending."
+    },
+    {
+      "sourceId": "probe-jre17",
+      "kind": "registry",
+      "platform": "linux/arm64",
+      "sourceImage": "eclipse-temurin:17-jre-noble",
+      "status": "resolved",
+      "registryRef": "eclipse-temurin:17-jre-noble",
+      "manifestDigest": "sha256:370a11e8a323ce6c9676f4e70b2b4d89bfcb87ddaa8e7f3b6c90c6003a99da6a",
+      "verifiedAt": "2026-11-12",
+      "evidence": "Temurin17 native platform descriptor locked; runtime acceptance pending."
     }
   ]
 }

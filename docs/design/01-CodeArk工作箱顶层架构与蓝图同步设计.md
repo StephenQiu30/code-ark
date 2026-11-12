@@ -1,7 +1,9 @@
 # 01 Code Ark 工作箱顶层架构与蓝图同步设计
 
-状态：**审查修订版，技术合同待实现与实机验证**（2026-11-12）。来源：[需求 01](../requirement/01-工作箱产品总览与核心诉求.md) `C01–C09`、[审查报告](../research/04-一键启动工具箱设计完整性审查.md) `ARK-01/02/05/06/09/11/13`。本轮只修订文档，没有工作箱产品代码或发行制品。
+状态：**源码实施中，完整实机与发行验收待完成**（2026-11-12）。来源：[需求 01](../requirement/01-工作箱产品总览与核心诉求.md) `C01–C09`、[审查报告](../research/04-一键启动工具箱设计完整性审查.md) `ARK-01/02/05/06/09/11/13`。本轮只修订文档，没有工作箱产品代码或发行制品。
 
+
+实施状态：已开始按本合同开发，当前实现、验证和剩余项见 [首阶段执行记录](../research/06-工作箱首阶段实施与验证记录.md)。源码检查、隔离 Redis 和最终安装包是独立证据，不表示全量功能已交付。
 ## 1. 摘要
 
 工作箱使用 Tauri 2、Rust、React、TypeScript 和 Tailwind，随安装包内嵌现有 17 套服务蓝图与 1 份宿主机工具指南。源码配置保持唯一来源；用户不需要 Git、源码仓库、Node 或 Rust。运行时将逻辑服务、独立实例、已有外部服务分开登记，通过确定性的覆盖层消除手改 YAML、密钥和网络前置。
@@ -82,11 +84,14 @@ toolbox/
 └── stacks/<service_id>/
     ├── docker-compose.yml          # 原始提取蓝图
     ├── .env                        # 用户值；权限受限，不自动改已有有效值
+    ├── .codeark-instance.json       # 实际部署、代际与变更前恢复意图
+    ├── .managed-data.json           # 已创建数据目录的文件系统身份
     ├── .blueprint-manifest.json
     ├── .runtime/<generation_id>/   # 受限权限的候选插值文件、覆盖层与部署记录
     └── <declared-data-paths>/
 ```
 
+- 新工作区只采用空的专用目录；已有工作区先核验身份与 registry，再打开，不抢改已有非空目录权限。既有栈或数据目录没有归属凭据时拒绝采用。
 - `WorkspaceIdentity { workspace_id: UUID, root: PathBuf }` 持久化且不得因重开应用变化；新工作区生成新 ID。
 - `InstanceIdentity { workspace_id, service_id, instance_id: UUID, project_name }`；项目名 `ca-<workspace UUID前12位>-<service_id>`。创建前检查截断标识碰撞，碰撞时延长标识并持久化实际名称，后续不重新计算。
 - 所有固定 `container_name`、显式网络名、显式卷 `name` 均生成实例前缀名称；普通 Compose 网络/卷也使用独立项目名。Nacos 不再引用源码固定卷 `nacos-start-local-data`，使用实例专属卷。
@@ -94,7 +99,7 @@ toolbox/
 - 依赖网络取 `DatabaseBinding.network_name`，上层加入**该已登记网络**，使用其可解析别名。一个工作区复用一个已选择的基础数据库实例；不同工作区不默认创建重复中间件，优先展示已登记依赖供复用。外部库权限由设计 02 的 `ExternalConnected` 管理。
 - 外部实例保持原有名称、卷和生命周期，不能因与 `sourceProject` 一致就成为 Managed。真实外部卷保留 `external: true`，禁止加入删除列表。
 
-跨工作区使用关系不只存各自registry：控制根固定为macOS `~/Library/Application Support/CodeArk/control/`、Windows `%LOCALAPPDATA%\CodeArk\control\`、Linux `$XDG_DATA_HOME/codeark/control/`（未设置则`~/.local/share/codeark/control/`），维护`usage-index.json`及锁；工作区切换不改变控制根。索引记录target/daemon、提供者实例、消费者workspace/实例、binding/claim、场景引用、活动操作和登记状态，不存秘密。测试控制根只能由显式隔离验收配置指定。注册/注销和保守失败规则由设计02定义；移动工作区或删除索引不能视为消费者已停止。
+跨工作区使用关系不只存各自registry：控制根固定为macOS `~/Library/Application Support/CodeArk/control/`、Windows `%LOCALAPPDATA%\CodeArk\control\`、Linux `$XDG_DATA_HOME/codeark/control/`（未设置则`~/.local/share/codeark/control/`），维护`usage/usage.json`及锁；工作区切换不改变控制根。索引记录target/daemon、提供者实例、消费者workspace/实例、binding/claim、场景引用、活动操作和登记状态，不存秘密。测试控制根只能由显式隔离验收配置指定。注册/注销和保守失败规则由设计02定义；移动工作区或删除索引不能视为消费者已停止。
 
 ### 7.3 非破坏性物化、升级与工作区切换
 
@@ -102,7 +107,7 @@ toolbox/
 
 更新先完成 schema/镜像兼容检查、备份指引、候选 `config --quiet`；需要迁移的数据库禁止自动降级或以换镜像恢复。活动部署和最近就绪部署分别记录，失败后显示实际部分成功状态，不伪装已回滚。原实例继续使用旧蓝图，直到用户应用更新。
 
-切换工作区只切换视图和注册表，不移动或清空数据，也不停止旧容器；切换前展示仍在运行的实例。v1 不提供运行中数据库二进制目录自动迁移；提供受控导出/导入指南。符号链接、嵌套工作区、Docker 数据目录或无写权限路径不能用于清理目标；写文件使用同目录临时文件、同步与原子替换，Unix 文件 `0600`、敏感目录 `0700`，Windows 限制到当前用户 ACL。
+切换工作区只切换视图和注册表，不移动或清空数据，也不停止旧容器；切换前展示仍在运行的实例。v1 不提供运行中数据库二进制目录自动迁移；提供受控导出/导入指南。符号链接、嵌套工作区、Docker 数据目录或无写权限路径不能用于清理目标；写文件使用同目录临时文件、同步与原子替换，Unix 秘密文件 `0600`、敏感外围目录 `0700`；非秘密只读配置文件 `0644`、配置目录和可执行脚本 `0755`。新数据目录按镜像 UID/GID 验证独立策略，已有数据不盲目改权；原生 Linux 非 root 读写与重建未通过前不开放普通运行变更。Windows 私密路径限制当前用户与 SYSTEM，实机 ACL 仍需独立验收。
 
 ### 7.4 `.env`、密钥与有效配置生成
 
@@ -119,6 +124,8 @@ toolbox/
 | MySQL/PG/MinIO/RabbitMQ/ES/Grafana 初始化密码、XXL Token | 按服务校验生成32位安全字母数字；无需生成的用户名采用公开默认 | 验证已有有效值，不因补配置重新生成 |
 | Seata/XXL 数据库密码、Temporal PG 凭据 | `InheritBinding`，取已认证的依赖来源或其专属账号 | 不生成无关联密码 |
 | 可选 License API Key | 默认空；Basic License 用已认证管理连接处理 | 用户明确配置才使用 |
+
+Seata JWT 使用32随机字节的Base64，控制台密码独立生成。Nacos/XXL 管理员密码的来源及长度按服务实际校验，已有值始终保留。
 
 `.env` 缺字段可提出补全候选；已有文件的非空有效值即使恰好等于公开默认，也不自动替换。新托管实例可生成秘密；服务Token的显式更改走配置预览/应用。**v1不提供已初始化数据库账号的一键密码轮换**，包括自有基础库/专属账号；已初始化密码字段禁用随机生成。用户可更新已在数据库生效的连接凭据，但须先认证再应用，不改服务器账号。数据库已存在而本地密钥缺失时进入修复流程，不以重置解决。将来若增加账号轮换，须另立完整计划，不在本期IPC预留一个无后端实现的可用按钮。
 
@@ -154,7 +161,7 @@ toolbox/
 
 ### 7.8 技术选型候选基线（2026-11-12）
 
-依据[完整选型核验](../research/05-完整技术选型与服务制品核验.md)，实施候选固定为Rust1.99.1、Node24.22.3 LTS、pnpm12.18.0；保留既定Tauri版本。最低Rust不能只按Tauri1.90计算，SQLx0.9.0和sysinfo0.40.3分别要求1.94/1.95。工具链/锁文件在未来创建，当前只证明版本元数据与声明范围，不证明联合编译通过。
+依据[完整选型核验](../research/05-完整技术选型与服务制品核验.md)，实施候选固定为Rust1.99.1、Node24.22.3 LTS、pnpm12.18.0；保留既定Tauri版本。最低Rust不能只按Tauri1.90计算，SQLx0.9.0和sysinfo0.40.3分别要求1.94/1.95。工具链/锁文件已建立并在本机联合编译；跨平台与发行兼容仍以真实证据验收。
 
 构建期选yaml2.9.1；运行覆盖层选serde-saphyr2.1.1（固定Tagged生成!override、禁用include等不必要功能、设输入预算），不新用归档serde_yaml。公共DTO用ts-rs12.0.1导出，serde实际JSON夹具与TS校验一致，不能静默忽略不支持属性；不把生成类型当权限验证。系统随机源用getrandom0.4.3，已有dotenv行保留与特殊值最终Compose回归不变。
 
@@ -166,7 +173,7 @@ ES/IK也统一采用producer生成的原生归档，不保留桌面运行期loca
 
 本次查明旧Rocket Console和XXL3.5.0镜像仅声明amd64，MinIO两个官方latest入口匿名查询401。选择为MinIO同产品固定源码与XXL3.5.0生产原生amd64/arm64归档制品，由维护者使用受支持且锁定的builder构建/重打包；不让新手安装Go/Maven，也不以QEMU模拟当原生通过。MinIO候选source commit `9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a`、Go1.27.4；XXL候选commit `3bebfc1609b95413581b11e270e5670dce679813`、Maven3.9.16/JDK17，实际JRE基础用已解析平台digest，保存上游许可/来源和构建参数。
 
-producer生成的image-save归档、可获取发行URL、SHA/image ID及原生验收当前全不存在，均是发行前必需产物。只在选择服务时按需下载/加载，记录体积、空间、进度、超时和重试；没有对应制品就阻断该目标release，不把查询401解释成产品必然不可用，也不静默回退旧包/模拟。现有候选/release分级、同SHA推广与全部17服务范围不变。
+部分ARM本地image-save归档与身份校验已产生；可获取发行URL、全架构SHA/image ID及完整原生验收仍未齐备，均是发行前必需产物。只在选择服务时按需下载/加载，记录体积、空间、进度、超时和重试；没有对应制品就阻断该目标release，不把查询401解释成产品必然不可用，也不静默回退旧包/模拟。现有候选/release分级、同SHA推广与全部17服务范围不变。
 
 ## 8. 实施与验收
 

@@ -61,12 +61,12 @@ services/<service>-start-local/
 └── ...                # 当前服务专属配置、初始化或构建文件
 ```
 
-## 工作箱目标布局（实施中）
+## 工作箱源码布局（实施中）
 
 以下路径来自当前 [底座计划](docs/plan/01-服务清单与蓝图同步实施计划.md)、[编排计划](docs/plan/02-跨平台Docker探测与编排引擎实施计划.md)、[前端计划](docs/plan/03-工作箱前端工作台与跨平台CI实施计划.md)。工程已开始实施；下图是目标结构，精确已实现范围以 [toolbox/README.md](toolbox/README.md) 和对应计划执行记录为准。
 
 ```text
-toolbox/                                      # 未来独立桌面工程
+toolbox/                                      # 已创建的桌面工程
 ├── README.md
 ├── package.json / pnpm-lock.yaml
 ├── rust-toolchain.toml / .node-version
@@ -88,8 +88,13 @@ toolbox/                                      # 未来独立桌面工程
 │   ├── resources/
 │   │   ├── blueprints/                       # 只读来源同步的生成资源
 │   │   ├── sql/                              # 有来源、许可及校验和的初始化
-│   │   └── guides/                           # 离线指南、manifest 与最小示例
-│   └── tests/                                # acceptance 与 fixtures/runtime
+│   │   ├── guides/                           # 生成的离线指南与 manifest
+│   │   ├── examples/                         # 生成的白名单教学源码
+│   │   └── probe-clients/                    # 生成的锁定协议 JAR
+│   ├── examples/                             # 受控本地验证入口
+│   └── tests/acceptance.rs                    # 显式隔离配置的真实 Redis 验证
+├── guides/                                   # 11 份离线指南与来源清单
+├── examples/                                 # 13 个教学模块与独立 SDK 锁
 ├── probe-clients/
 │   ├── Dockerfile / pom.xml
 │   └── modules/<protocol>/                   # 协议隔离的短时原生客户端
@@ -97,29 +102,30 @@ toolbox/                                      # 未来独立桌面工程
 │   ├── minio/
 │   ├── xxjob/
 │   └── es-ik/                                # 制品配方、来源/工具/许可清单
-└── tests/fixtures/                           # 蓝图、环境、更新等合成夹具
+└── vitest.config.ts                          # 前端夹具和测试位于 src/
 
-.github/workflows/toolbox-ci.yml              # 未来 CI，实施时再创建
+.github/workflows/toolbox-ci.yml              # 源码检查流程
+.github/workflows/toolbox-native.yml          # 原生自托管候选构建，尚未验收
 ```
 
-| Rust 模块职责 | 计划模块 |
+| Rust 模块职责 | 当前模块 |
 | --- | --- |
-| 公共合同与入口 | `contracts`、`commands`、`lib`、`main` |
-| 清单、工作区、秘密和蓝图 | `catalog`、`workspace`、`env_store`、`blueprint` |
+| 公共合同与入口 | `contracts`、`desktop`、`lib`、`main` |
+| 清单、工作区、秘密和蓝图 | `catalog`、`workspace`、`env_store`、`blueprint`、`managed_data`；Windows ACL 在 `windows_permissions` |
 | Docker、预检和制品 | `docker_cli`、`preflight`、`storage_probe`、`image_store` |
-| 数据库绑定与初始化 | `bindings`、`database_claims`、`provisioner`、`initialization_store` |
-| 探针与就绪 | `probes`、`probe_clients` |
+| 数据库绑定与初始化 | `bindings`、`database_claims`、`provisioner`、`initialization_store`、`sql_provisioner`、`sql_schema` |
+| 探针与就绪 | `probes`、`probe_clients`、`live_status` |
 | 操作、锁与跨工作区引用 | `operation_store`、`locks`、`usage_index` |
-| 编排、配置应用、重置和诊断 | `orchestrator`、`config_apply`、`reset`、`diagnostics` |
+| 编排、配置应用、重置和诊断 | `orchestrator`、`runtime_state`、`recovery`、`config_apply`、`reset`；诊断命令在 `desktop` |
 
 前端只通过类型化 API 调用后端，不获得通用 Shell 或秘密对象。公共 DTO 从后端生成，不手工维护两套接口。测试夹具使用合成配置，不拷贝用户运行目录。精确接口、工具链和验收由对应 design/PRD/plan 维护。
 
 ## 源码、生成物与运行数据边界
 
-- `services/` 下各服务目录是现有 CLI 模板来源；未来同步脚本只读提取白名单文件，不反向修改原目录或打包真实 `.env`、数据、日志。
-- `toolbox/src-tauri/resources/blueprints/` 是计划生成的随包资源；实施时通过同步/校验再生成，不能手改成另一份权威 Compose。是否纳入 Git 随构建方案明确，但必须可从同一来源复现。
-- 现有 CLI 运行数据位置仍遵循各服务 README；未来工作箱默认工作区为 `~/.code-ark`，不得用源码目录作为默认运行目录。
-- 未来公共控制目录分别为 macOS `~/Library/Application Support/CodeArk/control`、Windows `%LOCALAPPDATA%\CodeArk\control`、Linux `$XDG_DATA_HOME/codeark/control`（未设置时为 `~/.local/share/codeark/control`）。共享引用、锁和操作记录不是可提交源码。
+- `services/` 下各服务目录是现有 CLI 模板来源；同步脚本只读提取白名单文件，不反向修改原目录或打包真实 `.env`、数据、日志。
+- `toolbox/src-tauri/resources/blueprints/` 是忽略的随包生成资源；通过同步/校验再生成，不能手改成另一份权威 Compose，不纳入 Git，必须可从同一来源复现。
+- 现有 CLI 运行数据位置仍遵循各服务 README；工作箱默认工作区为 `~/.code-ark`，不得用源码目录作为默认运行目录。
+- 公共控制目录分别为 macOS `~/Library/Application Support/CodeArk/control`、Windows `%LOCALAPPDATA%\CodeArk\control`、Linux `$XDG_DATA_HOME/codeark/control`（未设置时为 `~/.local/share/codeark/control`）。共享引用、锁和操作记录不是可提交源码。
 - 构建输出、安装包、镜像归档、下载缓存和实际诊断包不提交 Git；未来发行制品放发行资产并记录校验和及许可。调研缓存 `.firecrawl/` 保持忽略。
 - 本机 `.env`、数据与日志即使被忽略，也不能被同步、打包或共享脚本递归收集。共享白名单见 [SHARING.md](SHARING.md)。
 
@@ -128,3 +134,5 @@ toolbox/                                      # 未来独立桌面工程
 新增目录先确定归属，优先复用现有位置。跨服务脚本只有在多个真实调用方确有需要时才提出，不为单个服务增加根级脚本框架。目录移动必须说明路径、挂载和数据迁移影响，保留兼容或提供明确迁移方案。
 
 结构变更同时更新本文件、相关导航/README；涉及工作箱设计时先同步 design，再同步其唯一 PRD 和 Plan。未来路径仍标为待实施，验证完成才改变状态。提交与验证流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+工作区每个栈的 `.codeark-instance.json` 保存实际部署与恢复意图，`.managed-data.json` 记录已创建数据目录身份；`.runtime/<generation>/draft.env` 暂存配置，`effective.env` 记录已应用秘密快照，均不属于可分享源码。公共控制根下 `usage/usage.json` 维护共享引用。没有归属记录的非空目录不得自动采用或清理。当前实现与未验收范围见 [首阶段执行记录](docs/research/06-工作箱首阶段实施与验证记录.md)。

@@ -19,5 +19,7 @@
   },
   "nativeBuild": "pending",
   "functionalAcceptance": "pending",
-  "licenseReview": "pending"
+  "licenseReview": "pending",
+  "recipeSha256": "466f4b70d986c8d425b7e5b5d9516aad624a9d84b560a9003f6bb90d30e6c1d1",
+  "entrypointSha256": "3086a0ec8e88510469e70accb04b513a948829918d3bf192f8c80f20f5511e1d"
 }

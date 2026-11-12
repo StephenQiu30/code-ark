@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "serviceId": "seata",
+      "version": "1.8.0",
+      "upstreamSource": "https://raw.githubusercontent.com/apache/incubator-seata/v1.8.0/script/server/db/mysql.sql",
+      "repositoryPath": "toolbox/src-tauri/resources/sql/seata_1_8_0_mysql.sql",
+      "sha256": "9313cf0d0e9fd117d3eb2902c1a2174f67f01a2adffbc40026d83720dd54919f",
+      "license": "Apache-2.0",
+      "licenseFile": "SEATA-LICENSE",
+      "sourceNote": "Identical upstream SQL bytes.",
+      "transformation": "Versioned scoped initialization plan; original repository file stays unchanged."
+    },
+    {
+      "serviceId": "xxjob",
+      "version": "3.5.0",
+      "upstreamSource": "https://raw.githubusercontent.com/xuxueli/xxl-job/3.5.0/doc/db/tables_xxl_job.sql",
+      "repositoryPath": "services/xxjob-start-local/tables_xxl_job.sql",
+      "sha256": "8f29210cfb49800daa93408395159f42f12d76d88cee35f70e7cc59838d7c0a3",
+      "license": "GPL-3.0",
+      "licenseFile": "XXL-LICENSE",
+      "sourceNote": "Existing repository variant: clears the upstream Dify sample API key and adjusts one alarm-status comment. Schema is unchanged.",
+      "transformation": "Versioned scoped initialization plan; original repository file stays unchanged."
+    }
+  ]
+}

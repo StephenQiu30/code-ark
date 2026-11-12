@@ -150,10 +150,16 @@ pub fn generate_secret(format: &str) -> Result<String, ToolboxError> {
     match format {
         "base64" => Ok(base64::engine::general_purpose::STANDARD.encode(bytes)),
         "hex64" => Ok(bytes.iter().map(|b| format!("{b:02x}")).collect()),
-        "alphanumeric24" | "alphanumeric32" => {
+        "alphanumeric20" | "alphanumeric24" | "alphanumeric32" => {
             const ALPHABET: &[u8] =
                 b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            let len = if format == "alphanumeric24" { 24 } else { 32 };
+            let len = if format == "alphanumeric20" {
+                20
+            } else if format == "alphanumeric24" {
+                24
+            } else {
+                32
+            };
             let mut result = String::new();
             while result.len() < len {
                 getrandom::fill(&mut bytes).map_err(|_| err("RandomSourceUnavailable"))?;

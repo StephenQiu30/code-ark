@@ -38,3 +38,12 @@ toolbox/src-tauri/target/
 toolbox/src-tauri/gen/
 toolbox/src-tauri/resources/blueprints/
 toolbox/*.tsbuildinfo
+toolbox/probe-clients/**/target/
+toolbox/src-tauri/resources/probe-clients/
+
+# Tutorial build output is never a packaged source asset.
+toolbox/examples/**/target/
+
+toolbox/src-tauri/resources/guides/
+toolbox/src-tauri/resources/examples/
+toolbox/src-tauri/resources/.codeark-resource-manifest.json

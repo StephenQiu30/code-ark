@@ -11,10 +11,12 @@ RUN curl --fail --location --silent --show-error "$SOURCE_URL" -o /tmp/source.ta
 RUN mvn --batch-mode --no-transfer-progress -pl xxl-job-admin -am package -DskipTests
 
 FROM ${RUNTIME_IMAGE}
+ENV SERVER_SERVLET_CONTEXT_PATH=/xxl-job-admin
 WORKDIR /app
 COPY --from=build /source/xxl-job-admin/target/xxl-job-admin-*.jar /app/xxl-job-admin.jar
 COPY --from=build /source/LICENSE /usr/share/licenses/xxl-job/LICENSE
 COPY entrypoint.sh /app/entrypoint.sh
+RUN mkdir -p /data/applogs && chown -R 1000:1000 /data/applogs
 USER 1000:1000
 EXPOSE 8080
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

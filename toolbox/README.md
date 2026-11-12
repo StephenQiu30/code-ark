@@ -1,45 +1,46 @@
-# Code Ark 桌面工作箱（开发中）
+# Code Ark 桌面工作箱（源码预览）
 
-Tauri 2 + Rust + React 的本地基础设施工作台，复用 [services/](../services/README.md) 中的模板。当前已开始实施；尚无公开发行安装包，静态检查通过不等于 17 服务或三端验收通过。
+Tauri 2 + Rust + React 本地基础设施工作台，复用 [services/](../services/README.md) 中的模板。已进入源码实施阶段，尚无公开安装包。当前普通运行入口仅在 macOS arm64 开放变更操作；其他原生平台须完成验收后再开放，不能把跨平台编译或界面测试当作支持承诺。
 
-English Summary: The desktop toolbox is under active implementation, not a released product. Service templates are read-only inputs; runtime configuration and data belong in an independent workspace. Candidate and release builds fail closed until immutable image sources and matching acceptance evidence exist.
+English Summary: This is an unreleased source preview. The backend and desktop interface are implemented in part; an isolated native macOS arm64 Redis lifecycle has passed. Other native targets, all 17 services, database-dependent workflows and final installers are not accepted yet. Runtime configuration and data stay outside source control.
 
-## 当前已实现
+## 已落地范围
 
-- 17 服务、7 场景、1 宿主机指南的受控清单。
-- 只提取 Git 跟踪白名单，拒绝秘密文件、未跟踪资产、越界路径和符号链接；验证挂载引用、脚本 LF 和文件哈希。
-- development / candidate / release 分级；未解析镜像不进入候选或发行，未验收的制品不标为通过。
-- Rust 公共 DTO 自动生成 TypeScript、带锁工作区身份与实例登记、独立资源前缀、按已选数据库绑定去重的依赖顺序。
-- 无损 `.env` 候选和系统随机秘密，保留已有凭据；独立覆盖全部容器/网络/卷/端口，生成最终依赖参数。
-- 蓝图物化、用户编辑冲突与数据格式升级门禁；不自动覆盖已有文件。
-- Tauri/React 最小入口。编排与业务界面继续按计划实施。
-- 固定本地 Docker 目标、版本/合并能力检查、端口/容量预检、受控镜像获取及归档身份校验。
-- 已有数据库的拓扑/认证入口、精确初始化授权、claim 与容器所有权核验；真实SQL初始化与全量运行仍待实施/验证。
+- 17 服务、7 场景、1 宿主机指南的清单；77 个受跟踪来源资产白名单同步、哈希及路径校验，不复制本机 `.env`、数据或日志。
+- 工作区和实例身份、配置保留与随机秘密、资源隔离覆盖层、升级冲突保护、固定 Docker 目标、端口/内存/容量预检、不可变镜像和 OCI 归档身份校验。
+- 持久操作与跨进程锁、共享引用、部分创建资源恢复、启停、就绪探针、候选配置预检及就绪后提交、按归属清单重置。周期状态检查使用有期限的内存观察结果，不能把读取磁盘时间当成新探针证据。
+- 推荐入门、场景和服务列表、环境助手、任务、详情与连接、配置、日志、教程、工作区设置及白名单诊断。前端只调用类型化后端命令；没有通用 Shell/文件 IPC。
+- 11 份离线指南、13 个教学模块、9 个隔离协议客户端，以及源码 CI / 原生候选构建流程。随包使用锁定 JRE17 镜像运行协议客户端，基础设施用户无需宿主机 Java；维护者构建与自愿运行教学源码需要相应工具。
 
-## 开发环境
+## 当前验证和限制
 
-锁定 Node `24.22.3`、pnpm `12.18.0`、Rust `1.99.1`，需对应操作系统的 Tauri 原生构建前置条件。开发者需要这些工具；未来安装包用户只需受支持的 Docker 运行环境。
+[执行记录](../docs/research/06-工作箱首阶段实施与验证记录.md) 区分源码检查、真实服务和最终制品。Redis 已验证写读、保留数据重建、端口改动、容量确认、登记缺失后的停止恢复和精确重置。XXL ARM 镜像独立登录/数据库探测通过；不代表主工作箱的 XXL 依赖链或任务调度验收通过。
 
-在本目录执行：
+Canal、Temporal、XXL、Seata 的数据库初始化尚未接入主编排，启动显式返回 `DependencyInitializationRequired`；MySQL/PG 未完成全部业务资源枚举前拒绝整实例重置。日志的原生 Channel/ACK 联调、诊断日志预览、完整场景、非 root Linux 数据目录权限、Windows 进程树及 ACL、各系统安装包仍待验证。不要用于承载未备份的业务数据。
+
+镜像锁共 56 个平台条目：50 个注册表条目已解析，6 个 MinIO/XXL/ES-IK 原生归档仍未具备完整可发行来源。development 用于源码开发；candidate 要求所选目标所有来源可解析且架构匹配；release 还要求匹配同 SHA 候选包的真实服务与安装验收。当前不放行候选/公开发行，不能绕过门禁。
+
+## 开发与本地运行
+
+使用 Node `24.22.3`、pnpm `12.18.0`、Rust `1.99.1`、JDK17、Maven `3.9.16` 和对应系统的 Tauri 构建前置。在仓库根目录执行：
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm test:scripts
-pnpm sync
-pnpm verify --mode development
-cargo test --locked --manifest-path src-tauri/Cargo.toml
-pnpm typecheck
-pnpm build
-cargo check --locked --manifest-path src-tauri/Cargo.toml --features desktop
-pnpm tauri dev
+pnpm --dir toolbox install --frozen-lockfile
+mvn -B -ntp -C -f toolbox/examples/java/pom.xml package
+mvn -B -ntp -C -f toolbox/probe-clients/pom.xml package
+python3 toolbox/probe-clients/bundle.py
+pnpm --dir toolbox test:scripts
+pnpm --dir toolbox sync
+node toolbox/scripts/prepare-desktop.mjs
+cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml --features desktop
+pnpm --dir toolbox test
+pnpm --dir toolbox typecheck
+pnpm --dir toolbox build
+pnpm --dir toolbox tauri dev
 ```
 
-`resources/blueprints/` 为可重复生成的忽略输出，不手工维护。同步不读取真实 `.env` 或数据目录；`catalog/services.json` 的资产列表才是提取范围，不递归复制服务目录。
+首次启动只打开工作台，不自动启动服务。运行工作区默认 `~/.code-ark`，公共控制目录按系统隔离；检测 Docker 后再选择服务。全新开发检出须先构建并校验协议 JAR，再准备桌面资源；不提交这些生成物。教学模块自行显式确认后才连接/写入，详见 [示例说明](examples/README.md)。
 
-## 构建与发行边界
-
-当前 `catalog/images.lock.json` 已解析48个平台注册表条目，6个原生归档条目仍待实际制品。development 仅用于源码开发；candidate 要求所选目标的全部镜像来源解析且架构匹配，release 还要求外部记录的同 SHA 候选包、17 服务、7 场景及最终安装验收证据。不能用 development 绕过门禁打公开安装包。
-
-运行工作区默认 `~/.code-ark`，不使用源码目录；后续真实服务测试只能在明确隔离目标与资源范围内执行。不要删除现有服务数据、轮换已有数据库密码或执行全局 prune。
+真实服务测试默认忽略，必须提供固定 CLI/context/daemon、专用工作区、run ID、端口范围及删除授权的 `CODE_ARK_ACCEPTANCE_CONFIG`。测试只处理该范围的可证实资源；不要复用现有业务环境或执行全局 prune。`resources/blueprints/`、随包教程/客户端和资源 manifest 均由构建生成，不手工维护。
 
 [项目结构](../PROJECT.md) · [设计与计划](../docs/00-文档导航.md) · [贡献规范](../CONTRIBUTING.md)

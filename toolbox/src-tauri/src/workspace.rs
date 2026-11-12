@@ -29,7 +29,16 @@ pub(crate) fn reject_links(path: &Path) -> Result<(), ToolboxError> {
         }
         match fs::symlink_metadata(ancestor) {
             Ok(m) if m.file_type().is_symlink() => return Err(error("UnsafePath")),
-            Ok(_) => (),
+            Ok(m) => {
+                #[cfg(windows)]
+                {
+                    use std::os::windows::fs::MetadataExt;
+                    if m.file_attributes() & 0x400 != 0 {
+                        return Err(error("UnsafePath"));
+                    }
+                }
+                let _ = m;
+            }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
             Err(_) => return Err(error("PathUnavailable")),
         }
@@ -45,6 +54,8 @@ pub(crate) fn private_dir(path: &Path) -> Result<(), ToolboxError> {
         fs::set_permissions(path, fs::Permissions::from_mode(0o700))
             .map_err(|_| error("PermissionDenied"))?;
     }
+    #[cfg(windows)]
+    crate::windows_permissions::restrict(path)?;
     Ok(())
 }
 pub(crate) fn open_private(path: &Path, create_new: bool) -> Result<File, ToolboxError> {
@@ -61,7 +72,10 @@ pub(crate) fn open_private(path: &Path, create_new: bool) -> Result<File, Toolbo
         use std::os::unix::fs::OpenOptionsExt;
         o.mode(0o600);
     }
-    o.open(path).map_err(|_| error("StateUnavailable"))
+    let file = o.open(path).map_err(|_| error("StateUnavailable"))?;
+    #[cfg(windows)]
+    crate::windows_permissions::restrict(path)?;
+    Ok(file)
 }
 pub(crate) fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), ToolboxError> {
     reject_links(path)?;
@@ -118,6 +132,29 @@ pub fn open_workspace(path: &Path) -> Result<WorkspaceIdentity, ToolboxError> {
     for ancestor in path.ancestors().skip(1) {
         if ancestor.join("workspace.json").exists() {
             return Err(error("NestedWorkspace"));
+        }
+    }
+    // Selecting an arbitrary existing folder grants no permission to change its ACL or adopt its contents.
+    if path.exists() {
+        if !path.is_dir() {
+            return Err(error("UnsafePath"));
+        }
+        if path.join("workspace.json").exists() {
+            let canonical = path.canonicalize().map_err(|_| error("UnsafePath"))?;
+            let identity: WorkspaceIdentity = read_json(&path.join("workspace.json"))?;
+            let registry: Registry = read_json(&path.join("registry.json"))?;
+            if identity.root != canonical.to_string_lossy()
+                || registry.schema_version != 1
+                || registry.workspace_id != identity.workspace_id
+            {
+                return Err(error("WorkspaceIdentityConflict"));
+            }
+        } else if std::fs::read_dir(path)
+            .map_err(|_| error("WorkspaceNotWritable"))?
+            .next()
+            .is_some()
+        {
+            return Err(error("WorkspaceNotEmpty"));
         }
     }
     private_dir(path)?;
@@ -307,5 +344,35 @@ mod tests {
         std::os::unix::fs::symlink(external.path(), &link).unwrap();
         assert!(open_workspace(&link).is_err());
         assert!(!external.path().join("workspace.json").exists());
+    }
+}
+#[cfg(test)]
+mod adoption_tests {
+    use super::*;
+    #[test]
+    fn selecting_existing_nonworkspace_never_changes_permissions_or_adopts_contents() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path().join("existing-project");
+        std::fs::create_dir(&root).unwrap();
+        std::fs::write(root.join("business.txt"), "preserved").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        assert_eq!(open_workspace(&root).unwrap_err().code, "WorkspaceNotEmpty");
+        assert_eq!(
+            std::fs::read_to_string(root.join("business.txt")).unwrap(),
+            "preserved"
+        );
+        assert!(!root.join("workspace.json").exists());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                std::fs::metadata(root).unwrap().permissions().mode() & 0o777,
+                0o755
+            );
+        }
     }
 }

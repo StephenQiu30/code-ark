@@ -1,0 +1,85 @@
+name: Toolbox source checks
+on:
+  push:
+    paths: ["toolbox/**", "services/**", ".github/workflows/toolbox-*.yml"]
+  pull_request:
+    paths: ["toolbox/**", "services/**", ".github/workflows/toolbox-*.yml"]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: toolbox-source-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.3
+      - name: Install exact source toolchains
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global pnpm@12.18.0
+          rustup toolchain install 1.99.1 --profile minimal
+          rustup default 1.99.1
+          test -n "$JAVA_HOME_17_X64"
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/codeark-toolchains"
+          cd "$RUNNER_TEMP/codeark-toolchains"
+          curl --fail --location --retry 3 --output maven.tar.gz https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz
+          curl --fail --location --retry 3 --output maven.sha512 https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.tar.gz.sha512
+          printf '%s  maven.tar.gz\n' "$(awk '{print $1}' maven.sha512)" | sha512sum --check
+          tar -xzf maven.tar.gz
+          echo "$RUNNER_TEMP/codeark-toolchains/apache-maven-3.9.16/bin" >> "$GITHUB_PATH"
+      - name: Install oldest supported Linux build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev libgtk-3-dev patchelf pkg-config
+      - name: Frozen frontend dependency install
+        run: pnpm --dir toolbox install --frozen-lockfile
+      - name: Compile tutorial SDK sources without contacting services
+        run: |
+          mvn -B -ntp -C -f toolbox/examples/java/pom.xml package
+      - name: Compile and verify bundled read-only protocol clients
+        run: |
+          mvn -B -ntp -C -f toolbox/probe-clients/pom.xml package
+          python3 toolbox/probe-clients/bundle.py
+          python3 toolbox/probe-clients/tests/client_contract.py
+      - name: Prepare every declared desktop resource before Rust desktop compilation
+        run: |
+          node toolbox/scripts/sync-blueprints.mjs
+          node toolbox/scripts/verify-blueprints.mjs --mode development
+          node toolbox/scripts/verify-guides.mjs --mode candidate --check-clients
+          node toolbox/examples/verify-input-guards.mjs
+          node toolbox/scripts/prepare-desktop.mjs
+          pnpm --dir toolbox build
+      - name: Script and guide contract tests
+        run: pnpm --dir toolbox test:scripts
+      - name: Rust tests and generated DTO drift
+        run: |
+          cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml
+          git diff --exit-code -- toolbox/src/types/generated
+          test -z "$(git ls-files --others --exclude-standard toolbox/src/types/generated)"
+          cargo test --locked --manifest-path toolbox/src-tauri/Cargo.toml --features desktop
+          cargo check --locked --manifest-path toolbox/src-tauri/Cargo.toml --features desktop
+      - name: Frontend behavior, both TypeScript projects and WebView-targeted build
+        run: |
+          pnpm --dir toolbox test
+          pnpm --dir toolbox run typecheck
+          git diff --check
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: toolbox-protocol-clients-${{ github.sha }}
+          path: toolbox/probe-clients/target/bundle/
+          if-no-files-found: error
+      - name: Record source-only outcome
+        shell: bash
+        run: |
+          printf '%s\n' 'Source checks passed. Real17-service, native installer, signing and SDK runtime acceptance remain separate and are not marked passed by this workflow.' >> "$GITHUB_STEP_SUMMARY"
