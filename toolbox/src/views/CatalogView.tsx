@@ -1,24 +1,33 @@
 import { useState } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "../components/ui/card";
-import { Input } from "../components/ui/input";
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "../components/ui/input-group";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import {
   Empty,
   EmptyHeader,
   EmptyTitle,
   EmptyDescription,
 } from "../components/ui/empty";
-import { StartAction } from "../components/StartAction";
+import { EnvironmentConnectButton } from "../components/EnvironmentConnectButton";
+import { PageHeader } from "../components/PageHeader";
+import { ResourceList } from "../components/ResourceList";
+import { ServiceRow } from "../components/ServiceRow";
+import { categoryLabel } from "../lib/services";
 import { useWorkspace } from "../lib/workspace";
-import { useT, phaseText } from "../lib/i18n";
+import { useT } from "../lib/i18n";
+
 export function CatalogView({
   onService,
 }: {
@@ -27,70 +36,105 @@ export function CatalogView({
   const { state } = useWorkspace();
   const t = useT();
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState("all");
+  const categories = [
+    ...new Set(
+      state.catalog?.services.map((s) => categoryLabel(s.category, s.id)) ?? [],
+    ),
+  ];
   const services =
-    state.catalog?.services.filter((s) =>
-      `${s.id} ${s.name} ${s.category}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    ) ?? [];
+    state.catalog?.services.filter((service) => {
+      const phase =
+        state.snapshot?.services.find((s) => s.serviceId === service.id)
+          ?.phase ?? "Uninitialized";
+      return (
+        `${service.id} ${service.name} ${service.category} ${categoryLabel(service.category, service.id)}`
+          .toLowerCase()
+          .includes(search.toLowerCase()) &&
+        (category === "all" ||
+          categoryLabel(service.category, service.id) === category) &&
+        (status === "all" ||
+          (status === "ready"
+            ? phase === "Ready"
+            : status === "action"
+              ? ["Failed", "Degraded", "AwaitingAction"].includes(phase)
+              : ["Stopped", "Uninitialized"].includes(phase)))
+      );
+    }) ?? [];
+  const statuses: Record<string, string> = {
+    all: "全部状态",
+    ready: "已就绪",
+    stopped: "未启动 / 已停止",
+    action: "需要处理",
+  };
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1>{t("全部服务")}</h1>
-        <p className="muted">
-          {t("服务是否可用由真实连接验证决定；外部服务仅观察。")}
-        </p>
-      </div>
-      <Input
-        aria-label="搜索服务"
-        placeholder="搜索服务或分类…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title={t("全部服务")}
+        description={`${state.catalog?.services.length ?? 0} 套环境，按需启动。`}
+        actions={
+          <EnvironmentConnectButton
+            variant="outline"
+            label={state.snapshot?.target ? "检测连接" : "连接 Docker"}
+          />
+        }
       />
-      <div className="card-grid">
-        {services.map((service) => {
-          const snapshot = state.snapshot?.services.find(
-            (s) => s.serviceId === service.id,
-          );
-          return (
-            <Card key={service.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle>{service.name}</CardTitle>
-                  <Badge variant="secondary">
-                    {t(phaseText[snapshot?.phase ?? "Uninitialized"])}
-                  </Badge>
-                </div>
-                <CardDescription>{service.category}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="muted">
-                  依赖：{service.dependencies.join("、") || "无"}
-                </p>
-                <p className="muted">{snapshot?.messageCode}</p>
-                {snapshot?.phase === "Ready" && (
-                  <p className="muted">
-                    {t("基础设施就绪 · 业务客户端待接入")}
-                  </p>
-                )}
-              </CardContent>
-              <CardFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => onService(service.id)}
-                  aria-label={`查看 ${service.name}`}
-                >
-                  {t("查看")}
-                </Button>
-                {snapshot?.ownership !== "External" &&
-                  snapshot?.phase !== "ExternalObserve" && (
-                    <StartAction serviceIds={[service.id]} />
-                  )}
-              </CardFooter>
-            </Card>
-          );
-        })}
+      <div className="flex items-center justify-between gap-4">
+        <InputGroup className="max-w-90">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput
+            aria-label="搜索服务"
+            placeholder={t("搜索服务…")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </InputGroup>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <SlidersHorizontal data-icon="inline-start" />
+              {t(statuses[status])}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuGroup>
+              {Object.entries(statuses).map(([key, label]) => (
+                <DropdownMenuItem key={key} onSelect={() => setStatus(key)}>
+                  {t(label)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      <Tabs value={category} onValueChange={setCategory}>
+        <TabsList
+          variant="line"
+          className="h-auto max-w-full flex-wrap justify-start"
+        >
+          <TabsTrigger value="all">{t("全部")}</TabsTrigger>
+          {categories.map((c) => (
+            <TabsTrigger key={c} value={c}>
+              {t(c)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <ResourceList items={services} getKey={(s) => s.id}>
+        {(service) => (
+          <ServiceRow
+            launch
+            service={service}
+            snapshot={state.snapshot?.services.find(
+              (s) => s.serviceId === service.id,
+            )}
+            onSelect={onService}
+          />
+        )}
+      </ResourceList>
       {!services.length && (
         <Empty>
           <EmptyHeader>

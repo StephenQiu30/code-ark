@@ -253,6 +253,17 @@ export function createTestApi(): ToolboxApi {
     chooseWorkspace: vi.fn().mockResolvedValue(fixtureSnapshot),
     databaseCandidates: vi.fn().mockResolvedValue([]),
     verifyDatabaseBinding: vi.fn().mockResolvedValue(fixtureBinding),
+    bindingRequirements: vi
+      .fn()
+      .mockImplementation(async (serviceId: string) => ({
+        serviceId,
+        engine: serviceId === "temporal" ? "pgsql" : "mysql",
+        databaseNames:
+          serviceId === "temporal"
+            ? ["temporal", "temporal_visibility"]
+            : ["ca_fixture_db"],
+        editableDatabases: serviceId === "canal",
+      })),
     bindingGrantPreview: vi.fn().mockResolvedValue(fixtureGrant),
     authorizeDatabaseBinding: vi.fn().mockResolvedValue(fixtureBinding),
     startLogStream: vi

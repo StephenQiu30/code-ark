@@ -1,85 +1,82 @@
-import { Button } from "../components/ui/button";
+import { EnvironmentConnectButton } from "../components/EnvironmentConnectButton";
+import { Separator } from "../components/ui/separator";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from "../components/ui/empty";
+import { PageHeader } from "../components/PageHeader";
+import { ResourceList } from "../components/ResourceList";
+import { ServiceRow } from "../components/ServiceRow";
 import { StartAction } from "../components/StartAction";
 import { useWorkspace } from "../lib/workspace";
-import { useT, phaseText } from "../lib/i18n";
+import { useT } from "../lib/i18n";
 import { LaunchpadView } from "./LaunchpadView";
+
 export function WelcomeView({
   onService,
 }: {
   onService: (id: string) => void;
 }) {
-  const { state, api, run } = useWorkspace();
+  const { state } = useWorkspace();
   const t = useT();
-  const redis = state.snapshot?.services.find((s) => s.serviceId === "redis");
+  const recent =
+    state.snapshot?.services
+      .filter((s) => s.instanceId)
+      .slice(0, 3)
+      .flatMap((snapshot) => {
+        const service = state.catalog?.services.find(
+          (s) => s.id === snapshot.serviceId,
+        );
+        return service ? [{ service, snapshot }] : [];
+      }) ?? [];
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="eyebrow">{t("从一小步开始")}</p>
-        <h1>{t("先完成一次真实连接")}</h1>
-        <p className="muted">
-          {t("选择服务，工作箱负责准备；连接验证结果会如实显示。")}
-        </p>
-      </div>
-      <Card className="first-service">
-        <CardHeader>
-          <Badge variant="secondary">{t("推荐入门 · 轻量")}</Badge>
-          <CardTitle>Redis</CardTitle>
-          <CardDescription>
-            {t("启动缓存服务，完成内置连接测试，再复制真实地址。")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ol className="steps">
-            <li>{t("检测 Docker 环境")}</li>
-            <li>{t("准备镜像与配置")}</li>
-            <li>{t("启动并验证连接")}</li>
-            <li>{t("复制客户端配置")}</li>
-          </ol>
-          {redis && (
-            <p role="status">
-              {t(phaseText[redis.phase])}
-              {redis.phase === "Ready"
-                ? " · 基础设施可用，业务客户端待接入"
-                : ""}
-            </p>
-          )}
-          <p className="muted">
-            {t("首次拉取镜像需要联网，耗时取决于网络与缓存。")}
-          </p>
-        </CardContent>
-        <CardFooter className="flex-wrap">
-          <Button
-            variant="outline"
-            onClick={() => void run(() => api.detectEnvironment())}
-          >
-            {t("检测 Docker 环境")}
-          </Button>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title={t("概览")}
+        description={t("启动服务，继续你的开发。")}
+      />
+      <section
+        className="flex flex-wrap items-center justify-between gap-6"
+        aria-label={t("从 Redis 开始")}
+      >
+        <div className="flex flex-col gap-2">
+          <h2 className="section-title">{t("从 Redis 开始")}</h2>
+          <p className="muted">{t("检查环境、启动服务并验证连接。")}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           {!state.snapshot?.target && (
-            <Button
-              variant="outline"
-              onClick={() => void run(() => api.openOfficial("docker-install"))}
-            >
-              {t("安装 Docker")}
-            </Button>
+            <EnvironmentConnectButton variant="outline" label="检测 Docker 环境" />
           )}
-          <StartAction serviceIds={["redis"]} label="先试运行 Redis" />
-          {redis?.instanceId && (
-            <button className="text-link" onClick={() => onService("redis")}>
-              {t("查看连接")}
-            </button>
-          )}
-        </CardFooter>
-      </Card>
-      <LaunchpadView />
+          <StartAction serviceIds={["redis"]} label="启动 Redis" />
+        </div>
+      </section>
+      <Separator />
+      <section className="flex flex-col gap-6">
+        <h2 className="section-title">{t("最近使用")}</h2>
+        {recent.length ? (
+          <ResourceList items={recent} getKey={(item) => item.service.id}>
+            {({ service, snapshot }) => (
+              <ServiceRow
+                service={service}
+                snapshot={snapshot}
+                onSelect={onService}
+              />
+            )}
+          </ResourceList>
+        ) : (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>{t("还没有启动过服务")}</EmptyTitle>
+              <EmptyDescription>
+                {t("从 Redis 开始，或为项目选择一个场景。")}
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </section>
+      <LaunchpadView compact />
     </div>
   );
 }

@@ -6,6 +6,16 @@ use std::{fs::File, path::Path};
 pub struct ResourceGuard {
     _files: Vec<File>,
 }
+impl Drop for ResourceGuard {
+    fn drop(&mut self) {
+        // A concurrently spawned child can briefly inherit an open description
+        // before exec. Release the lock explicitly instead of waiting for every
+        // inherited descriptor to close.
+        for file in &self._files {
+            let _ = file.unlock();
+        }
+    }
+}
 pub fn acquire(root: &Path, keys: &[String]) -> Result<ResourceGuard, ToolboxError> {
     use sha2::{Digest, Sha256};
     private_dir(root)?;

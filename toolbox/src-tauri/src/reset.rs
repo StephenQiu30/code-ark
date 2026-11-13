@@ -407,17 +407,12 @@ async fn assert_no_bind_consumers(
         if !crate::probes::valid_id(id) {
             return Err(error("DockerOutputInvalid"));
         }
-        let raw = runner
-            .run_read(&["container", "inspect", "--format", "{{json .Mounts}}", id])
-            .await?;
-        let mounts: Vec<Value> =
+        let raw = runner.run_read(&["container", "inspect", "--format", r#"{"Mounts":{{json .Mounts}},"HostConfig":{"Binds":{{json .HostConfig.Binds}},"Mounts":{{json .HostConfig.Mounts}}}}"#, id]).await?;
+        let container: Value =
             serde_json::from_slice(&raw).map_err(|_| error("DockerOutputInvalid"))?;
-        for mount in mounts.iter().filter(|m| m["Type"] == "bind") {
-            let source = mount["Source"]
-                .as_str()
-                .ok_or_else(|| error("UnprovenBindTopology"))?;
+        for source in crate::bindings::container_bind_sources(&container, &runner.target)? {
             for path in paths {
-                if paths_overlap(path, Path::new(source))? {
+                if paths_overlap(path, Path::new(&source))? {
                     return Err(error("SharedBindMountInUse"));
                 }
             }
@@ -437,5 +432,34 @@ mod bind_tests {
         assert!(paths_overlap(&root.join("data"), &root.join("data")).unwrap());
         assert!(!paths_overlap(&root.join("data"), &root.join("data-other")).unwrap());
         assert!(paths_overlap(&root, Path::new("../outside")).is_err());
+    }
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn desktop_alias_cannot_hide_a_shared_bind_from_reset() {
+        let target = DockerTarget {
+            target_id: "target".into(),
+            cli_path: "/Applications/Docker.app/Contents/Resources/bin/docker".into(),
+            context_name: "desktop-linux".into(),
+            endpoint_kind: "unix".into(),
+            daemon_id: "daemon".into(),
+            os_type: "linux".into(),
+            architecture: "arm64".into(),
+        };
+        let container = json!({"Mounts":[{"Type":"bind","Source":"/host_mnt/Users/local/project/data/subtree","Destination":"/shared"}],"HostConfig":{"Binds":["/host_mnt/Users/local/project/data/subtree:/shared:rw"]}});
+        let sources = crate::bindings::container_bind_sources(&container, &target).unwrap();
+        assert!(
+            paths_overlap(
+                Path::new("/Users/local/project/data"),
+                Path::new(&sources[0])
+            )
+            .unwrap()
+        );
+        assert!(
+            !paths_overlap(
+                Path::new("/Users/local/project/data-other"),
+                Path::new(&sources[0])
+            )
+            .unwrap()
+        );
     }
 }

@@ -32,7 +32,8 @@ impl AcceptanceConfig {
             || !self.run_id.bytes().all(|b| b.is_ascii_hexdigit())
             || self.port_min < 20000
             || self.port_max <= self.port_min
-            || self.port_max - self.port_min > 1000
+            // Nacos requires its main port plus offsets 1000, 1001 and 1002.
+            || self.port_max - self.port_min > 2048
             || !self.workspace_root.is_absolute()
             || !self.control_root.is_absolute()
             || self.control_root.starts_with(&self.workspace_root)
@@ -97,6 +98,11 @@ mod tests {
         assert!(c.validate(&target).is_err());
         c.expected_daemon_id = target.daemon_id.clone();
         c.allow_create = false;
+        assert!(c.validate(&target).is_err());
+        c.allow_create = true;
+        c.port_max = c.port_min + 1999;
+        c.validate(&target).unwrap();
+        c.port_max = c.port_min + 2049;
         assert!(c.validate(&target).is_err());
     }
 }

@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import App from "../../App";
@@ -25,13 +26,18 @@ it("exports only the selected bundled guide sources through native backend selec
     .fn()
     .mockResolvedValue({ exportId: "sources", path: "/selected/tutorial" });
   render(<App api={{ ...api, exportGuideSources: exportSources }} />);
-  fireEvent.click(await screen.findByRole("button", { name: "教程" }));
-  fireEvent.click(await screen.findByRole("button", { name: "阅读指南" }));
+  await userEvent.click(
+    await screen.findByRole("button", { name: "使用指南" }),
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: /阅读指南/ }),
+  );
   expect(await screen.findByText("# 教学说明")).toBeInTheDocument();
   expect(exportSources).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "导出教学源码" }));
+  await userEvent.click(screen.getByRole("button", { name: "导出教学源码" }));
   await waitFor(() =>
     expect(exportSources).toHaveBeenCalledWith("backend-mysql"),
   );
-  expect(await screen.findByText("/selected/tutorial")).toBeInTheDocument();
+  expect(await screen.findByText("教学源码已导出")).toBeInTheDocument();
+  expect(screen.queryByText("/selected/tutorial")).not.toBeInTheDocument();
 });

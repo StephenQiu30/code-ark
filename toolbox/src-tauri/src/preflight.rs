@@ -85,31 +85,10 @@ pub async fn run_preflight(
     verified_owned_ports: &BTreeSet<(u16, String)>,
     verified_owned_ids: &BTreeSet<String>,
 ) -> Result<PreflightReport, ToolboxError> {
-    runner.verify_identity().await?;
-    let info = runner.run_read(&["info", "--format", "{{json .}}"]).await?;
-    let info: serde_json::Value =
-        serde_json::from_slice(&info).map_err(|_| error("DockerOutputInvalid"))?;
+    let available = available_daemon_memory(runner, verified_owned_ids).await?;
     // A local socket can front a Desktop VM or proxy. Until the daemon's host namespace
     // is positively identified, a host DockerRootDir never proves daemon free space.
     let capacity = crate::storage_probe::capacity(workspace, None)?;
-    let stats = runner
-        .run_read(&[
-            "stats",
-            "--no-stream",
-            "--no-trunc",
-            "--format",
-            "{{json .}}",
-        ])
-        .await?;
-    let used = running_memory_bytes(
-        std::str::from_utf8(&stats).map_err(|_| error("DockerOutputInvalid"))?,
-        verified_owned_ids,
-    )?;
-    let available = info["MemTotal"]
-        .as_u64()
-        .ok_or_else(|| error("UnknownMemory"))?
-        .saturating_sub(used)
-        .saturating_sub(512 * 1024 * 1024);
     Ok(assess(
         service,
         effective,
@@ -117,6 +96,52 @@ pub async fn run_preflight(
         available,
         verified_owned_ports,
     ))
+}
+async fn available_daemon_memory(
+    runner: &DockerRunner,
+    owned: &BTreeSet<String>,
+) -> Result<u64, ToolboxError> {
+    // An unknown observation proves no capacity. Re-read the complete sample a
+    // bounded number of times, keeping target errors and persistent unknowns fatal.
+    for attempt in 0..3 {
+        runner.verify_identity().await?;
+        let sample = async {
+            let info = runner.run_read(&["info", "--format", "{{json .}}"]).await?;
+            let info: serde_json::Value =
+                serde_json::from_slice(&info).map_err(|_| error("DockerOutputInvalid"))?;
+            if info["ID"] != runner.target.daemon_id || info["OSType"] != "linux" {
+                return Err(error("TargetChanged"));
+            }
+            let stats = runner
+                .run_read(&[
+                    "stats",
+                    "--no-stream",
+                    "--no-trunc",
+                    "--format",
+                    "{{json .}}",
+                ])
+                .await?;
+            let used = running_memory_bytes(
+                std::str::from_utf8(&stats).map_err(|_| error("DockerOutputInvalid"))?,
+                owned,
+            )?;
+            Ok::<u64, ToolboxError>(
+                info["MemTotal"]
+                    .as_u64()
+                    .ok_or_else(|| error("UnknownMemory"))?
+                    .saturating_sub(used)
+                    .saturating_sub(512 * 1024 * 1024),
+            )
+        }
+        .await;
+        match sample {
+            Err(error) if error.code == "UnknownMemory" && attempt < 2 => {
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            }
+            result => return result,
+        }
+    }
+    Err(error("UnknownMemory"))
 }
 #[cfg(test)]
 mod tests {
@@ -274,5 +299,80 @@ mod load_tests {
             1536 * 1024 * 1024
         );
         assert!(running_memory_bytes("invalid-json", &BTreeSet::new()).is_err());
+    }
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn unknown_memory_is_resampled_without_assuming_capacity_or_ignoring_target_changes() {
+        let root = tempfile::tempdir().unwrap();
+        let program = root.path().join("fake-docker");
+        std::fs::write(
+            &program,
+            r#"#!/usr/bin/env python3
+import json,sys
+from pathlib import Path
+root=Path(__file__).parent
+scenario=(root/'scenario').read_text()
+count=int((root/'count').read_text()) if (root/'count').exists() else 0
+a=sys.argv[3:]
+if a[0]=='info':
+ info_count=int((root/'info-count').read_text()) if (root/'info-count').exists() else 0
+ (root/'info-count').write_text(str(info_count+1))
+ changed=(scenario=='target-change' and count) or (scenario=='sample-target-change' and info_count)
+ info={'ID':'changed' if changed else 'daemon','OSType':'linux','MemTotal':8*1024**3}
+ if scenario=='missing-total' and not count: del info['MemTotal']
+ print(json.dumps(info))
+elif a[:2]==['context','inspect']: print('[{"Endpoints":{"docker":{"Host":"unix:///fake.sock"}}}]')
+elif a[0]=='stats':
+ (root/'count').write_text(str(count+1))
+ unknown=scenario in ['persistent','target-change'] or (scenario=='transient' and not count)
+ print(json.dumps({'ID':'external','MemUsage':'unknown' if unknown else '256MiB / 8GiB'}))
+else: sys.exit(1)
+"#,
+        )
+        .unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let runner = DockerRunner {
+            target: DockerTarget {
+                target_id: "target".into(),
+                cli_path: program.to_str().unwrap().into(),
+                context_name: "fake".into(),
+                endpoint_kind: "unix".into(),
+                daemon_id: "daemon".into(),
+                os_type: "linux".into(),
+                architecture: "arm64".into(),
+            },
+        };
+        for (scenario, expected, attempts) in [
+            (
+                "transient",
+                Ok((8u64 * 1024 - 256 - 512) * 1024 * 1024),
+                "2",
+            ),
+            (
+                "missing-total",
+                Ok((8u64 * 1024 - 256 - 512) * 1024 * 1024),
+                "2",
+            ),
+            ("persistent", Err("UnknownMemory"), "3"),
+            ("target-change", Err("TargetChanged"), "1"),
+            ("sample-target-change", Err("TargetChanged"), "0"),
+        ] {
+            std::fs::write(root.path().join("scenario"), scenario).unwrap();
+            std::fs::write(root.path().join("count"), "0").unwrap();
+            std::fs::write(root.path().join("info-count"), "0").unwrap();
+            let result = available_daemon_memory(&runner, &BTreeSet::new())
+                .await
+                .map_err(|error| error.code);
+            match expected {
+                Ok(bytes) => assert_eq!(result.unwrap(), bytes),
+                Err(code) => assert_eq!(result.unwrap_err(), code),
+            }
+            assert_eq!(
+                std::fs::read_to_string(root.path().join("count")).unwrap(),
+                attempts,
+                "{scenario}"
+            );
+        }
     }
 }

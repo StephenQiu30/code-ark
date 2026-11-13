@@ -10,6 +10,7 @@
 This directory provides a lightweight monitoring stack based on Prometheus and Grafana.
 It is intended for local dashboards, metric collection, and alert rule validation.
 The current setup does not require a `.env` file.
+Reserve 1 GiB for the stack: 512 MiB each for Grafana and Prometheus, plus Docker host overhead.
 
 </details>
 
@@ -36,6 +37,8 @@ The current setup does not require a `.env` file.
 ## 前置条件
 
 - 已安装 Docker 和 Docker Compose
+- 为本组容器预留至少 1 GiB 可用内存，另保留 Docker 自身运行余量。Prometheus 和 Grafana 的内存上限各为 512 MiB。
+- Grafana 官方最低推荐为 [512 MB 内存、1 个 CPU 核心](https://grafana.com/docs/grafana/v13.3/setup-grafana/installation/)。Grafana 13.3.1 在旧的 256 MiB 硬限下可能持续回收内存页，进程没有被 OOM 杀死也可能长期无法开始监听 HTTP。
 
 ## 快速启动
 

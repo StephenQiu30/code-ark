@@ -11,7 +11,6 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { FieldSet, FieldLegend, Field, FieldLabel } from "./ui/field";
-import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { useWorkspace } from "../lib/workspace";
 import type { DiagnosticsPreview } from "../types/toolbox";
 export function DiagnosticsPreviewDialog({
@@ -26,7 +25,7 @@ export function DiagnosticsPreviewDialog({
   const [excluded, setExcluded] = useState<string[]>([]);
   const [includeLogs, setIncludeLogs] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [path, setPath] = useState<string | null>(null);
+  const [exported, setExported] = useState(false);
   const hasLogs = Object.keys(preview.sections).some((key) =>
     key.toLowerCase().includes("log"),
   );
@@ -44,15 +43,11 @@ export function DiagnosticsPreviewDialog({
             {t(
               "只导出以下白名单摘要。不会自动发送给任何人。日志默认排除；未知秘密仍可能需要手动排除。",
             )}
+            {!!preview.riskFlags.length &&
+              ` ${t("请复核高风险内容")}：${preview.riskFlags.join("；")}`}
           </DialogDescription>
         </DialogHeader>
         <p>已排除字段：{preview.excludedFields.join("、") || "无"}</p>
-        {!!preview.riskFlags.length && (
-          <Alert>
-            <AlertTitle>{t("请复核高风险内容")}</AlertTitle>
-            <AlertDescription>{preview.riskFlags.join("；")}</AlertDescription>
-          </Alert>
-        )}
         <FieldSet>
           <FieldLegend>{t("选择要包含的摘要")}</FieldLegend>
           {Object.entries(preview.sections).map(([key, body]) => (
@@ -62,7 +57,7 @@ export function DiagnosticsPreviewDialog({
                   checked={!excluded.includes(key)}
                   onCheckedChange={(checked) =>
                     setExcluded(
-                      checked
+                      checked === true
                         ? excluded.filter((id) => id !== key)
                         : [...excluded, key],
                     )
@@ -79,19 +74,18 @@ export function DiagnosticsPreviewDialog({
             <FieldLabel>
               <Checkbox
                 checked={includeLogs}
-                onCheckedChange={(checked) => setIncludeLogs(checked)}
+                onCheckedChange={(checked) => setIncludeLogs(checked === true)}
               />
               包含已预览的限定日志（最多 100 行）
             </FieldLabel>
           </Field>
         )}
-        {path && <p role="status">{path}</p>}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t("关闭")}
           </Button>
           <Button
-            disabled={busy || !!path}
+            disabled={busy || exported}
             onClick={async () => {
               setBusy(true);
               try {
@@ -102,7 +96,7 @@ export function DiagnosticsPreviewDialog({
                     includeLogs,
                   }),
                 );
-                if (result) setPath(result.path);
+                if (result) setExported(true);
               } finally {
                 setBusy(false);
               }

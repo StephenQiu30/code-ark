@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
+import { ResourceList } from "../components/ResourceList";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "../components/ui/card";
+  Item,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemActions,
+} from "../components/ui/item";
+import { Separator } from "../components/ui/separator";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { useWorkspace } from "../lib/workspace";
@@ -18,7 +21,6 @@ export function GuideHubView() {
   const [guides, setGuides] = useState<GuideSpec[]>([]);
   const [selected, setSelected] = useState<GuideSpec | null>(null);
   const [body, setBody] = useState("");
-  const [exportPath, setExportPath] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -31,12 +33,10 @@ export function GuideHubView() {
   }, [api, run]);
   return (
     <div className="flex flex-col gap-5">
-      <h1>{t("教程")}</h1>
-      <p className="muted">
-        {t(
-          "基础设施连接测试不需要 Git / Node / Rust。教学源码的语言工具链另行安装；待验证示例不代表已通过。",
-        )}
-      </p>
+      <PageHeader
+        title={t("使用指南")}
+        description="从启动第一个服务，到接入你的项目。"
+      />
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
@@ -54,22 +54,21 @@ export function GuideHubView() {
         </Button>
       </div>
       {selected ? (
-        <Card>
-          <CardHeader>
+        <section className="flex min-w-0 flex-col gap-6">
+          <div className="flex flex-col gap-3">
             <Button
               variant="ghost"
               onClick={() => {
                 setSelected(null);
                 setBody("");
-                setExportPath(null);
               }}
             >
               {t("返回全部教程")}
             </Button>
-            <CardTitle>{selected.title}</CardTitle>
-            <CardDescription>{selected.scopeNotice}</CardDescription>
-          </CardHeader>
-          <CardContent>
+            <h2 className="section-title">{selected.title}</h2>
+            <p className="muted">{selected.scopeNotice}</p>
+          </div>
+          <div className="flex min-w-0 flex-col gap-4">
             <dl className="details">
               <dt>{t("客户端版本")}</dt>
               <dd>
@@ -88,10 +87,7 @@ export function GuideHubView() {
                 if (!selected) return;
                 setExportBusy(true);
                 try {
-                  const result = await run(() =>
-                    api.exportGuideSources(selected.guideId),
-                  );
-                  if (result) setExportPath(result.path);
+                  await run(() => api.exportGuideSources(selected.guideId));
                 } finally {
                   setExportBusy(false);
                 }
@@ -104,7 +100,6 @@ export function GuideHubView() {
                 "在原生目录选择器中选择导出位置。只写入公开白名单源码，不会运行示例或复制凭据。",
               )}
             </p>
-            {exportPath && <p role="status">{exportPath}</p>}
             <pre className="guide-text">{body}</pre>
             <h3>{t("执行")}</h3>
             <pre>{selected.invocation}</pre>
@@ -112,55 +107,50 @@ export function GuideHubView() {
             <pre>{selected.expectedOutput}</pre>
             <h3>{t("清理教学数据")}</h3>
             <pre>{selected.cleanup}</pre>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : (
-        <div className="card-grid">
-          {guides.map((guide) => (
-            <Card key={guide.guideId}>
-              <CardHeader>
-                <CardTitle>{guide.title}</CardTitle>
-                <CardDescription>{guide.scopeNotice}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Badge variant="secondary">{guide.status}</Badge>
-                <p className="muted">
-                  {guide.requiredTools.join(" / ") || "离线指南"}
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const result = await run(() =>
-                      api.readGuide(guide.guideId),
-                    );
-                    if (result !== null) {
-                      setSelected(guide);
-                      setBody(result);
-                    }
-                  }}
-                >
-                  {t("阅读指南")}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <ResourceList items={guides} getKey={(guide) => guide.guideId}>
+          {(guide) => (
+            <Item asChild variant="service">
+              <button
+                type="button"
+                aria-label={`阅读指南 ${guide.title}`}
+                onClick={async () => {
+                  const result = await run(() => api.readGuide(guide.guideId));
+                  if (result !== null) {
+                    setSelected(guide);
+                    setBody(result);
+                  }
+                }}
+              >
+                <ItemContent className="min-w-0">
+                  <ItemTitle>{guide.title}</ItemTitle>
+                  <ItemDescription>{guide.scopeNotice}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Badge variant="status">{guide.status}</Badge>
+                  <ArrowUpRight className="size-4" />
+                </ItemActions>
+              </button>
+            </Item>
+          )}
+        </ResourceList>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("MediaCrawler · 宿主机工具")}</CardTitle>
-          <CardDescription>
+      <Separator />
+      <section className="flex min-w-0 flex-col gap-6">
+        <div className="flex flex-col gap-3">
+          <h2 className="section-title">{t("MediaCrawler · 宿主机工具")}</h2>
+          <p className="muted">
             {t("不计入 17 个服务，不通过 Docker 服务启动。")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
           {t(
             "需要 Git / uv。请按包内锁定 commit 与补丁指南操作，实际抓取能力及站点条件单独验证。",
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

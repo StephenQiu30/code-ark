@@ -1,7 +1,6 @@
 import { useT } from "../lib/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
-import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { useWorkspace } from "../lib/workspace";
 import { errorCode } from "../api/tauri";
 import type { LogBatch, LogAck, LogStreamStateEvent } from "../types/toolbox";
@@ -33,7 +32,7 @@ export function appendLogBatch(current: Ring, batch: LogBatch): Ring {
   };
 }
 export function LogViewer({ instanceId }: { instanceId: string }) {
-  const { api } = useWorkspace();
+  const { api, feedback } = useWorkspace();
   const t = useT();
   const [restart, setRestart] = useState(0);
   const [streamId, setStreamId] = useState<string | null>(null);
@@ -52,6 +51,7 @@ export function LogViewer({ instanceId }: { instanceId: string }) {
   const accepted = useRef(new Set<number>());
   const receiveTime = useRef(Date.now());
   const [idle, setIdle] = useState(0);
+  const idleNotice = useRef(0);
   useEffect(() => {
     const previousShutdown = shutdown.current;
     let disposed = false;
@@ -163,7 +163,7 @@ export function LogViewer({ instanceId }: { instanceId: string }) {
     const starting = start().catch((error) => {
       if (disposed) return;
       active.current = null;
-      setError(true);
+      setError(false);
       setMessageCode(errorCode(error));
       setPhase("Unavailable");
       unlisten?.();
@@ -195,18 +195,37 @@ export function LogViewer({ instanceId }: { instanceId: string }) {
         const first = acknowledged.current.values().next().value;
         if (first !== undefined) acknowledged.current.delete(first);
       }
-      void api.ackLogBatch(ack).catch(() => {
-        setError(true);
-      });
+      void api.ackLogBatch(ack).catch(() => {});
     }
   }, [api, ring, streamId]);
-  const copy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(ring.lines.join("\n"));
-    } catch {
-      setError(true);
-    }
-  }, [ring.lines]);
+  const copy = useCallback(
+    () => feedback.copy(ring.lines.join("\n")),
+    [feedback, ring.lines],
+  );
+  useEffect(() => {
+    if (error)
+      feedback.error({
+        code:
+          messageCode ??
+          (phase === "Expired" ? "LogStreamExpired" : "LogReadFailed"),
+      });
+    else if (phase === "AwaitingConsumer")
+      feedback.info("日志已暂停，等待渲染确认");
+    else if (phase === "Stopped") feedback.info("日志订阅已停止");
+  }, [error, messageCode, phase, feedback]);
+  useEffect(() => {
+    const stage =
+      phase === "Active" ? (idle >= 30000 ? 30 : idle >= 10000 ? 10 : 0) : 0;
+    if (stage && stage !== idleNotice.current)
+      feedback.info(
+        stage === 30
+          ? "30 秒未收到新批次；可重新连接读取最近日志。"
+          : "10 秒未收到新批次，可能暂无日志或正在等待消费。",
+        { id: "log-idle" },
+      );
+    if (!stage && idleNotice.current) feedback.dismiss("log-idle");
+    idleNotice.current = stage;
+  }, [idle, phase, feedback]);
   return (
     <div className="flex flex-col gap-3">
       <p className="muted">
@@ -220,37 +239,6 @@ export function LogViewer({ instanceId }: { instanceId: string }) {
       <p role="status">
         {t("已丢弃 / 截断")} {ring.dropped} {t("行")}
       </p>
-      {phase === "AwaitingConsumer" && (
-        <Alert>
-          <AlertTitle>日志已暂停，等待渲染确认</AlertTitle>
-          <AlertDescription>
-            后端已暂停发送；只会在批次提交到界面后确认，不自动增加信用。
-          </AlertDescription>
-        </Alert>
-      )}
-      {phase === "Stopped" && <p>日志订阅已停止</p>}
-      {error && (
-        <Alert>
-          <AlertTitle>
-            {phase === "Expired"
-              ? "日志订阅已过期"
-              : phase === "Failed"
-                ? "日志读取失败"
-                : t("日志连接需要恢复")}
-          </AlertTitle>
-          <AlertDescription>
-            {messageCode && <p>{messageCode}</p>}
-            {t("保留已显示的脱敏内容，请重新连接。不会显示原始 IPC 错误。")}
-          </AlertDescription>
-        </Alert>
-      )}
-      {idle >= 10000 && phase === "Active" && (
-        <p className="muted">
-          {idle >= 30000
-            ? t("30 秒未收到新批次；订阅可能已过期，可重新连接读取最近日志。")
-            : t("10 秒未收到新批次；可能暂无日志或正在等待消费。")}
-        </p>
-      )}
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => setRestart((n) => n + 1)}>
           {t("重新连接日志")}

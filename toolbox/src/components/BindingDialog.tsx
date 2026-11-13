@@ -1,6 +1,13 @@
-import { NativeSelect, NativeSelectOption } from "./ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { useT } from "../lib/i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,18 +17,25 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { FieldGroup, Field, FieldLabel, FieldDescription } from "./ui/field";
+import { FieldGroup, Field, FieldLabel } from "./ui/field";
+import { Skeleton } from "./ui/skeleton";
 import { Input } from "./ui/input";
 import { useWorkspace } from "../lib/workspace";
-import type { DatabaseCandidate, BindingGrantPreview } from "../types/toolbox";
+import type {
+  DatabaseCandidate,
+  BindingGrantPreview,
+  BindingRequirements,
+} from "../types/toolbox";
 export function BindingDialog({
   serviceId,
   onClose,
+  onAuthorized,
 }: {
   serviceId: string;
   onClose: () => void;
+  onAuthorized?: () => void;
 }) {
-  const { api, run } = useWorkspace();
+  const { api, run, feedback, state } = useWorkspace();
   const t = useT();
   const [candidates, setCandidates] = useState<DatabaseCandidate[]>([]);
   const [candidateId, setCandidateId] = useState("");
@@ -30,20 +44,70 @@ export function BindingDialog({
   const [databases, setDatabases] = useState("");
   const [preview, setPreview] = useState<BindingGrantPreview | null>(null);
   const [busy, setBusy] = useState(false);
+  const active = useRef(true);
+  const [requirements, setRequirements] = useState<BindingRequirements | null>(
+    null,
+  );
+  const knownBinding = state.snapshot?.bindings.find(
+    (binding) =>
+      binding.engine ===
+      (state.catalog?.services.find((s) => s.id === serviceId)
+        ?.dependencies[0] ?? serviceId),
+  );
+  const close = () => {
+    active.current = false;
+    onClose();
+  };
+  const finish = () => {
+    if (!active.current) return;
+    close();
+    onAuthorized?.();
+  };
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   useEffect(() => {
     let active = true;
-    void run(() => api.databaseCandidates()).then((result) => {
-      if (active && result) setCandidates(result);
-    });
+    setBusy(true);
+    void run(() =>
+      Promise.all([
+        api.databaseCandidates(),
+        api.bindingRequirements(serviceId),
+      ]),
+    )
+      .then(async (result) => {
+        if (!active || !result) return;
+        const [all, required] = result;
+        setRequirements(required);
+        setDatabases(required.databaseNames.join(", "));
+        const candidates = all.filter(
+          (candidate) => candidate.engine === required.engine,
+        );
+        setCandidates(candidates);
+        if (candidates.length === 1) setCandidateId(candidates[0].candidateId);
+        if (knownBinding && !["mysql", "pgsql", "canal"].includes(serviceId)) {
+          const preview = await run(() =>
+            api.bindingGrantPreview(knownBinding.bindingId, serviceId),
+          );
+          if (active && preview) setPreview(preview);
+        } else if (!candidates.length)
+          feedback.info("未发现可复用数据库，请检查目标与网络。");
+      })
+      .finally(() => {
+        if (active) setBusy(false);
+      });
     return () => {
       active = false;
     };
-  }, [api, run]);
+  }, [api, run, feedback, serviceId, knownBinding?.bindingId]);
   return (
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) close();
       }}
     >
       <DialogContent>
@@ -55,33 +119,28 @@ export function BindingDialog({
             )}
           </DialogDescription>
         </DialogHeader>
-        {!preview ? (
+        {!requirements ? (
+          <Skeleton className="h-40" />
+        ) : !preview ? (
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="binding-candidate">
                 {t("已有数据库")}
               </FieldLabel>
-              <NativeSelect
-                id="binding-candidate"
-                value={candidateId}
-                onChange={(e) => setCandidateId(e.target.value)}
-              >
-                <NativeSelectOption value="">
-                  {t("选择已发现的容器")}
-                </NativeSelectOption>
-                {candidates.map((c) => (
-                  <NativeSelectOption value={c.candidateId} key={c.candidateId}>
-                    {c.name} · {c.engine} · {c.networkNames.join(", ")}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-              {!candidates.length && (
-                <FieldDescription>
-                  {t(
-                    "未发现可复用容器。原生进程或远程数据库拓扑暂不支持，请检查目标与网络。",
-                  )}
-                </FieldDescription>
-              )}
+              <Select value={candidateId} onValueChange={setCandidateId}>
+                <SelectTrigger id="binding-candidate">
+                  <SelectValue placeholder={t("选择已发现的容器")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {candidates.map((c) => (
+                      <SelectItem key={c.candidateId} value={c.candidateId}>
+                        {c.name} · {c.engine} · {c.networkNames.join(", ")}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </Field>
             <Field>
               <FieldLabel htmlFor="binding-user">{t("用户名")}</FieldLabel>
@@ -104,16 +163,20 @@ export function BindingDialog({
                 autoComplete="off"
               />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="binding-databases">
-                {t("允许的专属数据库（逗号分隔）")}
-              </FieldLabel>
-              <Input
-                id="binding-databases"
-                value={databases}
-                onChange={(e) => setDatabases(e.target.value)}
-              />
-            </Field>
+            {(requirements.editableDatabases ||
+              requirements.databaseNames.length > 0) && (
+              <Field>
+                <FieldLabel htmlFor="binding-databases">
+                  {t("允许的专属数据库（逗号分隔）")}
+                </FieldLabel>
+                <Input
+                  id="binding-databases"
+                  value={databases}
+                  readOnly={!requirements.editableDatabases}
+                  onChange={(e) => setDatabases(e.target.value)}
+                />
+              </Field>
+            )}
           </FieldGroup>
         ) : (
           <>
@@ -122,7 +185,10 @@ export function BindingDialog({
               <dt>{t("授权数据库")}</dt>
               <dd>{preview.grant.allowedDatabases.join("、")}</dd>
               <dt>{t("账号范围")}</dt>
-              <dd>{preview.grant.allowedAccounts.join("、")}</dd>
+              <dd>
+                {preview.grant.allowedAccounts.join("、") ||
+                  t("沿用已验证的连接账号")}
+              </dd>
               <dt>{t("操作")}</dt>
               <dd>{preview.grant.operations.join("、")}</dd>
               <dt>{t("服务器指纹")}</dt>
@@ -132,12 +198,18 @@ export function BindingDialog({
           </>
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={close}>
             {t("取消")}
           </Button>
           {!preview ? (
             <Button
-              disabled={busy || !candidateId || !username || !databases.trim()}
+              disabled={
+                busy ||
+                !requirements ||
+                !candidateId ||
+                !username ||
+                (requirements.editableDatabases && !databases.trim())
+              }
               onClick={async () => {
                 setBusy(true);
                 try {
@@ -152,15 +224,19 @@ export function BindingDialog({
                         .filter(Boolean),
                     }),
                   );
+                  if (!active.current) return;
                   setPassword("");
-                  if (binding) {
+                  if (binding && ["mysql", "pgsql"].includes(serviceId)) {
+                    feedback.success("数据库连接已确认");
+                    finish();
+                  } else if (binding) {
                     const result = await run(() =>
                       api.bindingGrantPreview(binding.bindingId, serviceId),
                     );
-                    if (result) setPreview(result);
+                    if (active.current && result) setPreview(result);
                   }
                 } finally {
-                  setBusy(false);
+                  if (active.current) setBusy(false);
                 }
               }}
             >
@@ -175,9 +251,9 @@ export function BindingDialog({
                   const result = await run(() =>
                     api.authorizeDatabaseBinding(preview.previewId),
                   );
-                  if (result) onClose();
+                  if (result) finish();
                 } finally {
-                  setBusy(false);
+                  if (active.current) setBusy(false);
                 }
               }}
             >

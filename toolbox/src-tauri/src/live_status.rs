@@ -23,7 +23,19 @@ use zeroize::Zeroizing;
 
 const REFRESH: Duration = Duration::from_secs(20);
 const TTL: Duration = Duration::from_secs(55);
-const PROBE_DEADLINE: Duration = Duration::from_secs(20);
+fn observation_budget(service: &ServiceSpec) -> Duration {
+    let probes: u64 = service
+        .probes
+        .iter()
+        .map(|probe| {
+            u64::from(probe.attempts.min(5)) * u64::from(probe.timeout_secs.min(60))
+                + u64::from(probe.attempts.min(5).saturating_sub(1))
+        })
+        .sum();
+    // Before/after process evidence and connection metadata have a separate
+    // bounded allowance; the protocol conditions and their own deadlines stay intact.
+    Duration::from_secs(20 + probes)
+}
 
 #[derive(Clone, PartialEq, Eq)]
 struct Basis {
@@ -201,16 +213,21 @@ impl LiveStatus {
             return;
         }
         let epoch = c.epoch;
+        let batch_budget = crate::catalog::load_embedded_catalog()
+            .ok()
+            .and_then(|catalog| catalog.services.iter().map(observation_budget).max())
+            .unwrap_or(Duration::from_secs(20))
+            + Duration::from_secs(5);
         let mut cancelled = self.inner.invalidated.subscribe();
         c.running = true;
         c.last_batch = Some(Instant::now());
         drop(c);
         let live = self.clone();
-        handle.spawn(async move{
-            let _lease=PollLease(live.clone());
-            tokio::select!{
+        handle.spawn(async move {
+            let _lease = PollLease(live.clone());
+            tokio::select! {
                 _=cancelled.changed()=>{},
-                _=tokio::time::timeout(Duration::from_secs(25),live.poll(&engine,store,target,epoch))=>{}
+                _=tokio::time::timeout(batch_budget,live.poll(&engine,store,target,epoch))=>{}
             }
         });
     }
@@ -287,7 +304,7 @@ impl LiveStatus {
             let root = workspace.clone();
             workers.spawn(async move {
                 let check = tokio::time::timeout(
-                    PROBE_DEADLINE,
+                    observation_budget(&service),
                     observe(&own, root, endpoint, &instance, &service),
                 )
                 .await;
@@ -366,7 +383,7 @@ async fn inspect_processes(
         return Err(error("ComponentIdentityUnverified"));
     }
     // Project only ownership and process fields. Docker inspect can also contain plaintext environment and health logs.
-    const TEMPLATE: &str = r#"{"Id":{{json .Id}},"Mounts":{{json .Mounts}},"Config":{"Labels":{{json .Config.Labels}}},"State":{"Status":{{json .State.Status}},"Running":{{json .State.Running}},"OOMKilled":{{json .State.OOMKilled}},"Paused":{{json .State.Paused}},"Error":{{if .State.Error}}"ContainerFailed"{{else}}""{{end}},"ExitCode":{{json .State.ExitCode}},"StartedAt":{{json .State.StartedAt}},"Health":{{if .State.Health}}{"Status":{{json .State.Health.Status}}}{{else}}null{{end}}}}"#;
+    const TEMPLATE: &str = r#"{"Id":{{json .Id}},"Mounts":{{json .Mounts}},"HostConfig":{"Binds":{{json (index .HostConfig "Binds")}},"Mounts":{{json (index .HostConfig "Mounts")}}},"Config":{"Labels":{{json .Config.Labels}}},"State":{"Status":{{json .State.Status}},"Running":{{json .State.Running}},"OOMKilled":{{json .State.OOMKilled}},"Paused":{{json .State.Paused}},"Error":{{if (index .State "Error")}}"ContainerFailed"{{else}}""{{end}},"ExitCode":{{json .State.ExitCode}},"StartedAt":{{json .State.StartedAt}},"Health":{{with (index .State "Health")}}{"Status":{{json (index . "Status")}}}{{else}}null{{end}}}}"#;
     let mut args: Vec<OsString> = ["container", "inspect", "--format", TEMPLATE]
         .into_iter()
         .map(Into::into)
@@ -465,9 +482,6 @@ async fn observe(
     if before.stopped {
         return Ok((ServicePhase::Stopped, None));
     }
-    if !service.dependencies.is_empty() {
-        return Err(error("DependencyInitializationRequired"));
-    }
     let stack = RuntimeStore::new(workspace).stack(&service.id)?;
     let generation = effective.generation_id.clone();
     let secrets = tokio::task::spawn_blocking(move || load_env(&stack, &generation))
@@ -479,6 +493,7 @@ async fn observe(
         None
     };
     let results = probes::evaluate(&ProbeContext {
+        control_root: &engine.control,
         runner: &runner,
         instance: &instance.identity,
         effective,
@@ -511,6 +526,29 @@ async fn observe(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn observation_budget_includes_declared_protocol_attempts_and_metadata() {
+        let catalog = crate::catalog::load_embedded_catalog().unwrap();
+        for service in catalog
+            .services
+            .iter()
+            .filter(|service| ["canal", "temporal", "rocketmq"].contains(&service.id.as_str()))
+        {
+            let declared: u64 = service
+                .probes
+                .iter()
+                .map(|probe| {
+                    u64::from(probe.timeout_secs) * u64::from(probe.attempts)
+                        + u64::from(probe.attempts.saturating_sub(1))
+                })
+                .sum();
+            assert_eq!(
+                observation_budget(service),
+                Duration::from_secs(declared + 20)
+            );
+            assert!(observation_budget(service) > Duration::from_secs(25));
+        }
+    }
     use crate::{
         bindings::OwnedContainerRecord,
         contracts::{EffectiveConfig, InstanceIdentity},

@@ -10,16 +10,14 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
-import {
-  FieldGroup,
-  Field,
-  FieldLabel,
-  FieldError,
-  FieldDescription,
-} from "./ui/field";
+import { FieldGroup, Field, FieldLabel, FieldDescription } from "./ui/field";
 import { Input } from "./ui/input";
 import { useWorkspace } from "../lib/workspace";
-import type { ConfigDraftView, DashboardSnapshot } from "../types/toolbox";
+import type {
+  ConfigDraftView,
+  DashboardSnapshot,
+  OperationRecord,
+} from "../types/toolbox";
 function draftScope(
   snapshot: DashboardSnapshot | null,
   draft: ConfigDraftView,
@@ -38,11 +36,13 @@ function draftScope(
 export function ConfigEditor({
   draft: initial,
   onApplied,
+  disabled = false,
 }: {
   draft: ConfigDraftView;
-  onApplied: () => void;
+  onApplied: (operation: OperationRecord) => void;
+  disabled?: boolean;
 }) {
-  const { api, run, state } = useWorkspace();
+  const { api, run, state, feedback } = useWorkspace();
   const t = useT();
   const [draft, setDraft] = useState(initial);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -63,7 +63,16 @@ export function ConfigEditor({
     (service) => service.instanceId === draft.instanceId,
   );
   const generationMatches =
-    !!live && live.appliedGeneration === draft.baseGeneration;
+    !!live && (live.appliedGeneration ?? "unapplied") === draft.baseGeneration;
+  const service = state.catalog?.services.find(
+    (spec) => spec.id === live?.serviceId,
+  );
+  const fieldLabel = (key: string) => {
+    const port = /^port:(.+):(\d+)$/.exec(key);
+    if (!port) return key;
+    const name = service?.name ?? live?.serviceId ?? port[1];
+    return `${name} 宿主机端口${service?.ports.length === 1 ? "" : `（容器 ${port[2]}）`}`;
+  };
   const identityMatches =
     validationScope === scope && generationMatches && !!state.snapshot?.target;
   const canApply =
@@ -73,12 +82,16 @@ export function ConfigEditor({
     !errors.length &&
     !draft.validationErrors.length &&
     !busy &&
+    !disabled &&
     !state.error &&
     (!needsConsent || consented);
   useEffect(() => {
     setConsentScope(null);
     setConfirm(false);
   }, [scope]);
+  useEffect(() => {
+    if (validated && !identityMatches) feedback.error({ code: "StaleDraft" });
+  }, [validated, identityMatches, feedback]);
   useEffect(() => {
     setDraft(initial);
     setValues({});
@@ -89,14 +102,21 @@ export function ConfigEditor({
   }, [initial.draftId, initial.instanceId, initial.baseGeneration]);
   return (
     <div className="flex flex-col gap-4">
-      <p>草稿 · 基于 {draft.baseGeneration}。保存草稿不会更改当前连接。</p>
+      <p>修改后先保存并验证，再确认应用。</p>
       <FieldGroup>
         {draft.fields.map((field) => (
-          <Field key={field.key} data-disabled={!field.editable || busy}>
-            <FieldLabel htmlFor={`draft-${field.key}`}>{field.key}</FieldLabel>
+          <Field
+            key={field.key}
+            data-disabled={!field.editable || busy || disabled}
+            data-invalid={draft.validationErrors.length > 0}
+          >
+            <FieldLabel htmlFor={`draft-${field.key}`}>
+              {fieldLabel(field.key)}
+            </FieldLabel>
             <Input
               id={`draft-${field.key}`}
-              disabled={!field.editable || busy}
+              disabled={!field.editable || busy || disabled}
+              aria-invalid={draft.validationErrors.length > 0}
               type={field.sensitive ? "password" : "text"}
               value={values[field.key] ?? field.value ?? ""}
               placeholder={field.sensitive ? "已保存的秘密保持不变" : ""}
@@ -115,9 +135,6 @@ export function ConfigEditor({
           </Field>
         ))}
       </FieldGroup>
-      {draft.validationErrors.map((error, index) => (
-        <FieldError key={index}>{error}</FieldError>
-      ))}
       {report ? (
         <div className="flex flex-col gap-2">
           <h3>{t("本草稿的真实环境预检")}</h3>
@@ -135,41 +152,24 @@ export function ConfigEditor({
               ? "未知"
               : `${(report.capacity.daemonFreeBytes / 1024 ** 3).toFixed(1)} GiB`}
           </p>
-          {(report.capacity.workspaceFreeBytes === null ||
-            report.capacity.daemonFreeBytes === null) && (
-            <p>{t("可用磁盘容量未知")}</p>
-          )}
-          {report.issues.map((issue, index) => (
-            <FieldError key={index}>
-              {issue.code}
-              {issue.field ? ` · ${issue.field}` : ""}
-            </FieldError>
-          ))}
         </div>
-      ) : (
-        <p className="muted">{t("请先保存草稿并完成真实环境预检")}</p>
-      )}
-      {validated && !identityMatches && (
-        <FieldError>
-          {t("草稿所属工作区、目标或已应用版本已变化，请重新验证")}
-        </FieldError>
-      )}
+      ) : null}
       {needsConsent && (
         <Field>
           <FieldLabel htmlFor="config-capacity-consent">
             <Checkbox
               id="config-capacity-consent"
               checked={consented}
-              disabled={busy}
+              disabled={busy || disabled}
               onCheckedChange={(checked) =>
-                setConsentScope(checked ? scope : null)
+                setConsentScope(checked === true ? scope : null)
               }
             />
             {t("我理解容量未知，仅同意本次应用")}
           </FieldLabel>
           <FieldDescription>
             {t(
-              "此确认仅适用于当前草稿、目标与基础版本；重新验证或身份变化会清除。",
+              "此确认仅适用于本次修改和当前 Docker 环境；重新验证或切换环境后需要再次确认。",
             )}
           </FieldDescription>
         </Field>
@@ -177,7 +177,7 @@ export function ConfigEditor({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          disabled={busy}
+          disabled={busy || disabled}
           onClick={async () => {
             setBusy(true);
             setValidated(false);
@@ -230,7 +230,7 @@ export function ConfigEditor({
             </DialogTitle>
             <DialogDescription>
               {t(
-                "当前连接仍是已应用版本。应用会重新验证端口、凭据、数据兼容和依赖；完成后以新的后端快照为准。",
+                "应用会重新检查端口、凭据和依赖，保留持久化数据。完成后更新连接信息。",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -239,9 +239,6 @@ export function ConfigEditor({
               <li key={index}>{impact}</li>
             ))}
           </ul>
-          <p>
-            草稿 {draft.draftId} · 基础版本 {draft.baseGeneration}
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirm(false)}>
               {t("取消")}
@@ -257,7 +254,7 @@ export function ConfigEditor({
                   );
                   if (result) {
                     setValidated(false);
-                    onApplied();
+                    onApplied(result);
                   }
                 } finally {
                   setConsentScope(null);

@@ -611,6 +611,13 @@
           "protocol": "tcp"
         },
         {
+          "componentId": "broker",
+          "hostIp": "127.0.0.1",
+          "hostPort": 18082,
+          "containerPort": 8081,
+          "protocol": "tcp"
+        },
+        {
           "componentId": "console",
           "hostIp": "127.0.0.1",
           "hostPort": 18180,
@@ -1755,7 +1762,7 @@
           "required": true
         }
       ],
-      "minMemoryBytes": 805306368,
+      "minMemoryBytes": 1073741824,
       "minWorkspaceFreeBytes": null,
       "minDaemonFreeBytes": null,
       "estimatedPullBytes": null,

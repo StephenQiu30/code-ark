@@ -77,7 +77,10 @@ toolbox/                                      # 已创建的桌面工程
 ├── scripts/                                  # 蓝图同步、校验及其测试
 ├── src/
 │   ├── main.tsx / App.tsx
-│   ├── components/                           # 组件与相邻 __tests__
+│   ├── assets/                               # Figma原始Logo SVG
+│   ├── components/                           # 共享品牌/页面/全局反馈组件、Radix ui/与相邻 __tests__
+│   ├── hooks/                                # Sidebar响应式Hook
+│   ├── lib/                                  # 工作区、全局反馈/异常映射/命令通知、主题、字典与展示工具
 │   ├── views/                                # 页面与相邻 __tests__
 │   ├── api/                                  # 类型化 Tauri 调用
 │   └── types/generated/                      # 后端共享 DTO 生成结果
@@ -116,7 +119,11 @@ toolbox/                                      # 已创建的桌面工程
 | 数据库绑定与初始化 | `bindings`、`database_claims`、`provisioner`、`initialization_store`、`sql_provisioner`、`sql_schema` |
 | 探针与就绪 | `probes`、`probe_clients`、`live_status` |
 | 操作、锁与跨工作区引用 | `operation_store`、`locks`、`usage_index` |
-| 编排、配置应用、重置和诊断 | `orchestrator`、`runtime_state`、`recovery`、`config_apply`、`reset`；诊断命令在 `desktop` |
+| 编排、配置应用、重置和诊断 | `orchestrator`、`dependencies`、`service_bootstrap`、`runtime_state`、`recovery`、`config_apply`、`reset`；诊断命令在 `desktop` |
+
+`BindingRequirements` 由后端派生初始化范围并生成前端 DTO。`toolbox/src-tauri/examples/preset_startup.rs` 使用显式隔离配置，按服务组验证真实启动、探针与保留数据的重复启动；不使用默认用户工作区，源码存在不代表完整运行或安装包验收通过。
+
+`service_bootstrap.rs` 仅执行已核验托管服务的首次配置，当前用于 Nacos 管理员；只读探针不包含账号初始化副作用。公共控制目录下的 `probe-clients/active` 保存短命协议客户端的最小恢复记录，`last-failure.json` 仅保留最近一次安全分类摘要，不保存标准输出、凭据或原始 inspect。
 
 前端只通过类型化 API 调用后端，不获得通用 Shell 或秘密对象。公共 DTO 从后端生成，不手工维护两套接口。测试夹具使用合成配置，不拷贝用户运行目录。精确接口、工具链和验收由对应 design/PRD/plan 维护。
 

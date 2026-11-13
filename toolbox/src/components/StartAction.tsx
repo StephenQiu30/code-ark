@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { Play, LoaderCircle } from "lucide-react";
+import { useState, useRef, useEffect, useId } from "react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -8,7 +9,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "./ui/dialog";
-import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
+import { BindingDialog } from "./BindingDialog";
+import { errorCode } from "../api/tauri";
 import { useWorkspace } from "../lib/workspace";
 import { useT } from "../lib/i18n";
 import type { PreflightReport } from "../types/toolbox";
@@ -21,10 +23,13 @@ export function StartAction({
   sceneId?: string | null;
   label?: string;
 }) {
-  const { api, state, run } = useWorkspace();
+  const { api, state, run, feedback } = useWorkspace();
   const t = useT();
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
+  const notificationScope = useId();
+  const checkSequence = useRef(0);
+  const [bindingService, setBindingService] = useState<string | null>(null);
   const [reports, setReports] = useState<PreflightReport[] | null>(null);
   const [reportScope, setReportScope] = useState("");
   const currentScope = JSON.stringify([
@@ -34,10 +39,18 @@ export function StartAction({
     sceneId,
   ]);
   const scopeChanged = !!reports && reportScope !== currentScope;
+  useEffect(() => {
+    if (scopeChanged) feedback.error({ code: "StaleOperation" });
+  }, [scopeChanged, feedback]);
   const blocked =
     !state.snapshot?.target ||
     !!state.snapshot?.environmentError ||
-    !!state.error;
+    !!state.error ||
+    state.snapshot.operations.some(
+      (operation) =>
+        ["Queued", "Running"].includes(operation.phase) &&
+        operation.allowedActions.includes("cancel"),
+    );
   const submit = async (consent: boolean) => {
     const snapshot = state.snapshot;
     if (!snapshot?.target) return;
@@ -55,11 +68,38 @@ export function StartAction({
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
+    const notice = `start-preflight:${notificationScope}:${++checkSequence.current}`;
+    feedback.loading("正在检查启动条件…", { id: notice });
     try {
-      const result = await run(() =>
-        Promise.all(serviceIds.map((id) => api.preflightService(id))),
-      );
+      const result = await run(async () => {
+        const reports: PreflightReport[] = [];
+        for (const id of serviceIds) {
+          try {
+            reports.push(await api.preflightService(id));
+          } catch (error) {
+            if (
+              [
+                "DependencyBindingRequired",
+                "ExistingDatabaseBindingRequired",
+                "InitializationGrantOutOfScope",
+                "BindingReverificationRequired",
+              ].includes(errorCode(error))
+            )
+              setBindingService(id);
+            throw error;
+          }
+        }
+        return reports;
+      });
       if (!result) return;
+      if (
+        result.some((r) =>
+          r.issues.some((i) => i.severity.toLowerCase() === "error"),
+        )
+      ) {
+        result.forEach((report) => feedback.preflight(report));
+        return;
+      }
       if (
         result.some(
           (r) =>
@@ -73,6 +113,7 @@ export function StartAction({
       }
       await submit(false);
     } finally {
+      feedback.dismiss(notice);
       lock.current = false;
       setBusy(false);
     }
@@ -83,11 +124,24 @@ export function StartAction({
     ) ?? [];
   return (
     <>
+      {bindingService && (
+        <BindingDialog
+          serviceId={bindingService}
+          onClose={() => setBindingService(null)}
+          onAuthorized={() => void start()}
+        />
+      )}
       <Button
         disabled={blocked || busy || !serviceIds.length}
         onClick={() => void start()}
       >
-        {busy ? t("正在检查…") : t(label)}
+        {busy ? (
+          <LoaderCircle data-icon="inline-start" className="animate-spin" />
+        ) : (
+          <Play data-icon="inline-start" />
+        )}
+        {t(label)}
+        {busy ? t(" · 正在检查…") : ""}
       </Button>
       <Dialog
         open={!!reports}
@@ -106,12 +160,6 @@ export function StartAction({
               )}
             </DialogDescription>
           </DialogHeader>
-          {errors.map((issue, i) => (
-            <Alert key={i} variant="destructive">
-              <AlertTitle>{issue.code}</AlertTitle>
-              <AlertDescription>{issue.field}</AlertDescription>
-            </Alert>
-          ))}
           {reports?.map((report, i) => (
             <p key={i}>
               所需内存 {(report.requiredMemoryBytes / 1024 ** 3).toFixed(1)} GiB
@@ -119,9 +167,6 @@ export function StartAction({
               GiB · 容量 {report.capacity.daemonStatus}
             </p>
           ))}
-          {scopeChanged && (
-            <p role="alert">目标、工作区或服务已变化，请取消并重新检查。</p>
-          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setReports(null)}>
               {t("取消")}

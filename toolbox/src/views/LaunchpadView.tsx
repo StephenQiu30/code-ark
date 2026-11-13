@@ -1,14 +1,8 @@
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 import { Field, FieldLabel } from "../components/ui/field";
 import { useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "../components/ui/card";
+import { PageHeader } from "../components/PageHeader";
+import { ScenarioItem } from "../components/ScenarioItem";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -31,7 +25,7 @@ const boundaries: Record<string, string> = {
     "分别验证订阅与消息收发；Canal → 队列桥接为选做示例，不会自动部署。",
   "search-observability": "真实业务采集器及采集目标由应用提供。",
 };
-export function LaunchpadView() {
+export function LaunchpadView({ compact = false }: { compact?: boolean }) {
   const { state, api, run } = useWorkspace();
   const [stopBusy, setStopBusy] = useState(false);
   const t = useT();
@@ -39,6 +33,12 @@ export function LaunchpadView() {
   const [queue, setQueue] = useState("kafka");
   const [search, setSearch] = useState("elastic");
   const catalog = state.catalog;
+  const preferred = catalog?.scenes.filter((scene) =>
+    ["backend-mysql", "workflow-temporal"].includes(scene.id),
+  );
+  const previewScenes = preferred?.length
+    ? preferred
+    : catalog?.scenes.slice(0, 2);
   const selectedIds =
     selected?.id === "cdc-messaging"
       ? [
@@ -56,41 +56,23 @@ export function LaunchpadView() {
               : id !== "monitoring"),
         ) ?? []);
   return (
-    <section className="flex flex-col gap-4">
-      <div className="section-heading">
-        <h2>{t("选择需要的基础设施")}</h2>
-        <span className="muted">
-          {catalog?.scenes.length ?? 0} 个场景 · {catalog?.services.length ?? 0}{" "}
-          个服务
-        </span>
-      </div>
-      <div className="card-grid">
-        {catalog?.scenes.map((scene) => (
-          <Card key={scene.id}>
-            <CardHeader>
-              <CardTitle>{scene.name}</CardTitle>
-              <CardDescription>
-                {scene.services
-                  .map(
-                    (id) =>
-                      catalog.services.find((s) => s.id === id)?.name ?? id,
-                  )
-                  .join(" / ")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="muted">{t(boundaries[scene.id])}</p>
-            </CardContent>
-            <CardFooter>
-              <Button
-                variant="outline"
-                aria-label={`查看 ${scene.name}`}
-                onClick={() => setSelected(scene)}
-              >
-                {t("查看")}
-              </Button>
-            </CardFooter>
-          </Card>
+    <section className="flex flex-col gap-8">
+      {compact ? (
+        <h2 className="section-title">{t("按项目开始")}</h2>
+      ) : (
+        <PageHeader
+          title={t("场景启动台")}
+          description={t("选择项目所需的服务组合。")}
+        />
+      )}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+        {(compact ? previewScenes : catalog?.scenes)?.map((scene) => (
+          <ScenarioItem
+            key={scene.id}
+            scene={scene}
+            services={catalog?.services ?? []}
+            onSelect={() => setSelected(scene)}
+          />
         ))}
       </div>
       <Dialog
@@ -113,8 +95,11 @@ export function LaunchpadView() {
               </FieldLabel>
               <ToggleGroup
                 aria-labelledby="queue-label"
-                value={[queue]}
-                onValueChange={(value) => setQueue(value[0] ?? queue)}
+                type="single"
+                value={queue}
+                onValueChange={(value) => {
+                  if (value) setQueue(value);
+                }}
                 variant="outline"
               >
                 <ToggleGroupItem value="kafka">Kafka</ToggleGroupItem>
@@ -128,8 +113,11 @@ export function LaunchpadView() {
               <FieldLabel id="search-label">{t("选择范围")}</FieldLabel>
               <ToggleGroup
                 aria-labelledby="search-label"
-                value={[search]}
-                onValueChange={(value) => setSearch(value[0] ?? search)}
+                type="single"
+                value={search}
+                onValueChange={(value) => {
+                  if (value) setSearch(value);
+                }}
                 variant="outline"
               >
                 <ToggleGroupItem value="elastic">Elastic</ToggleGroupItem>

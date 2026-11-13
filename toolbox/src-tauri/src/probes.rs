@@ -5,6 +5,7 @@ use crate::docker_cli::DockerRunner;
 use crate::env_store::SecretValues;
 
 pub struct ProbeContext<'a> {
+    pub control_root: &'a std::path::Path,
     pub runner: &'a DockerRunner,
     pub instance: &'a InstanceIdentity,
     pub effective: &'a EffectiveConfig,
@@ -373,13 +374,11 @@ async fn database(cx: &ProbeContext<'_>, port: u16) -> Check {
             .fetch_all(&mut c)
             .await
             .map_err(|_| err("DatabaseQueryFailed"))?;
-        let db = cx.field("MYSQL_DATABASE")?.replace('`', "``");
-        let permitted = grants.iter().any(|g| {
-            g.split_once(" ON ").is_some_and(|(privs, scope)| {
-                (scope.starts_with(&format!("`{db}`.* TO ")) || scope.starts_with("*.* TO "))
-                    && (privs.contains("SELECT") || privs.contains("ALL PRIVILEGES"))
-            })
-        });
+        let permitted = crate::bindings::mysql_grants_allow(
+            &grants.join("\n"),
+            "SELECT",
+            Some(cx.field("MYSQL_DATABASE")?),
+        );
         checked(v == "ok" && permitted)
     } else {
         let opts = sqlx::postgres::PgConnectOptions::new()
@@ -1005,7 +1004,7 @@ mod tests {
             .iter()
             .find(|p| p.component_id == component)
             .unwrap();
-        let effective = EffectiveConfig {
+        let mut effective = EffectiveConfig {
             ports: vec![crate::contracts::PortMapping {
                 component_id: component.into(),
                 container_port: port,
@@ -1021,6 +1020,15 @@ mod tests {
             config_digest: String::new(),
             image_artifacts: vec![],
         };
+        if service_id == "nacos" {
+            effective.ports.push(crate::contracts::PortMapping {
+                component_id: component.into(),
+                container_port: 8080,
+                host_port,
+                host_ip: "127.0.0.1".into(),
+                protocol: "tcp".into(),
+            });
+        }
         let target = crate::contracts::DockerTarget {
             target_id: "t".into(),
             context_name: "unused".into(),
@@ -1044,6 +1052,7 @@ mod tests {
         ]));
         let runner = DockerRunner { target };
         let ctx = ProbeContext {
+            control_root: std::path::Path::new(""),
             runner: &runner,
             service: &service,
             instance: &instance,
@@ -1058,11 +1067,15 @@ mod tests {
         } else {
             port
         };
-        let observed = Observed {
+        let mut observed = Observed {
             id: String::new(),
             started: String::new(),
             ports: json!({format!("{actual}/tcp"):[{"HostIp":"127.0.0.1","HostPort":host_port.to_string()}]}),
         };
+        if service_id == "nacos" {
+            observed.ports["8080/tcp"] =
+                json!([{"HostIp":"127.0.0.1","HostPort":host_port.to_string()}]);
+        }
         let http = Client::builder()
             .no_proxy()
             .redirect(reqwest::redirect::Policy::none())
@@ -1202,5 +1215,44 @@ mod tests {
             .await
             .is_ok()
         );
+    }
+    #[tokio::test]
+    async fn nacos_denied_login_is_never_readiness_success() {
+        for status in [401, 403] {
+            let result = http_fixture(
+                "nacos",
+                "nacos",
+                8848,
+                vec![("/nacos/v3/auth/user/login", status, "", "User not found!")],
+            )
+            .await;
+            assert_eq!(result.unwrap_err().code, "ProbeAuthenticationFailed");
+        }
+    }
+    #[tokio::test]
+    async fn nacos_valid_login_cannot_mask_denied_console_access() {
+        for status in [401, 403] {
+            let result = http_fixture(
+                "nacos",
+                "nacos",
+                8848,
+                vec![
+                    (
+                        "/nacos/v3/auth/user/login",
+                        200,
+                        "",
+                        r#"{"accessToken":"fixture-token"}"#,
+                    ),
+                    (
+                        "/v3/console/core/namespace/list",
+                        status,
+                        "",
+                        r#"{"code":403,"data":null}"#,
+                    ),
+                ],
+            )
+            .await;
+            assert_eq!(result.unwrap_err().code, "ProbeAuthenticationFailed");
+        }
     }
 }

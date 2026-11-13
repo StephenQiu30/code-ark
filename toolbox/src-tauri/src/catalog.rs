@@ -55,6 +55,9 @@ pub fn resolve_startup_order(
             .ok_or_else(|| ToolboxError::new("UnknownService"))?
             .id
             .as_str();
+        if bound.contains(canonical) {
+            continue;
+        }
         visit(
             canonical,
             &services,
@@ -84,6 +87,38 @@ mod tests {
         );
     }
     #[test]
+    fn monitoring_budget_covers_component_limits_and_grafana_startup_floor() {
+        let catalog = load_embedded_catalog().unwrap();
+        let monitoring = catalog
+            .services
+            .iter()
+            .find(|service| service.id == "monitoring")
+            .unwrap();
+        let compose: serde_json::Value = serde_saphyr::from_str(include_str!(
+            "../../../services/monitoring-start-local/docker-compose.yml"
+        ))
+        .unwrap();
+        let limits = ["grafana", "prometheus"].map(|id| {
+            compose["services"][id]["deploy"]["resources"]["limits"]["memory"]
+                .as_str()
+                .unwrap()
+                .strip_suffix('M')
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+                * 1024
+                * 1024
+        });
+        assert!(
+            limits[0] >= 512 * 1024 * 1024,
+            "Grafana must meet its official minimum startup memory recommendation"
+        );
+        assert!(
+            monitoring.min_memory_bytes >= limits.iter().sum::<u64>(),
+            "Preflight must budget for both components together"
+        );
+    }
+    #[test]
     fn dag_uses_selected_bindings() {
         let c = load_embedded_catalog().unwrap();
         assert_eq!(
@@ -109,7 +144,14 @@ mod tests {
             server_fingerprint: "verified".into(),
         };
         assert_eq!(
-            resolve_startup_order(&c, &["temporal".into()], &vec![binding]).unwrap(),
+            resolve_startup_order(&c, &["temporal".into()], &vec![binding.clone()]).unwrap(),
+            vec!["temporal"]
+        );
+        // A scene can explicitly select PostgreSQL as well as its consumer.
+        // The selected external database still takes its place in the graph.
+        assert_eq!(
+            resolve_startup_order(&c, &["pgsql".into(), "temporal".into()], &vec![binding])
+                .unwrap(),
             vec!["temporal"]
         );
     }

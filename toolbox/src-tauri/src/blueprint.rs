@@ -55,6 +55,29 @@ fn safe_token(value: &str) -> bool {
 fn literal(value: &str) -> String {
     value.replace('$', "$$")
 }
+fn canal_scope_blacklist(bindings: &BindingSet) -> Result<String, ToolboxError> {
+    let mut mysql = bindings.iter().filter(|binding| binding.engine == "mysql");
+    let binding = mysql.next().ok_or_else(|| error("BindingRequired"))?;
+    if mysql.next().is_some()
+        || binding.grant != "ObserveReplication"
+        || binding.allowed_databases.is_empty()
+        || binding
+            .allowed_databases
+            .iter()
+            .any(|database| !crate::bindings::valid_database_name(database))
+    {
+        return Err(error("InitializationGrantOutOfScope"));
+    }
+    // Canal lowercases names before matching. The binding's identifier whitelist
+    // excludes regex metacharacters; the editable table filter is a separate limit.
+    let databases = binding
+        .allowed_databases
+        .iter()
+        .map(|database| database.to_ascii_lowercase())
+        .collect::<Vec<_>>()
+        .join("|");
+    Ok(format!("(?!(?:{databases})[.]).*"))
+}
 fn json_env(value: &Value) -> BTreeMap<String, Value> {
     match value {
         Value::Object(map) => map.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
@@ -268,6 +291,28 @@ pub fn render_override(
         let mut command = None;
         let mut mounts = None;
         let mut build = None;
+        if service.id == "temporal"
+            && ["temporal", "temporal-schema-setup"].contains(&component.id.as_str())
+            && let Some(binding) = bindings.iter().find(|b| b.engine == "pgsql")
+        {
+            if binding.container_port == 0 {
+                return Err(error("InvalidBinding"));
+            }
+            environment.insert("DB_PORT".into(), json!(binding.container_port.to_string()));
+        }
+        if service.id == "canal" && component.id == "canal-server" {
+            // The image creates the second instance only in multi-stream mode.
+            // Keep the readiness client's fixed ID on its own destination.
+            environment.insert("canal.destinations".into(), json!("example,codeark_probe"));
+            environment.insert("canal.instance.multi.stream.on".into(), json!("true"));
+            // TSDB enumerates visible schemas before applying its table whitelist.
+            // Its schema blacklist is checked first, so it must derive from the
+            // backend grant rather than the editable CANAL_FILTER_REGEX.
+            environment.insert(
+                "canal.instance.filter.black.regex".into(),
+                json!(canal_scope_blacklist(bindings)?),
+            );
+        }
         if service.id == "xxjob" {
             let host = required("MYSQL_HOST")?;
             let port = required("MYSQL_PORT")?;
@@ -375,7 +420,9 @@ pub fn render_override(
             }
         }
         if service.id == "rocketmq" && component.id == "broker" {
-            ports.push(json!({"target":8081,"published":effective.ports.iter().find(|p|p.component_id==component.id&&p.container_port==8081).map_or(18082,|p|p.host_port).to_string(),"host_ip":"127.0.0.1","protocol":"tcp"}));
+            // Proxy publishing must participate in catalog configuration,
+            // preflight and isolation; never introduce a guessed host port here.
+            host_port(8081)?;
             command = Some(vec![
                 "sh".into(),
                 "mqbroker".into(),
@@ -517,6 +564,173 @@ curl --config /run/codeark/auth.curlrc http://elasticsearch:9200/_license | grep
 mod tests {
     use super::*;
     use std::collections::BTreeMap;
+    #[test]
+    fn rocket_proxy_uses_the_declared_effective_port_and_rejects_missing_mapping() {
+        let (root, service, identity, mut effective, values) = inputs("rocketmq");
+        let proxy = effective
+            .ports
+            .iter_mut()
+            .find(|mapping| mapping.component_id == "broker" && mapping.container_port == 8081)
+            .unwrap();
+        proxy.host_port = 28643;
+        let artifact = render_override(
+            root.path(),
+            &service,
+            &identity,
+            &effective,
+            &values,
+            &vec![],
+        )
+        .unwrap();
+        let rendered = model(root.path(), &artifact);
+        let mappings = rendered["services"]["broker"]["ports"].as_array().unwrap();
+        let proxy = mappings
+            .iter()
+            .filter(|mapping| mapping["target"] == 8081)
+            .collect::<Vec<_>>();
+        assert_eq!(proxy.len(), 1);
+        assert_eq!(proxy[0]["published"], "28643");
+        assert!(
+            !mappings
+                .iter()
+                .any(|mapping| mapping["published"] == "18082")
+        );
+        effective
+            .ports
+            .retain(|mapping| mapping.container_port != 8081);
+        assert_eq!(
+            render_override(
+                root.path(),
+                &service,
+                &identity,
+                &effective,
+                &values,
+                &vec![]
+            )
+            .err()
+            .unwrap()
+            .code,
+            "MissingPort"
+        );
+    }
+    fn canal_binding(identity: &InstanceIdentity) -> DatabaseBinding {
+        DatabaseBinding {
+            binding_id: "scoped-mysql".into(),
+            target_id: identity.target_id.clone(),
+            daemon_id: identity.daemon_id.clone(),
+            engine: "mysql".into(),
+            lifecycle_owner: "Managed".into(),
+            container_id: "mysql-container".into(),
+            network_name: "mysql-network".into(),
+            network_alias: "mysql".into(),
+            container_port: 3306,
+            host_endpoint: None,
+            credential_ref: SecretRef {
+                key: "mysql-credential".into(),
+            },
+            allowed_databases: vec!["foo_bar".into(), "billing".into()],
+            grant: "ObserveReplication".into(),
+            server_fingerprint: "verified-server".into(),
+        }
+    }
+    #[test]
+    fn canal_reserves_a_probe_destination_and_blacklists_only_from_granted_databases() {
+        let (root, service, identity, effective, mut values) = inputs("canal");
+        // A narrower user filter is retained; changing it cannot widen the grant.
+        values
+            .0
+            .insert("CANAL_FILTER_REGEX".into(), "foo_bar\\.orders".into());
+        let artifact = render_override(
+            root.path(),
+            &service,
+            &identity,
+            &effective,
+            &values,
+            &vec![canal_binding(&identity)],
+        )
+        .unwrap();
+        let rendered = model(root.path(), &artifact);
+        let env = &rendered["services"]["canal-server"]["environment"];
+        assert_eq!(env["canal.destinations"], "example,codeark_probe");
+        assert_eq!(env["canal.instance.multi.stream.on"], "true");
+        assert_eq!(env["canal.instance.tsdb.enable"], "true");
+        assert_eq!(env["canal.instance.filter.regex"], "foo_bar\\.orders");
+        assert_eq!(
+            env["canal.instance.filter.black.regex"],
+            "(?!(?:foo_bar|billing)[.]).*"
+        );
+        values.0.insert("CANAL_FILTER_REGEX".into(), ".*".into());
+        let artifact = render_override(
+            root.path(),
+            &service,
+            &identity,
+            &effective,
+            &values,
+            &vec![canal_binding(&identity)],
+        )
+        .unwrap();
+        assert_eq!(
+            model(root.path(), &artifact)["services"]["canal-server"]["environment"]["canal.instance.filter.black.regex"],
+            env["canal.instance.filter.black.regex"]
+        );
+    }
+    #[test]
+    fn canal_blacklist_rejects_missing_ungranted_and_regex_bearing_scope() {
+        let (_, _, identity, _, _) = inputs("canal");
+        assert!(canal_scope_blacklist(&vec![]).is_err());
+        let mut binding = canal_binding(&identity);
+        binding.allowed_databases.push("foo.*".into());
+        assert!(canal_scope_blacklist(&vec![binding]).is_err());
+        let mut binding = canal_binding(&identity);
+        binding.allowed_databases.clear();
+        assert!(canal_scope_blacklist(&vec![binding]).is_err());
+        let mut binding = canal_binding(&identity);
+        binding.grant = "ReadOnlyConnect".into();
+        assert!(canal_scope_blacklist(&vec![binding]).is_err());
+        assert!(
+            canal_scope_blacklist(&vec![canal_binding(&identity), canal_binding(&identity)])
+                .is_err()
+        );
+    }
+    #[test]
+    fn temporal_uses_the_verified_database_container_port() {
+        let (root, service, identity, effective, values) = inputs("temporal");
+        let binding = DatabaseBinding {
+            binding_id: "verified-pg".into(),
+            target_id: identity.target_id.clone(),
+            daemon_id: identity.daemon_id.clone(),
+            engine: "pgsql".into(),
+            lifecycle_owner: "ExternalConnected".into(),
+            container_id: "pg-container".into(),
+            network_name: "pg-network".into(),
+            network_alias: "pg-database".into(),
+            container_port: 5544,
+            host_endpoint: None,
+            credential_ref: SecretRef {
+                key: "pg-credential".into(),
+            },
+            allowed_databases: vec!["temporal".into(), "temporal_visibility".into()],
+            grant: "InitializeNamedResources".into(),
+            server_fingerprint: "verified-server".into(),
+        };
+        let artifact = render_override(
+            root.path(),
+            &service,
+            &identity,
+            &effective,
+            &values,
+            &vec![binding],
+        )
+        .unwrap();
+        let rendered = model(root.path(), &artifact);
+        for id in ["temporal", "temporal-schema-setup"] {
+            assert_eq!(rendered["services"][id]["environment"]["DB_PORT"], "5544");
+            assert_eq!(
+                rendered["services"][id]["environment"]["POSTGRES_SEEDS"],
+                "pg-database"
+            );
+        }
+    }
     fn inputs(
         id: &str,
     ) -> (
@@ -716,7 +930,12 @@ mod tests {
             .map(|s| s.id)
         {
             let (dir, s, i, c, secrets) = inputs(&id);
-            let a = render_override(dir.path(), &s, &i, &c, &secrets, &vec![]).unwrap();
+            let bindings = if id == "canal" {
+                vec![canal_binding(&i)]
+            } else {
+                vec![]
+            };
+            let a = render_override(dir.path(), &s, &i, &c, &secrets, &bindings).unwrap();
             let m = model(dir.path(), &a);
             for component in &s.components {
                 assert!(

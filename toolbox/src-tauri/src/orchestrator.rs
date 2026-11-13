@@ -142,10 +142,31 @@ impl Engine {
             .read()
             .map_err(|_| error("StateUnavailable"))?
             .clone();
+        let bindings = self.load_bindings()?;
         let services = crate::catalog::load_embedded_catalog()?
             .services
             .into_iter()
             .map(|s| {
+                if let Some(binding) = bindings.iter().find(|b| {
+                    b.engine == s.id
+                        && target.as_ref().is_some_and(|t| {
+                            t.target_id == b.target_id && t.daemon_id == b.daemon_id
+                        })
+                }) && !instances
+                    .iter()
+                    .any(|i| i.identity.service_id == s.id && !i.containers.is_empty())
+                {
+                    return ServiceSnapshot {
+                        service_id: s.id,
+                        instance_id: Some(format!("binding-{}", binding.binding_id)),
+                        phase: ServicePhase::ExternalObserve,
+                        ownership: "ExternalConnected".into(),
+                        desired_generation: None,
+                        applied_generation: None,
+                        last_ready_generation: None,
+                        message_code: None,
+                    };
+                }
                 if let Some(i) = instances.iter().find(|i| i.identity.service_id == s.id) {
                     let observation = self.live_status.service_snapshot(i, target.as_ref());
                     let phase = observation
@@ -197,7 +218,6 @@ impl Engine {
                 }
             })
             .collect();
-        let bindings = self.load_bindings()?;
         Ok(DashboardSnapshot {
             workspace: store.workspace,
             target,
@@ -385,21 +405,97 @@ impl Engine {
         let target = self.target()?;
         let runner = DockerRunner::connect(target.clone()).await?;
         let service = self.service(id)?;
-        if !service.dependencies.is_empty() {
-            return Err(error("DependencyInitializationRequired"));
-        }
         let instance = self.instance_for(&service, &target)?;
-        let effective = self.effective(&instance, &service, &target)?;
-        let (ports, ids) = self.owned(&runner, &instance).await?;
-        crate::preflight::run_preflight(
-            &runner,
-            &service,
-            &effective,
-            Path::new(&self.store()?.workspace.root),
-            &ports,
-            &ids,
-        )
-        .await
+        let global = self.load_bindings()?;
+        if service.dependencies.iter().any(|dependency| {
+            global
+                .iter()
+                .any(|b| b.engine == *dependency && b.target_id == target.target_id)
+                && !instance.bindings.iter().any(|b| b.engine == *dependency)
+        }) {
+            return Err(error("DependencyBindingRequired"));
+        }
+        let mut external: Vec<DatabaseBinding> = instance
+            .bindings
+            .iter()
+            .filter(|b| b.lifecycle_owner != "Managed")
+            .cloned()
+            .collect();
+        if instance.containers.is_empty() {
+            external.extend(global.into_iter().filter(|b| {
+                b.engine == id && b.target_id == target.target_id && b.daemon_id == target.daemon_id
+            }));
+        }
+        if external.iter().any(|b| b.engine == id) {
+            return Ok(PreflightReport {
+                issues: vec![],
+                capacity: crate::storage_probe::capacity(
+                    Path::new(&self.store()?.workspace.root),
+                    None,
+                )?,
+                required_memory_bytes: 0,
+                daemon_memory_bytes: serde_json::from_slice::<Value>(
+                    &runner.run_read(&["info", "--format", "{{json .}}"]).await?,
+                )
+                .map_err(|_| error("DockerOutputInvalid"))?["MemTotal"]
+                    .as_u64()
+                    .ok_or_else(|| error("UnknownMemory"))?,
+                requires_capacity_consent: false,
+            });
+        }
+        let order = crate::catalog::resolve_startup_order(
+            &crate::catalog::load_embedded_catalog()?,
+            &[id.into()],
+            &external,
+        )?;
+        let mut combined: Option<PreflightReport> = None;
+        for id in order {
+            let service = self.service(&id)?;
+            let instance = self.instance_for(&service, &target)?;
+            if ["mysql", "pgsql"].contains(&service.id.as_str())
+                && instance.containers.is_empty()
+                && self
+                    .database_candidates(&runner)
+                    .await?
+                    .iter()
+                    .any(|candidate| candidate.engine == service.id)
+            {
+                return Err(error("ExistingDatabaseBindingRequired"));
+            }
+            let effective = self.effective(&instance, &service, &target)?;
+            let (ports, ids) = self.owned(&runner, &instance).await?;
+            let report = crate::preflight::run_preflight(
+                &runner,
+                &service,
+                &effective,
+                Path::new(&self.store()?.workspace.root),
+                &ports,
+                &ids,
+            )
+            .await?;
+            if let Some(total) = &mut combined {
+                total.required_memory_bytes = total
+                    .required_memory_bytes
+                    .saturating_add(report.required_memory_bytes);
+                total.daemon_memory_bytes =
+                    total.daemon_memory_bytes.min(report.daemon_memory_bytes);
+                total.requires_capacity_consent |= report.requires_capacity_consent;
+                total.issues.extend(report.issues);
+            } else {
+                combined = Some(report);
+            }
+        }
+        let mut report = combined.ok_or_else(|| error("UnknownService"))?;
+        if report.required_memory_bytes > report.daemon_memory_bytes
+            && !report.issues.iter().any(|i| i.code == "InsufficientMemory")
+        {
+            report.issues.push(PreflightIssue {
+                code: "InsufficientMemory".into(),
+                field: None,
+                severity: "error".into(),
+            });
+        }
+        Ok(report)
     }
     pub async fn preflight_configuration(
         &self,
@@ -529,7 +625,27 @@ impl Engine {
         }
         self.verify_native_runtime()?;
         let selected = validate_selection(&crate::catalog::load_embedded_catalog()?, &request)?;
-        let bindings = self.load_bindings()?;
+        let mut bindings = vec![];
+        for id in &selected {
+            bindings.extend(
+                self.instance_for(&self.service(id)?, &target)?
+                    .bindings
+                    .into_iter()
+                    .filter(|b| b.lifecycle_owner != "Managed"),
+            );
+        }
+        for binding in self.load_bindings()? {
+            if selected.contains(&binding.engine)
+                && binding.target_id == target.target_id
+                && binding.daemon_id == target.daemon_id
+                && !store
+                    .list()?
+                    .iter()
+                    .any(|i| i.identity.service_id == binding.engine && !i.containers.is_empty())
+            {
+                bindings.push(binding);
+            }
+        }
         let order = crate::catalog::resolve_startup_order(
             &crate::catalog::load_embedded_catalog()?,
             &selected,
@@ -539,9 +655,6 @@ impl Engine {
         let mut instances = vec![];
         for id in &order {
             let service = self.service(id)?;
-            if !service.dependencies.is_empty() {
-                return Err(error("DependencyInitializationRequired"));
-            }
             self.images(&service, &target)?;
             instances.push(self.instance_for(&service, &target)?);
         }
@@ -697,9 +810,6 @@ impl Engine {
                 if report.requires_capacity_consent && !request.accept_unknown_capacity {
                     return Err(error("UnknownCapacity"));
                 }
-                if !service.dependencies.is_empty() {
-                    return Err(error("DependencyInitializationRequired"));
-                }
                 if ["mysql", "pgsql"].contains(&service.id.as_str())
                     && i.containers.is_empty()
                     && self
@@ -720,6 +830,7 @@ impl Engine {
                 if !outcome.conflicts.is_empty() {
                     return Err(error("BlueprintConflict"));
                 }
+                let dependency = self.dependency(&runner, &service, i, &context).await?;
                 let envpath = stack.join(".env");
                 reject_links(&envpath)?;
                 let applying = i.pending_env.is_some();
@@ -742,7 +853,10 @@ impl Engine {
                     existing,
                     &sample,
                     &service,
-                    &crate::env_store::SecretValues::default(),
+                    dependency
+                        .as_ref()
+                        .map(|setup| &setup.inherited)
+                        .unwrap_or(&crate::env_store::SecretValues::default()),
                     existing.is_none(),
                 )?;
                 if !candidate.validation_errors.is_empty() {
@@ -769,6 +883,24 @@ impl Engine {
                 let secrets = crate::env_store::SecretValues(crate::env_store::parse_env(
                     &candidate.document,
                 )?);
+                if let Some(setup) = &dependency {
+                    self.progress(
+                        &mut op,
+                        &service.id,
+                        "initialize",
+                        "Running",
+                        "InitializingScopedDatabase",
+                    )?;
+                    self.initialize_dependency(&runner, &service, i, setup, &secrets, &context)
+                        .await?;
+                    self.progress(
+                        &mut op,
+                        &service.id,
+                        "initialize",
+                        "Completed",
+                        "DependencyInitialized",
+                    )?;
+                }
                 let artifact = render_override(
                     &stack,
                     &service,
@@ -830,6 +962,23 @@ impl Engine {
                     preset_refs: i.active_presets.clone(),
                     status: "Pending".into(),
                 })?;
+                for binding in i.bindings.iter().filter(|b| b.lifecycle_owner == "Managed") {
+                    if let Some(provider) = store.list()?.iter().find(|p| {
+                        p.containers
+                            .iter()
+                            .any(|c| c.container_id == binding.container_id)
+                    }) {
+                        usage.register(crate::usage_index::UsageRegistration {
+                            target_id: i.identity.target_id.clone(),
+                            provider_instance_id: provider.identity.instance_id.clone(),
+                            consumer_workspace_id: i.identity.workspace_id.clone(),
+                            consumer_instance_id: i.identity.instance_id.clone(),
+                            operation_id: op.operation_id.clone(),
+                            preset_refs: i.active_presets.clone(),
+                            status: "Active".into(),
+                        })?;
+                    }
+                }
                 self.progress(
                     &mut op,
                     &service.id,
@@ -886,6 +1035,24 @@ impl Engine {
                 i.phase = ServicePhase::RunningUnverified;
                 store.save(i)?;
                 op.applied_generation = Some(effective.generation_id.clone());
+                if service.id == "nacos" {
+                    self.progress(
+                        &mut op,
+                        &service.id,
+                        "initialize",
+                        "Running",
+                        "InitializingManagedAdministrator",
+                    )?;
+                    crate::service_bootstrap::nacos(self, &runner, i, &effective, &secrets, &cancel)
+                        .await?;
+                    self.progress(
+                        &mut op,
+                        &service.id,
+                        "initialize",
+                        "Completed",
+                        "ManagedAdministratorVerified",
+                    )?;
+                }
                 self.progress(
                     &mut op,
                     &service.id,
@@ -896,6 +1063,7 @@ impl Engine {
                 let started = std::time::Instant::now();
                 let results = loop {
                     let results = crate::probes::evaluate(&crate::probes::ProbeContext {
+                        control_root: &self.control,
                         runner: &runner,
                         instance: &i.identity,
                         effective: &effective,
@@ -925,6 +1093,11 @@ impl Engine {
                 }
                 crate::config_apply::commit_pending(&stack, i)?;
                 i.phase = ServicePhase::Ready;
+                for claim in &mut i.claims {
+                    if claim.status == "DatabaseCreated" {
+                        claim.status = "Initialized".into();
+                    }
+                }
                 i.message_code = results.iter().find_map(|p| p.warning_code.clone());
                 i.last_ready_generation = Some(effective.generation_id.clone());
                 usage.register(crate::usage_index::UsageRegistration {
@@ -1292,6 +1465,32 @@ impl Engine {
         Ok(op)
     }
     pub fn connection(&self, id: &str) -> Result<ConnectionView, ToolboxError> {
+        if let Some(binding_id) = id.strip_prefix("binding-") {
+            let binding = self
+                .load_bindings()?
+                .into_iter()
+                .find(|b| b.binding_id == binding_id)
+                .ok_or_else(|| error("UnknownBinding"))?;
+            let target = self.target()?;
+            if binding.target_id != target.target_id || binding.daemon_id != target.daemon_id {
+                return Err(error("TargetChanged"));
+            }
+            return Ok(ConnectionView {
+                instance_id: id.into(),
+                applied_generation: "verified-binding".into(),
+                host_endpoints: binding.host_endpoint.into_iter().collect(),
+                container_endpoints: vec![Endpoint {
+                    label: binding.engine.clone(),
+                    component_id: binding.engine,
+                    host: binding.network_alias,
+                    port: binding.container_port,
+                    protocol: "tcp".into(),
+                }],
+                required_networks: vec![binding.network_name],
+                credential_handles: vec![],
+                snippets: vec![],
+            });
+        }
         let i = self.store()?.instance(id)?;
         let e = i.applied.ok_or_else(|| error("NoAppliedConfiguration"))?;
         let service = self.service(&i.identity.service_id)?;

@@ -86,6 +86,7 @@ dto!(ProbeSpec {
 });
 dto!(ServiceSpec { id: String, name: String, category: String, source_dir: String, source_project: String, assets: Vec<String>, data_paths: Vec<String>, image_refs: Vec<String>, components: Vec<ComponentSpec>, ports: Vec<PortMapping>, dependencies: Vec<String>, env_schema: Vec<EnvFieldSpec>, probes: Vec<ProbeSpec>, #[ts(type = "number")] min_memory_bytes: u64, #[ts(type = "number | null")] min_workspace_free_bytes: Option<u64>, #[ts(type = "number | null")] min_daemon_free_bytes: Option<u64>, #[ts(type = "number | null")] estimated_pull_bytes: Option<u64>, capacity_status: String, data_compatibility: String });
 dto!(SceneSpec { id: String, name: String, services: Vec<String> });
+dto!(BindingRequirements { service_id: String, engine: String, database_names: Vec<String>, editable_databases: bool });
 dto!(HostGuide { id: String, name: String, source_dir: String, assets: Vec<String>, data_paths: Vec<String> });
 dto!(ServiceCatalog { schema_version: u32, services: Vec<ServiceSpec>, scenes: Vec<SceneSpec>, guides: Vec<HostGuide> });
 dto!(DockerTarget {

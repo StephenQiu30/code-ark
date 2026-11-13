@@ -1,13 +1,12 @@
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "../components/ui/card";
+import { Folder } from "lucide-react";
+import { EnvironmentConnectButton } from "../components/EnvironmentConnectButton";
+import { PageHeader } from "../components/PageHeader";
+import { Separator } from "../components/ui/separator";
+import { ModeToggle } from "../components/ModeToggle";
+import { useTheme } from "../lib/theme";
 import {
   Dialog,
   DialogContent,
@@ -29,59 +28,68 @@ export function SettingsView({
   const { api, state, run } = useWorkspace();
   const [confirm, setConfirm] = useState(false);
   const t = useT();
+  const { theme } = useTheme();
   return (
-    <div className="flex flex-col gap-5">
-      <h1>{t("设置")}</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("语言 / Language")}</CardTitle>
-          <CardDescription>
-            {t("默认中文，语言选择只保留在当前窗口。")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ToggleGroup
-            aria-label="语言 / Language"
-            value={[language]}
-            onValueChange={(value) => {
-              if (value[0]) onLanguage(value[0] as Language);
-            }}
-            variant="outline"
-          >
-            <ToggleGroupItem value="zh">简体中文</ToggleGroupItem>
-            <ToggleGroupItem value="en">English</ToggleGroupItem>
-          </ToggleGroup>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("工作区")}</CardTitle>
-          <CardDescription>
-            {t("切换不移动数据，不停止旧工作区实例。")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="break-all">
-            {state.snapshot?.workspace.root ?? "未连接"}
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title={t("设置")}
+        description={t("管理本机的外观与工作区。")}
+      />
+      <section className="flex items-center justify-between gap-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="section-title">{t("外观")}</h2>
+          <p className="muted">{t("选择浅色、深色，或跟随系统。")}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="muted">
+            {t({ light: "浅色", dark: "深色", system: "跟随系统" }[theme])}
+          </span>
+          <ModeToggle />
+        </div>
+      </section>
+      <Separator />
+      <section className="flex flex-col gap-5">
+        <h2 className="section-title">{t("工作区")}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="min-w-0 break-all">
+            {state.snapshot?.workspace.root ?? t("未连接")}
           </p>
-          <Button variant="outline" onClick={() => setConfirm(true)}>
+          <Button variant="ghost" onClick={() => setConfirm(true)}>
+            <Folder data-icon="inline-start" />
             {t("打开另一工作区")}
           </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("数据与发行状态")}</CardTitle>
-          <CardDescription>
-            {t("源码实施中；最终安装包与全部原生目标验证尚未完成。")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>
-            {t("备份与恢复使用离线迁移指南。已迁移的数据没有自动降级按钮。")}
-          </p>
-        </CardContent>
-      </Card>
+        </div>
+        <p className="muted">{t("切换不移动数据，不停止旧工作区实例。")}</p>
+      </section>
+      <Separator />
+      <section className="flex flex-col gap-5">
+        <h2 className="section-title">{t("Docker 目标")}</h2>
+        <div className="flex items-center justify-between gap-4">
+          <p>{state.snapshot?.target?.contextName ?? t("未连接")}</p>
+          <EnvironmentConnectButton />
+        </div>
+      </section>
+      <Separator />
+      <section className="flex flex-wrap items-center justify-between gap-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="section-title">{t("语言 / Language")}</h2>
+          <p className="muted">{t("默认中文，语言选择只保留在当前窗口。")}</p>
+        </div>
+        <ToggleGroup
+          type="single"
+          aria-label="语言 / Language"
+          value={language}
+          onValueChange={(value) => {
+            if (value === "zh" || value === "en") onLanguage(value);
+          }}
+          variant="outline"
+        >
+          <ToggleGroupItem value="zh">简体中文</ToggleGroupItem>
+          <ToggleGroupItem value="en">English</ToggleGroupItem>
+        </ToggleGroup>
+      </section>
+      <Separator />
+      <p className="text-xs text-muted-foreground">代码方舟 · Code Ark</p>
       <Dialog open={confirm} onOpenChange={setConfirm}>
         <DialogContent>
           <DialogHeader>

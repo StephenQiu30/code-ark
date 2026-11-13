@@ -1,17 +1,30 @@
 import {
-  Boxes,
-  BookOpen,
-  Settings,
   Activity,
-  LayoutGrid,
-  Play,
-  ShieldCheck,
-  Terminal,
-  Anchor,
+  BookOpen,
+  Grid2X2,
+  Layers,
+  LayoutDashboard,
+  ListChecks,
+  Plug,
+  Settings,
 } from "lucide-react";
-import { Button } from "./ui/button";
-import { Separator } from "./ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "./ui/sidebar";
+import { Brand } from "./Brand";
+import { ModeToggle } from "./ModeToggle";
 import { useT } from "../lib/i18n";
+
 export type Page =
   | "welcome"
   | "launchpad"
@@ -21,16 +34,37 @@ export type Page =
   | "logs"
   | "guides"
   | "settings";
-const items = [
-  ["welcome", "推荐入门", Play],
-  ["launchpad", "场景启动台", LayoutGrid],
-  ["catalog", "全部服务", Boxes],
-  ["preflight", "环境体检", ShieldCheck],
-  ["operations", "运行任务", Activity],
-  ["logs", "端口和日志", Terminal],
-  ["guides", "教程", BookOpen],
+export const pageLabels: Record<Page, string> = {
+  welcome: "概览",
+  launchpad: "场景启动台",
+  catalog: "全部服务",
+  preflight: "环境体检",
+  operations: "运行任务",
+  logs: "端口与日志",
+  guides: "使用指南",
+  settings: "设置",
+};
+const groups = [
+  {
+    title: "工作台",
+    items: [
+      { page: "welcome", icon: LayoutDashboard },
+      { page: "launchpad", icon: Layers },
+      { page: "catalog", icon: Grid2X2 },
+    ],
+  },
+  {
+    title: "运维",
+    items: [
+      { page: "preflight", icon: Activity },
+      { page: "operations", icon: ListChecks },
+      { page: "logs", icon: Plug },
+    ],
+  },
+  { title: "资源", items: [{ page: "guides", icon: BookOpen }] },
 ] as const;
-export function Sidebar({
+
+export function AppSidebar({
   page,
   onPage,
 }: {
@@ -38,47 +72,61 @@ export function Sidebar({
   onPage: (page: Page) => void;
 }) {
   const t = useT();
+  const { setOpenMobile, state } = useSidebar();
+  const navigate = (value: Page) => {
+    onPage(value);
+    setOpenMobile(false);
+  };
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <Anchor aria-hidden="true" />
-        <div>
-          <strong>Code Ark</strong>
-          <p>{t("本地开发工作箱")}</p>
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="px-4 py-4 group-data-[collapsible=icon]:px-5">
+        <div className="flex h-12 items-center">
+          <Brand />
         </div>
-      </div>
-      <nav aria-label="主导航" className="flex flex-col gap-1">
-        {items.map(([id, label, Icon], index) => (
-          <div key={id}>
-            {(index === 0 || index === 3 || index === 6) && (
-              <p className="nav-label">
-                {t(index === 0 ? "工作台" : index === 3 ? "运维" : "教程")}
-              </p>
-            )}
-            <Button
-              className="nav-button"
-              variant={page === id ? "secondary" : "ghost"}
-              aria-current={page === id ? "page" : undefined}
-              onClick={() => onPage(id)}
-            >
-              <Icon data-icon="inline-start" />
-              {t(label)}
-            </Button>
-          </div>
+      </SidebarHeader>
+      <SidebarContent className="px-2">
+        {groups.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{t(group.title)}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map(({ page: value, icon: Icon }) => (
+                  <SidebarMenuItem key={value}>
+                    <SidebarMenuButton
+                      isActive={page === value}
+                      tooltip={t(pageLabels[value])}
+                      onClick={() => navigate(value)}
+                      aria-current={page === value ? "page" : undefined}
+                    >
+                      <Icon />
+                      <span>{t(pageLabels[value])}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         ))}
-      </nav>
-      <div className="sidebar-footer">
-        <Separator />
-        <Button
-          className="nav-button"
-          variant={page === "settings" ? "secondary" : "ghost"}
-          onClick={() => onPage("settings")}
-        >
-          <Settings data-icon="inline-start" />
-          {t("设置")}
-        </Button>
-        <small>{t("源码实施中 · 尚未发行")}</small>
-      </div>
-    </aside>
+      </SidebarContent>
+      <SidebarFooter className="flex-row items-center gap-2 p-4 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:px-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              isActive={page === "settings"}
+              tooltip={t("设置")}
+              aria-label={t("设置")}
+              onClick={() => navigate("settings")}
+            >
+              <Settings />
+              <span>{t("设置")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <ModeToggle />
+        <span className="sr-only" aria-live="polite">
+          {state === "collapsed" ? t("侧栏已折叠") : ""}
+        </span>
+      </SidebarFooter>
+    </Sidebar>
   );
 }

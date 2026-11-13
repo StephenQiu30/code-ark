@@ -1,6 +1,6 @@
 # 协议就绪客户端
 
-工作箱把每种协议的客户端放在独立 classpath 中，运行时将包内目录只读挂载给镜像锁中的 `probe-jre17`。用户电脑只需 Docker。探针通过当前托管组件的网络命名空间连接服务，输入经 stdin 送入，固定结果写入 stdout。结果包含探针 ID、组件 ID、采样时间、成功状态和固定错误码。
+工作箱把每种协议的客户端放在独立 classpath 中。运行时先验证包内文件白名单与 SHA，再复制到当前 control 的内容摘要缓存，重新验证后只读挂载给镜像锁中的 `probe-jre17`；已发布的缓存目录不原地替换，原随包文件仍是唯一来源。用户电脑只需 Docker。探针通过当前托管组件的网络命名空间连接服务，输入经 stdin 送入，固定结果写入 stdout。结果包含探针 ID、组件 ID、采样时间、成功状态和固定错误码。
 
 维护者用 JDK 17 和 Maven 3.9.16 从当前目录构建发行资源。
 
@@ -18,7 +18,7 @@ python3 tests/client_contract.py
 | s3 | 使用签名请求读取授权桶列表 |
 | kafka | 读取 broker 元数据及 cluster ID |
 | rocket-route | 通过 NameServer 获取已注册 broker 地址 |
-| rocket-proxy | SDK 建立 gRPC producer 会话并发现预置系统 Topic 路由，随后关闭 |
+| rocket-proxy | SDK 按本地预设的明文 HTTP/2 入口建立 gRPC producer 会话，显式等待服务端 settings（PRODUCER/publishing）和心跳均返回 OK 后关闭；不访问系统 Topic、不创建 Topic 或发送消息，Broker 路由由独立 NameServer 探针检查 |
 | canal | 订阅专用 `codeark_probe` destination，取一个未确认批次；仅回滚本客户端取得的批次 |
 | seata | 与协调器完成 TM 注册握手并断开 |
 | nacos | 认证、读取配置并确认 SDK 连接状态 |

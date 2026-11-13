@@ -28,6 +28,7 @@ pub fn run() {
             desktop::database_candidates,
             desktop::verify_database_binding,
             desktop::binding_grant_preview,
+            desktop::binding_requirements,
             desktop::authorize_database_binding,
             desktop::preview_diagnostics,
             desktop::export_diagnostics,
@@ -64,6 +65,7 @@ pub mod database_claims;
 
 pub mod initialization_store;
 pub mod provisioner;
+mod dependencies;
 
 pub(crate) mod probe_clients;
 pub mod probes;
@@ -83,6 +85,7 @@ pub mod usage_index;
 pub mod endpoints;
 pub mod live_status;
 pub mod managed_data;
+pub(crate) mod service_bootstrap;
 pub mod recovery;
 #[cfg(windows)]
 mod windows_permissions;

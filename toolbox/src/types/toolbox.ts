@@ -29,3 +29,5 @@ export type { BindingGrantPreview } from "./generated/BindingGrantPreview";
 export type { PreflightReport } from "./generated/PreflightReport";
 
 export type { LogStreamStateEvent } from "./generated/LogStreamStateEvent";
+
+export type { BindingRequirements } from "./generated/BindingRequirements";

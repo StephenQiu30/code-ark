@@ -213,4 +213,23 @@ mod tests {
         actual[0]["Mounts"][0]["Source"] = serde_json::json!("/business/data");
         assert!(reconcile(&i, &t, &intents, Some("generation"), &actual).is_err());
     }
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn desktop_mount_alias_recovers_with_the_original_intent_paths() {
+        let (i, mut t, mut intents, mut actual) = input();
+        t.cli_path = "/Applications/Docker.app/Contents/Resources/bin/docker".into();
+        t.context_name = "desktop-linux".into();
+        intents[0].components[0].bind_sources = vec!["/Users/local/project/data".into()];
+        actual[0]["Mounts"][0] = serde_json::json!({"Type":"bind","Source":"/host_mnt/Users/local/project/data","Destination":"/data"});
+        actual[0]["HostConfig"] =
+            serde_json::json!({"Binds":["/host_mnt/Users/local/project/data:/data:rw"]});
+        let result = reconcile(&i, &t, &intents, Some("generation"), &actual).unwrap();
+        assert!(result.desired_complete);
+        assert_eq!(
+            result.containers[0].bind_sources,
+            intents[0].components[0].bind_sources
+        );
+        actual[0]["HostConfig"] = serde_json::Value::Null;
+        assert!(reconcile(&i, &t, &intents, Some("generation"), &actual).is_err());
+    }
 }

@@ -80,8 +80,13 @@
       "kind": "release-image-archive",
       "platform": "linux/arm64",
       "sourceImage": "minio/minio:latest",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "archiveUrl": "https://github.com/StephenQiu30/code-ark/releases/download/images-2026.11.13-arm64/minio-arm64.tar",
+      "archiveSha256": "e15976964ae7b31eaf9f2167f78f62870c7ab06e48b9c4f7a47ad4973c26a6a7",
+      "expectedImageId": "sha256:e0be4a9e00aa459c40befebc002cbd4f09d2e455870dd4da88f808ea0d3e4b52",
+      "localContentTag": "codeark/minio:sha256-e0be4a9e00aa459c40befebc002cbd4f09d2e455870dd4da88f808ea0d3e4b52",
+      "verifiedAt": "2026-11-13",
+      "evidence": "Published ARM64 image archive; anonymous full download SHA256 and isolated native functional/persistence acceptance passed. Desktop orchestration and final installer acceptance are separate. See docs/research/07-ARM64预构建镜像制品验收与发布.md."
     },
     {
       "sourceId": "kafka-kafka",
@@ -338,8 +343,13 @@
       "kind": "release-image-archive",
       "platform": "linux/arm64",
       "sourceImage": "xuxueli/xxl-job-admin:3.5.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "archiveUrl": "https://github.com/StephenQiu30/code-ark/releases/download/images-2026.11.13-arm64/xxjob-arm64.tar",
+      "archiveSha256": "583f1d74f96214768f12e8928410a7a5e6faa33dada83ca695be1fb0e68388f6",
+      "expectedImageId": "sha256:614dd0f1daa25c85c10952bf2d4d3a8b9ed299575dbcf2d4dba72a8a73b2001d",
+      "localContentTag": "codeark/xxjob:sha256-614dd0f1daa25c85c10952bf2d4d3a8b9ed299575dbcf2d4dba72a8a73b2001d",
+      "verifiedAt": "2026-11-13",
+      "evidence": "Published ARM64 image archive; anonymous full download SHA256 and isolated native functional/persistence acceptance passed. Desktop orchestration and final installer acceptance are separate. See docs/research/07-ARM64预构建镜像制品验收与发布.md."
     },
     {
       "sourceId": "nacos-nacos",
@@ -420,8 +430,13 @@
       "kind": "release-image-archive",
       "platform": "linux/arm64",
       "sourceImage": "elastic-start-local-elasticsearch:9.3.0-9.3.0",
-      "status": "pending",
-      "reason": "Producer artifact or platform manifest must be resolved and verified before candidate/release."
+      "status": "resolved",
+      "archiveUrl": "https://github.com/StephenQiu30/code-ark/releases/download/images-2026.11.13-arm64/es-ik-arm64.tar",
+      "archiveSha256": "7c239c359319502657852e52e73465306d0d77fe10ab08cb01d2f0aea3001881",
+      "expectedImageId": "sha256:1305b6d8c08eb826d8fab00bb574f7919a349d58b9d5a98397fea2e0547f37f4",
+      "localContentTag": "codeark/es-ik:sha256-1305b6d8c08eb826d8fab00bb574f7919a349d58b9d5a98397fea2e0547f37f4",
+      "verifiedAt": "2026-11-13",
+      "evidence": "Published ARM64 image archive; anonymous full download SHA256 and isolated native functional/persistence acceptance passed. Desktop orchestration and final installer acceptance are separate. See docs/research/07-ARM64预构建镜像制品验收与发布.md."
     },
     {
       "sourceId": "elastic-kibana",

@@ -5,8 +5,12 @@ import {
   useReducer,
   useCallback,
   useRef,
+  useMemo,
+  useState,
 } from "react";
 import type { ReactNode } from "react";
+import { useFeedback, type Feedback } from "./feedback";
+import { notifyingApi, consumeApiFailure } from "./notifying-api";
 import { errorCode } from "../api/tauri";
 import type { ToolboxApi } from "../api/tauri";
 import type {
@@ -49,28 +53,41 @@ export function workspaceReducer(state: State, action: Action): State {
 }
 const Context = createContext<{
   api: ToolboxApi;
+  feedback: Feedback;
   state: State;
   refresh: () => Promise<void>;
+  detecting: boolean;
+  detectEnvironment: () => Promise<DashboardSnapshot | null>;
   run: <R>(task: () => Promise<R>) => Promise<R | null>;
 } | null>(null);
 export function WorkspaceProvider({
-  api,
+  api: rawApi,
   children,
 }: {
   api: ToolboxApi;
   children: ReactNode;
 }) {
+  const feedback = useFeedback();
+  const api = useMemo(() => notifyingApi(rawApi, feedback), [rawApi, feedback]);
+  const connectionIssue = useRef<string | null>(null);
+  const environmentIssue = useRef<string | null>(null);
+  const observedOperations = useRef(new Map<string, string>());
+  const observedServices = useRef(new Map<string, string>());
   const [state, dispatch] = useReducer(workspaceReducer, {
     catalog: null,
     snapshot: null,
     error: null,
     disconnectedAt: null,
   });
+  const [detecting, setDetecting] = useState(false);
+  const pendingDetection = useRef<Promise<DashboardSnapshot | null> | null>(
+    null,
+  );
   const inFlight = useRef<Promise<void> | null>(null);
   const catalogLoaded = useRef(false);
   const eventSeqs = useRef(new Map<string, number>());
   const activeWorkspace = useRef<string | null>(null);
-  const refresh = useCallback(() => {
+  const refresh: () => Promise<void> = useCallback(() => {
     if (inFlight.current) return inFlight.current;
     const pending = Promise.all([
       api.dashboardSnapshot(),
@@ -82,8 +99,11 @@ export function WorkspaceProvider({
           }),
     ])
       .then(([value]) => {
-        if (activeWorkspace.current !== value.workspace.workspaceId)
+        if (activeWorkspace.current !== value.workspace.workspaceId) {
           eventSeqs.current.clear();
+          observedOperations.current.clear();
+          observedServices.current.clear();
+        }
         activeWorkspace.current = value.workspace.workspaceId;
         for (const operation of value.operations)
           eventSeqs.current.set(
@@ -93,17 +113,82 @@ export function WorkspaceProvider({
               eventSeqs.current.get(operation.operationId) ?? -1,
             ),
           );
+        if (connectionIssue.current) {
+          connectionIssue.current = null;
+          feedback.dismiss("backend-connection");
+          feedback.success("已重新连接工作箱后端");
+        }
+        const environmentKey = value.environmentError
+          ? `${value.workspace.workspaceId}:${value.target?.targetId}:${value.environmentError}`
+          : null;
+        if (environmentKey !== environmentIssue.current) {
+          environmentIssue.current = environmentKey;
+          if (value.environmentError)
+            feedback.error(
+              { code: value.environmentError },
+              {
+                id: "runtime-environment",
+                persistent: true,
+                action: {
+                  label: "Docker 官方安装指引",
+                  onClick: () => {
+                    void api.openOfficial("docker-install").catch(() => {});
+                  },
+                },
+              },
+            );
+          else feedback.dismiss("runtime-environment");
+        }
         dispatch({ type: "snapshot", value });
       })
       .catch((e) => {
-        dispatch({ type: "error", code: errorCode(e) });
+        const code = errorCode(e);
+        if (connectionIssue.current !== code) {
+          connectionIssue.current = code;
+          feedback.error(e, {
+            id: "backend-connection",
+            persistent: true,
+            action: {
+              label: "重新检测",
+              onClick: () => {
+                void refresh();
+              },
+            },
+          });
+        }
+        dispatch({ type: "error", code });
       })
       .finally(() => {
         inFlight.current = null;
       });
     inFlight.current = pending;
     return pending;
-  }, [api]);
+  }, [api, feedback]);
+  const detectEnvironment = useCallback(() => {
+    if (pendingDetection.current) return pendingDetection.current;
+    setDetecting(true);
+    const pending = api
+      .detectEnvironment()
+      .then(async (value) => {
+        environmentIssue.current = value.environmentError
+          ? `${value.workspace.workspaceId}:${value.target?.targetId}:${value.environmentError}`
+          : null;
+        feedback.dismiss("runtime-environment");
+        dispatch({ type: "snapshot", value });
+        await refresh();
+        return value;
+      })
+      .catch((error) => {
+        if (!consumeApiFailure(error)) feedback.error(error);
+        return null;
+      })
+      .finally(() => {
+        pendingDetection.current = null;
+        setDetecting(false);
+      });
+    pendingDetection.current = pending;
+    return pending;
+  }, [api, feedback, refresh]);
   const run = useCallback(
     async <R,>(task: () => Promise<R>): Promise<R | null> => {
       try {
@@ -111,11 +196,12 @@ export function WorkspaceProvider({
         await refresh();
         return result;
       } catch (e) {
-        dispatch({ type: "error", code: errorCode(e) });
+        if (!consumeApiFailure(e)) feedback.error(e);
+        if (errorCode(e) === "BackendUnavailable") await refresh();
         return null;
       }
     },
-    [refresh],
+    [refresh, feedback],
   );
   useEffect(() => {
     let alive = true;
@@ -133,7 +219,9 @@ export function WorkspaceProvider({
         if (!alive) stop();
         else unlisten = stop;
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (alive && errorCode(e) !== "BackendUnavailable") feedback.error(e);
+      });
     const interval = setInterval(() => {
       if (alive) void refresh();
     }, 5000);
@@ -149,9 +237,53 @@ export function WorkspaceProvider({
       window.removeEventListener("focus", focus);
       window.removeEventListener("online", focus);
     };
-  }, [api, refresh]);
+  }, [api, refresh, feedback]);
+  useEffect(() => {
+    if (!state.snapshot) return;
+    const nextOperations = new Map<string, string>();
+    for (const operation of state.snapshot.operations) {
+      const key = `${operation.phase}:${operation.errorCode ?? ""}`;
+      const previous = observedOperations.current.get(operation.operationId);
+      nextOperations.set(operation.operationId, key);
+      if (previous === key) continue;
+      if (
+        operation.errorCode &&
+        ["Failed", "Degraded", "AwaitingAction"].includes(operation.phase)
+      )
+        feedback.error({ code: operation.errorCode });
+      else if (
+        previous &&
+        ["Completed", "Succeeded", "Ready"].includes(operation.phase)
+      )
+        feedback.success("服务操作已完成");
+    }
+    observedOperations.current = nextOperations;
+    const nextServices = new Map<string, string>();
+    for (const service of state.snapshot.services) {
+      if (
+        !service.messageCode ||
+        !["Failed", "Degraded", "AwaitingAction"].includes(service.phase)
+      )
+        continue;
+      const key = `${service.instanceId}:${service.messageCode}`;
+      nextServices.set(service.serviceId, key);
+      if (observedServices.current.get(service.serviceId) !== key)
+        feedback.error({ code: service.messageCode });
+    }
+    observedServices.current = nextServices;
+  }, [state.snapshot, feedback]);
   return (
-    <Context.Provider value={{ api, state, refresh, run }}>
+    <Context.Provider
+      value={{
+        api,
+        feedback,
+        state,
+        refresh,
+        run,
+        detecting,
+        detectEnvironment,
+      }}
+    >
       {children}
     </Context.Provider>
   );

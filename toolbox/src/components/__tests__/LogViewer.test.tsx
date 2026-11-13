@@ -1,15 +1,27 @@
 import {
   act,
   fireEvent,
-  render,
+  render as renderView,
   screen,
   waitFor,
 } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { GlobalFeedback } from "../GlobalFeedback";
+import { ThemeProvider } from "../../lib/theme";
+import { toast } from "sonner";
 import { it, expect, vi } from "vitest";
 import { WorkspaceProvider } from "../../lib/workspace";
 import { LogViewer, appendLogBatch } from "../LogViewer";
 import { createTestApi } from "../../test-fixtures";
 import type { LogBatch } from "../../types/toolbox";
+function render(children: ReactNode) {
+  return renderView(
+    <ThemeProvider>
+      <GlobalFeedback />
+      {children}
+    </ThemeProvider>,
+  );
+}
 it("ACKs only the current stream after its lines are committed to the DOM", async () => {
   const api = createTestApi();
   let receive!: (batch: LogBatch) => void;
@@ -156,18 +168,23 @@ it("shows inactivity without claiming backend expiry, and resets the clock on re
     await act(async () => {
       vi.advanceTimersByTime(31000);
     });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
     expect(
-      screen.getByText(
-        "30 秒未收到新批次；订阅可能已过期，可重新连接读取最近日志。",
-      ),
+      screen.getByText("30 秒未收到新批次；可重新连接读取最近日志。"),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "重新连接日志" }));
     await act(async () => {});
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(toast.getToasts().some((item) => item.id === "log-idle")).toBe(
+      false,
+    );
     expect(
-      screen.queryByText(
-        "30 秒未收到新批次；订阅可能已过期，可重新连接读取最近日志。",
-      ),
-    ).not.toBeInTheDocument();
+      screen.getByRole("status", { name: "日志订阅状态" }),
+    ).toHaveTextContent("Active");
     unmount();
   } finally {
     vi.useRealTimers();
@@ -210,7 +227,9 @@ it("subscribes before opening the stream and renders actual pause/resume state",
   expect(
     screen.getByRole("status", { name: "日志订阅状态" }),
   ).toHaveTextContent("AwaitingConsumer");
-  expect(screen.getByText("日志已暂停，等待渲染确认")).toBeInTheDocument();
+  expect(
+    await screen.findByText("日志已暂停，等待渲染确认"),
+  ).toBeInTheDocument();
   await act(async () => {
     emit({ streamId: "stream-1", phase: "Active", messageCode: null });
   });
@@ -242,7 +261,7 @@ it("preserves terminal expiry received before the start response and refuses lat
       <LogViewer instanceId="redis-1" />
     </WorkspaceProvider>,
   );
-  expect(await screen.findByText("LogStreamExpired")).toBeInTheDocument();
+  expect(await screen.findByText(/LogStreamExpired/)).toBeInTheDocument();
   expect(
     screen.getByRole("status", { name: "日志订阅状态" }),
   ).toHaveTextContent("Expired");
@@ -331,7 +350,7 @@ it("shows backend read failure, ignores old streams and stops ACKs for batches n
   expect(
     screen.getByRole("status", { name: "日志订阅状态" }),
   ).toHaveTextContent("Failed");
-  expect(screen.getByText("LogReadFailed")).toBeInTheDocument();
+  expect(await screen.findByText(/LogReadFailed/)).toBeInTheDocument();
   expect(api.ackLogBatch).not.toHaveBeenCalled();
 });
 it("cleans up delayed state subscription without opening a closed view stream", async () => {
@@ -373,7 +392,7 @@ it("does not start an unobservable stream when the state listener cannot subscri
     </WorkspaceProvider>,
   );
   expect(
-    await screen.findByText("LogSubscriptionUnavailable"),
+    await screen.findByText(/LogSubscriptionUnavailable/),
   ).toBeInTheDocument();
   expect(
     screen.getByRole("status", { name: "日志订阅状态" }),
@@ -431,7 +450,7 @@ it("accumulates dropped-count deltas only once and displays normal stopped state
   expect(
     screen.getByRole("status", { name: "日志订阅状态" }),
   ).toHaveTextContent("Stopped");
-  expect(screen.getByText("日志订阅已停止")).toBeInTheDocument();
+  expect(await screen.findByText("日志订阅已停止")).toBeInTheDocument();
 });
 
 it("retains the backend failure code when both the early event and start handle are terminal", async () => {
@@ -454,7 +473,7 @@ it("retains the backend failure code when both the early event and start handle 
       <LogViewer instanceId="redis-1" />
     </WorkspaceProvider>,
   );
-  expect(await screen.findByText("LogReaderExited")).toBeInTheDocument();
+  expect(await screen.findByText(/LogReaderExited/)).toBeInTheDocument();
   expect(
     screen.getByRole("status", { name: "日志订阅状态" }),
   ).toHaveTextContent("Failed");

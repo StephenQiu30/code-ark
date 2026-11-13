@@ -11,7 +11,6 @@ import {
 import { Button } from "./ui/button";
 import { Field, FieldLabel } from "./ui/field";
 import { Input } from "./ui/input";
-import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { useWorkspace } from "../lib/workspace";
 import type { ResetPlan } from "../types/toolbox";
 export function ResetPlanDialog({
@@ -21,7 +20,7 @@ export function ResetPlanDialog({
   plan: ResetPlan;
   onClose: () => void;
 }) {
-  const { api, run, state } = useWorkspace();
+  const { api, run, state, feedback } = useWorkspace();
   const t = useT();
   const [typed, setTyped] = useState("");
   const [now, setNow] = useState(Date.now());
@@ -36,6 +35,9 @@ export function ResetPlanDialog({
     state.snapshot?.services.find(
       (service) => service.serviceId === plan.serviceId,
     )?.instanceId !== plan.instanceId;
+  useEffect(() => {
+    if (expired || scopeChanged) feedback.error({ code: "StaleResetPlan" });
+  }, [expired, scopeChanged, feedback]);
   useEffect(() => {
     setTyped("");
   }, [plan.planId, plan.fingerprint]);
@@ -52,17 +54,10 @@ export function ResetPlanDialog({
           <DialogDescription>
             {t(
               "只请求删除下列后端登记资源。资源或归属变化时需重新计划，服务名不是唯一校验。",
-            )}
+            )}{" "}
+            {t("此操作可能永久删除列出的数据")}。{plan.impact.join("；")}
           </DialogDescription>
         </DialogHeader>
-        <Alert variant="destructive">
-          <AlertTitle>
-            {expired
-              ? "计划已过期，请重新获取"
-              : "此操作可能永久删除列出的数据"}
-          </AlertTitle>
-          <AlertDescription>{plan.impact.join("；")}</AlertDescription>
-        </Alert>
         <ul>
           {plan.exactResourceIds.map((id) => (
             <li key={id}>{id}</li>
@@ -85,11 +80,6 @@ export function ResetPlanDialog({
             autoComplete="off"
           />
         </Field>
-        {scopeChanged && (
-          <p role="alert">
-            {t("计划所属实例或目标已变化，请关闭后重新获取计划。")}
-          </p>
-        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t("取消")}

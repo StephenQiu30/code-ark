@@ -48,6 +48,8 @@ export const tauriApi = {
   databaseCandidates: () => call<T.DatabaseCandidate[]>("database_candidates"),
   verifyDatabaseBinding: (request: T.VerifyBindingRequest) =>
     call<T.DatabaseBinding>("verify_database_binding", { request }),
+  bindingRequirements: (serviceId: string) =>
+    call<T.BindingRequirements>("binding_requirements", { serviceId }),
   bindingGrantPreview: (bindingId: string, serviceId: string) =>
     call<T.BindingGrantPreview>("binding_grant_preview", {
       bindingId,

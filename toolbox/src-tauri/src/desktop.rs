@@ -305,12 +305,87 @@ pub async fn verify_database_binding(
     Ok(view)
 }
 #[tauri::command]
-pub fn binding_grant_preview(
+pub fn binding_requirements(
+    state: State<'_, AppState>,
+    service_id: String,
+) -> Result<BindingRequirements, ToolboxError> {
+    let service = state.engine.service(&service_id)?;
+    let engine = service
+        .dependencies
+        .first()
+        .cloned()
+        .unwrap_or_else(|| service_id.clone());
+    if !["mysql", "pgsql"].contains(&engine.as_str()) {
+        return Err(error("UnsupportedDependencyTopology"));
+    }
+    let names = if ["mysql", "pgsql", "canal"].contains(&service_id.as_str()) {
+        vec![]
+    } else {
+        let instance = state
+            .engine
+            .instance_for(&service, &state.engine.target()?)?;
+        crate::dependencies::databases(&service_id, &instance.identity)?
+    };
+    Ok(BindingRequirements {
+        service_id,
+        engine,
+        database_names: names,
+        editable_databases: service.id == "canal",
+    })
+}
+#[tauri::command]
+pub async fn binding_grant_preview(
     state: State<'_, AppState>,
     binding_id: String,
     service_id: String,
 ) -> Result<BindingGrantPreview, ToolboxError> {
     let service = state.engine.service(&service_id)?;
+    if binding_id.len() != 32 || !binding_id.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(error("InvalidBinding"));
+    }
+    let binding = state
+        .engine
+        .load_bindings()?
+        .into_iter()
+        .find(|b| b.binding_id == binding_id)
+        .ok_or_else(|| error("BindingReverificationRequired"))?;
+    #[derive(serde::Deserialize)]
+    struct SavedCredentials {
+        username: String,
+        password: String,
+    }
+    let saved: SavedCredentials = read_json(
+        &Path::new(&state.engine.store()?.workspace.root)
+            .join("credentials")
+            .join(format!("{binding_id}.json")),
+    )?;
+    let credentials = crate::bindings::Credentials {
+        username: saved.username,
+        password: zeroize::Zeroizing::new(saved.password),
+    };
+    let runner = DockerRunner::connect(state.engine.target()?).await?;
+    let image = state
+        .engine
+        .images(&state.engine.service(&binding.engine)?, &runner.target)?
+        .remove(0);
+    let context = ImageContext {
+        cache_root: state.engine.control.join("image-cache"),
+        cancelled: Arc::new(AtomicBool::new(false)),
+    };
+    let verified =
+        crate::bindings::verify_binding(&runner, &binding, &credentials, Some(&image), &context)
+            .await?;
+    state
+        .bound
+        .lock()
+        .map_err(|_| error("StateUnavailable"))?
+        .insert(
+            binding_id.clone(),
+            Bound {
+                verified,
+                _credentials: credentials,
+            },
+        );
     let bound = state.bound.lock().map_err(|_| error("StateUnavailable"))?;
     let bound = bound
         .get(&binding_id)
@@ -322,23 +397,19 @@ pub fn binding_grant_preview(
     let instance = state
         .engine
         .instance_for(&service, &state.engine.target()?)?;
-    let suffix = &instance.identity.instance_id[..12];
-    let databases = if service_id == "temporal" {
-        vec!["temporal".into(), "temporal_visibility".into()]
+    let databases = if service_id == "canal" {
+        binding.allowed_databases.clone()
     } else {
-        vec![format!("ca_{suffix}_{service_id}")]
+        crate::dependencies::databases(&service_id, &instance.identity)?
     };
-    if databases
-        .iter()
-        .any(|d| !binding.allowed_databases.contains(d))
+    if databases.is_empty()
+        || databases
+            .iter()
+            .any(|d| !crate::bindings::valid_database_name(d))
     {
         return Err(error("InitializationGrantOutOfScope"));
     }
-    let accounts = if service_id == "temporal" {
-        vec![]
-    } else {
-        vec![format!("ca_{suffix}_{service_id}")]
-    };
+    let accounts = vec![];
     let view = BindingGrantPreview {
         preview_id: random_id()?,
         binding_id,
@@ -348,11 +419,22 @@ pub fn binding_grant_preview(
             server_fingerprint: binding.server_fingerprint.clone(),
             allowed_databases: databases,
             allowed_accounts: accounts,
-            operations: vec!["InitializeNamedResources".into()],
+            operations: vec![
+                if service.id == "canal" {
+                    "ObserveReplication"
+                } else {
+                    "InitializeNamedResources"
+                }
+                .into(),
+            ],
             confirmed_at: now(),
         },
-        scope_notice: "仅初始化清单中的专属库和账号；不授予外部容器启停、删除或整库重置权限。"
-            .into(),
+        scope_notice: if service.id == "canal" {
+            "仅用当前连接账号订阅所选数据库的变更；不修改外部账号权限，不接管容器生命周期。"
+        } else {
+            "仅初始化清单中的专属库；不授予外部容器启停、删除或整库重置权限。"
+        }
+        .into(),
     };
     state
         .grants
@@ -381,7 +463,7 @@ pub fn authorize_database_binding(
     let bound = bound
         .get(&preview.binding_id)
         .ok_or_else(|| error("BindingReverificationRequired"))?;
-    let authorized = crate::bindings::authorize_binding(&bound.verified, &preview.grant)?;
+    let authorized = crate::bindings::authorize_preview(&bound.verified, &preview.grant)?;
     let mut i = state.engine.instance_for(
         &state.engine.service(&preview.service_id)?,
         &state.engine.target()?,
@@ -392,7 +474,10 @@ pub fn authorize_database_binding(
     let dir = Path::new(&state.engine.store()?.workspace.root).join("grants");
     private_dir(&dir)?;
     atomic_write(
-        &dir.join(format!("{}.json", preview.binding_id)),
+        &dir.join(format!(
+            "{}-{}.json",
+            preview.binding_id, i.identity.instance_id
+        )),
         &serde_json::to_vec(&preview.grant).map_err(|_| error("StateWriteFailed"))?,
     )?;
     Ok(authorized.binding)

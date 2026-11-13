@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or_else(|_| root.join("control")),
         run_id: workspace.workspace_id,
         port_min: 27000,
-        port_max: 27999,
+        port_max: 28999,
         allow_create: true,
         allow_destructive_owned_only: true,
     };
