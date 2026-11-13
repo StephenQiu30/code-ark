@@ -1,4 +1,4 @@
-# Code Ark · 代码方舟
+# 代码方舟 · Code Ark：本地 Docker 开发环境工作箱
 
 <p align="center">
   <img src="./assets/readme/hero.png" width="100%" alt="Code Ark：按需选择本地基础服务，通过 Docker Compose 启动。方舟承载模块化容器的概念插画。">
@@ -11,13 +11,35 @@
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-d78958?style=flat-square" alt="MIT License"></a>
 </p>
 
-**把搭建中间件的时间，留给写代码。**
+**把搭建环境的时间，留给写代码。**
 
-Code Ark（代码方舟）收集了 **17 套 Docker Compose 配置**，覆盖数据库、缓存、消息队列、工作流、搜索、对象存储和监控。适合 Java、Go、Python、Node.js 开发者进行本地开发、接口联调和集成测试：选择需要的服务目录，按对应说明启动。
+代码方舟（Code Ark）是一款面向本地开发的 **Docker 环境桌面工作箱**，使用 Tauri 2、Rust 和 React 构建。选择服务或场景后，由工作箱检查 Docker、端口和资源，处理依赖初始化，再用真实协议探针确认就绪。界面采用 shadcn Radix 与 Tailwind CSS，提供浅色、深色和跟随系统主题；使用工作箱无需注册 Code Ark 账号。
 
-[English](./README.en.md) · [快速开始](#快速开始) · [服务目录](#服务目录) · [日常使用](#日常使用) · [参与贡献](#参与贡献)
+仓库同时提供 **17 套可独立使用的 Docker Compose 配置和 1 份宿主机工具指南**，覆盖数据库、缓存、消息队列、工作流、搜索、对象存储和监控，适合 Java、Go、Python、Node.js 开发者做本地开发、接口联调和学习。
 
-[工作箱设计与实施文档](./docs/00-文档导航.md)已按一键启动审查修订。桌面工作箱已进入源码实施、尚未发行，已通过隔离 Redis 源码闭环，完整服务和安装包验收仍待完成；当前可用方式仍是[服务索引](./services/README.md)中的 Docker Compose 配置。
+[English](./README.en.md) · [获取与状态](#获取与状态) · [快速开始](#快速开始) · [服务目录](#服务目录) · [常见问题](./docs/faq.md) · [参与贡献](#参与贡献)
+
+## 获取与状态
+
+最新：[v0.1.0-alpha.1 发布说明](./docs/releases/v0.1.0-alpha.1.md)。
+
+| 使用方式 | 入口 | 当前范围 |
+| --- | --- | --- |
+| Docker Compose | 下方[快速开始](#快速开始)与[服务索引](./services/README.md) | 可直接按各服务文档使用，无需构建桌面应用 |
+| 桌面工作箱源码预览 | [toolbox/README.md](./toolbox/README.md) | 当前变更操作开放于 macOS Apple Silicon（arm64）；其他原生平台尚待验收 |
+| 发行与下载 | [GitHub Releases](https://github.com/StephenQiu30/code-ark/releases) | [v0.1.0-alpha.1 源码预览](https://github.com/StephenQiu30/code-ark/releases/tag/v0.1.0-alpha.1)与 ARM64 服务镜像；尚无公开桌面安装包 |
+
+截至 2026-11-13，**16 个预设在 macOS arm64 上通过两轮隔离的真实启动、协议探针和保留数据的停止验证**。完整 Elastic Stack 因现场可用内存不足 6 GiB 被预检拒绝，未计入通过；AMD64 镜像归档、其他原生系统与最终安装包仍待验证。范围与证据见[常见问题及项目事实](./docs/faq.md)、[桌面与依赖预设验证](./docs/research/08-桌面全局消息与预设启动验证.md)和[其余预设验证](./docs/research/09-其余预设真实启动验证.md)。
+
+## 工作箱能帮你做什么
+
+- **按需启动本地环境**：从服务或场景选择入口，先检查 Docker 目标、端口、内存与磁盘，再编排已选服务及其依赖。
+- **处理依赖和初始化**：为受支持的数据库依赖链校验账号、专属数据库和初始化结果，减少手工拼接配置；已有配置不会因再次启动而直接覆盖。
+- **确认后台真的可用**：使用数据库、消息与 HTTP/API 探针确认就绪，界面提供状态、连接信息、任务与日志入口。
+- **保留数据与操作归属**：工作区数据在源码目录之外，默认位置为 `~/.code-ark`；通过实例身份、资源归属和操作记录保护启停与恢复，重置需要明确范围与确认。
+- **边用边学**：内置离线指南和教学示例，服务模板仍可单独使用 Compose 管理。首次打开工作箱不会自动启动服务。
+
+源码预览的具体能力和未验收项见[工作箱说明](./toolbox/README.md)；完整技术资料见[文档中心](./docs/00-文档导航.md)。
 
 ## 快速开始
 
@@ -69,7 +91,7 @@ docker compose down           # 移除当前项目容器和网络
 
 </details>
 
-这些配置面向本地开发与学习。生产部署需结合实际环境补充认证、TLS、备份、高可用与容量规划；部分目录使用 `latest`，团队复现前可自行固定兼容版本。
+这些配置面向本地开发与学习。生产部署需结合实际环境补充认证、TLS、备份、高可用与容量规划；镜像、端口与依赖版本以各服务 Compose 和文档为准。
 
 ## 参与贡献
 
@@ -81,4 +103,4 @@ docker compose down           # 移除当前项目容器和网络
 
 ## License
 
-仓库配置与文档采用 [MIT License](./LICENSE)。第三方软件、镜像及 MediaCrawler 的使用需分别遵循各自上游许可。
+仓库原创代码、配置与文档采用 [MIT License](./LICENSE)。第三方软件、镜像及 MediaCrawler 的使用需分别遵循各自上游许可。

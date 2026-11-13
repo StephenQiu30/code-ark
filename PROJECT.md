@@ -8,7 +8,8 @@ English Summary: Keep Compose templates together under `services/`. Put service-
 
 ```text
 code-ark/
-├── README.md / README.en.md       # 中英文使用入口与服务索引
+├── README.md / README.en.md       # 中英文产品介绍、获取方式与服务索引
+├── llms.txt                      # 可引用的项目事实与权威文档检索入口
 ├── AGENTS.md                     # 人工与自动化协作规则
 ├── PROJECT.md                    # 本文件：结构与职责
 ├── CONTRIBUTING.md               # 贡献、提交与验证流程
@@ -21,6 +22,7 @@ code-ark/
 ├── .editorconfig                 # 编辑器默认格式
 ├── .gitmessage                   # 可选本地提交模板
 ├── .github/
+│   ├── repository-metadata.json  # 公开介绍、topics及增量label定义
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── ISSUE_TEMPLATE/           # 问题、功能建议与安全政策入口
 ├── assets/readme/                # 项目首页静态素材
@@ -38,6 +40,10 @@ code-ark/
 | 内容 | 位置与维护边界 |
 | --- | --- |
 | 快速开始、服务索引入口 | 根 README；中英文同步 |
+| 项目事实与常见问题 | `docs/faq.md`；日期、平台与验收证据保持一致 |
+| 机器可读检索入口 | 根 `llms.txt`；指向已有事实与文档，不替代文档或承诺收录 |
+| 公开发行说明 | `docs/releases/`；区分源码预览、镜像和已验收安装包 |
+| 仓库展示与标签 | `.github/repository-metadata.json`；描述、homepage、topics与增量labels，不包含凭据 |
 | 完整服务表、默认端口与目录迁移 | `services/README.md`，集中维护，根 README 和本文不复制清单 |
 | 提交流程与质量要求 | `CONTRIBUTING.md`；`AGENTS.md` 引用并补充执行规则 |
 | 结构规范 | `PROJECT.md`，实际新增/移动路径必须同步 |

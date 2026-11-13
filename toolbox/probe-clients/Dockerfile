@@ -6,7 +6,7 @@ WORKDIR /src
 COPY pom.xml pom.xml
 COPY common common
 COPY modules modules
-RUN mvn -B -ntp package && mkdir /bundle && \
+RUN mvn -B -ntp clean package && mkdir /bundle && \
     for module in modules/*; do \
       dest="/bundle/${module#modules/}"; mkdir "$dest" && \
       cp "$module/target/probe.jar" "$dest/" && cp -R "$module/target/lib" "$dest/" || exit 1; \

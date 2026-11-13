@@ -1,5 +1,6 @@
 name: 功能建议
 description: 提出服务模板、文档、新手体验或工作箱设计建议。
+labels: [enhancement]
 body:
   - type: input
     id: area

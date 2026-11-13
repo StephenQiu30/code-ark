@@ -1,4 +1,4 @@
-# Code Ark · Local infrastructure
+# Code Ark · Local Docker Development Toolbox
 
 <p align="center">
   <img src="./assets/readme/hero.png" width="100%" alt="Code Ark: choose local infrastructure and start it with Docker Compose. A conceptual ark carries modular service containers.">
@@ -13,11 +13,33 @@
 
 **Spend your setup time building your application.**
 
-Code Ark brings together **17 Docker Compose configurations** for databases, caching, messaging, workflows, search, object storage, and monitoring. Choose a service directory and follow its setup instructions for local development, integration testing, or learning with Java, Go, Python, or Node.js.
+Code Ark (代码方舟) is a **desktop toolbox for local Docker development environments**, built with Tauri 2, Rust, and React. Select a service or scenario; the toolbox checks Docker, ports, and resources, handles dependency initialization, and confirms readiness with real protocol probes. Its shadcn Radix and Tailwind CSS interface offers light, dark, and system themes. No Code Ark account is required.
 
-[中文](./README.md) · [Quick start](#quick-start) · [Service catalog](#service-catalog) · [Daily use](#daily-use) · [Contribute](#contribute)
+The repository also provides **17 independently usable Docker Compose configurations and one host-tool guide** for databases, caching, messaging, workflows, search, object storage, and monitoring. They support local development, integration testing, and learning with Java, Go, Python, or Node.js.
 
-The [desktop toolbox design and implementation documents](./docs/00-文档导航.md) incorporate the one-click startup review. The desktop toolbox is being implemented in [toolbox/](./toolbox/README.md); it has not been released, and an isolated Redis source lifecycle has passed; full service and installer acceptance remain pending. The Compose configurations in the [service index](./services/README.md) remain the current way to use this repository.
+[中文](./README.md) · [Get Code Ark](#get-code-ark) · [Quick start](#quick-start) · [Service catalog](#service-catalog) · [FAQ](./docs/faq.md#english-faq) · [Contribute](#contribute)
+
+## Get Code Ark
+
+Latest: [v0.1.0-alpha.1 source preview notes](./docs/releases/v0.1.0-alpha.1.md).
+
+| Option | Entry point | Current scope |
+| --- | --- | --- |
+| Docker Compose | [Quick start](#quick-start) below and the [service index](./services/README.md) | Follow each service guide directly; no desktop build required |
+| Desktop source preview | [toolbox/README.md](./toolbox/README.md) | Operations that change services are currently enabled on macOS Apple Silicon (arm64); other native targets await acceptance |
+| Releases and downloads | [GitHub Releases](https://github.com/StephenQiu30/code-ark/releases) | [v0.1.0-alpha.1 source preview](https://github.com/StephenQiu30/code-ark/releases/tag/v0.1.0-alpha.1) and ARM64 service image artifacts; no public desktop installer yet |
+
+As of 2026-11-13, **16 presets have passed two isolated rounds of real startup, protocol probes, and stopping with data retained on macOS arm64**. The full Elastic Stack was refused by preflight because available memory was below 6 GiB; it is not counted as passed. AMD64 image archives, other native systems, and final installers still require validation. See the [FAQ and project facts](./docs/faq.md#english-faq), [desktop and dependency preset evidence](./docs/research/08-桌面全局消息与预设启动验证.md), and [remaining preset evidence](./docs/research/09-其余预设真实启动验证.md).
+
+## What the toolbox does
+
+- **Starts environments on demand:** choose services or scenarios, check the Docker target, ports, memory, and disk, then orchestrate the selected services and their dependencies.
+- **Handles dependencies and initialization:** validate credentials, dedicated databases, and initialization results for supported dependency chains. Starting again does not simply overwrite existing configuration.
+- **Checks actual backend readiness:** database, messaging, and HTTP/API probes verify readiness; the interface provides status, connection details, tasks, and log access.
+- **Tracks data and resource ownership:** runtime data stays outside source control, in `~/.code-ark` by default. Instance identities, ownership checks, and operation records guide lifecycle actions and recovery; reset requires an explicit scope and confirmation.
+- **Supports learning:** offline guides and teaching examples accompany the toolbox. Compose templates remain usable on their own. Opening the toolbox does not automatically start services.
+
+See the [toolbox guide](./toolbox/README.md) for implemented features and remaining acceptance work, and the [documentation center](./docs/00-文档导航.md) for technical details.
 
 ## Quick start
 
@@ -69,7 +91,7 @@ For services that need `.env`, copy `.env.example` **on the first run** and set 
 
 </details>
 
-These configurations target local development and learning. Production deployment needs environment-specific authentication, TLS, backups, availability, and capacity planning. Some directories use `latest`; pin compatible versions when reproducibility matters.
+These configurations target local development and learning. Production deployment needs environment-specific authentication, TLS, backups, availability, and capacity planning. Consult each service’s Compose file and guide for image versions, ports, and dependencies.
 
 ## Contribute
 
@@ -81,4 +103,4 @@ New commits and PR titles use `type(scope): description`, with a required scope,
 
 ## License
 
-Repository configurations and documentation use the [MIT License](./LICENSE). Third-party software, images, and MediaCrawler remain subject to their own upstream licenses.
+Original repository code, configurations, and documentation use the [MIT License](./LICENSE). Third-party software, images, and MediaCrawler remain subject to their own upstream licenses.

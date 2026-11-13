@@ -17,7 +17,17 @@
     <module>modules/nacos</module>
     <module>modules/mysql</module>
   </modules>
-  <build><pluginManagement><plugins>
+  <build><plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>3.6.2</version>
+      <executions><execution><id>release-toolchain</id><goals><goal>enforce</goal></goals>
+        <configuration><rules>
+          <requireJavaVersion><version>[17,18)</version><message>Protocol client artifacts must be built with JDK 17; --release alone does not produce the reviewed bytes.</message></requireJavaVersion>
+          <requireMavenVersion><version>[3.9.16]</version></requireMavenVersion>
+        </rules></configuration>
+      </execution></executions>
+    </plugin>
+  </plugins><pluginManagement><plugins>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version></plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>3.4.2</version></plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.9.0</version></plugin>

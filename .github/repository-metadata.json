@@ -1,0 +1,73 @@
+{
+  "description": "代码方舟 Code Ark：本地 Docker 开发环境工作箱与 17 套 Compose 预设。Tauri 桌面源码预览，管理数据库、缓存、消息队列、工作流、搜索和监控。Local Docker development environments with guided startup and protocol checks.",
+  "homepage": "https://github.com/StephenQiu30/code-ark/releases",
+  "topics": [
+    "code-ark",
+    "developer-tools",
+    "local-development",
+    "development-environment",
+    "docker",
+    "docker-compose",
+    "self-hosted",
+    "middleware",
+    "tauri",
+    "rust",
+    "react",
+    "shadcn-ui",
+    "tailwindcss",
+    "mysql",
+    "postgresql",
+    "redis",
+    "kafka",
+    "nacos",
+    "temporal",
+    "minio"
+  ],
+  "labels": [
+    {
+      "name": "area:desktop",
+      "color": "5319E7",
+      "description": "桌面界面、主题、交互与无障碍 / Desktop UI and accessibility"
+    },
+    {
+      "name": "area:runtime",
+      "color": "1D76DB",
+      "description": "Docker 探测、依赖初始化、生命周期与协议检查 / Runtime orchestration"
+    },
+    {
+      "name": "area:templates",
+      "color": "0E8A16",
+      "description": "Compose 预设、服务配置与端口 / Compose service presets"
+    },
+    {
+      "name": "area:docs",
+      "color": "0075CA",
+      "description": "指南、示例、中英文文档与可发现性 / Documentation and discoverability"
+    },
+    {
+      "name": "area:release",
+      "color": "BFD4F2",
+      "description": "构建、制品、安装、许可和发行验收 / Builds, artifacts and release acceptance"
+    },
+    {
+      "name": "platform:macos",
+      "color": "C5DEF5",
+      "description": "macOS 问题或平台验证；请注明 CPU 架构 / Include CPU architecture"
+    },
+    {
+      "name": "platform:windows",
+      "color": "C5DEF5",
+      "description": "Windows 问题或平台验证；不代表已验收支持 / Windows platform validation"
+    },
+    {
+      "name": "platform:linux",
+      "color": "C5DEF5",
+      "description": "Linux 问题或平台验证；请注明发行版 / Include Linux distribution"
+    },
+    {
+      "name": "needs-reproduction",
+      "color": "FBCA04",
+      "description": "需要公开配置与合成数据的最小复现 / Minimal sanitized reproduction needed"
+    }
+  ]
+}

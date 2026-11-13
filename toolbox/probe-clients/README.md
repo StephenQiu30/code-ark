@@ -2,7 +2,7 @@
 
 工作箱把每种协议的客户端放在独立 classpath 中。运行时先验证包内文件白名单与 SHA，再复制到当前 control 的内容摘要缓存，重新验证后只读挂载给镜像锁中的 `probe-jre17`；已发布的缓存目录不原地替换，原随包文件仍是唯一来源。用户电脑只需 Docker。探针通过当前托管组件的网络命名空间连接服务，输入经 stdin 送入，固定结果写入 stdout。结果包含探针 ID、组件 ID、采样时间、成功状态和固定错误码。
 
-维护者用 JDK 17 和 Maven 3.9.16 从当前目录构建发行资源。
+维护者用 JDK 17 和 Maven 3.9.16 从当前目录构建发行资源。Maven 在编译前校验这两项；`--release 17` 不能保证其他 JDK 的编译字节及 JAR manifest 与已审查锁一致，切换 JDK 后应重新执行 `clean package`。
 
 ```sh
 mvn -B -ntp clean package

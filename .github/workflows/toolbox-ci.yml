@@ -49,7 +49,7 @@ jobs:
           mvn -B -ntp -C -f toolbox/examples/java/pom.xml package
       - name: Compile and verify bundled read-only protocol clients
         run: |
-          mvn -B -ntp -C -f toolbox/probe-clients/pom.xml package
+          mvn -B -ntp -C -f toolbox/probe-clients/pom.xml clean package
           python3 toolbox/probe-clients/bundle.py
           python3 toolbox/probe-clients/tests/client_contract.py
       - name: Prepare every declared desktop resource before Rust desktop compilation

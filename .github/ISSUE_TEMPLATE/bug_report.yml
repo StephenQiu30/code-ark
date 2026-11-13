@@ -1,14 +1,15 @@
 name: 问题报告
-description: 报告服务启动、配置或文档问题；安全漏洞请使用安全政策入口。
+description: 报告桌面源码预览、Compose服务、配置或文档问题；安全漏洞请使用安全政策入口。
+labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: 请勿粘贴真实 .env、密码、Token、业务数据或原始诊断包。桌面工作箱尚未实现；请说明当前使用方式。
+      value: 请勿粘贴真实 .env、密码、Token、业务数据或原始诊断包。桌面工作箱为源码预览，尚无公开安装包；请说明使用Compose还是桌面源码。
   - type: input
     id: service
     attributes:
-      label: 服务目录或文档路径
-      placeholder: services/redis-start-local 或 docs/design/...
+      label: 服务、桌面模块或文档路径
+      placeholder: services/redis-start-local、toolbox 或 docs/faq.md
     validations:
       required: true
   - type: textarea

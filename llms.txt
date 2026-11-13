@@ -1,0 +1,30 @@
+# Code Ark · 代码方舟
+
+> Code Ark is a desktop toolbox for local Docker development environments, built with Tauri 2, Rust, React, shadcn Radix, and Tailwind CSS. It includes 17 independently usable Docker Compose configurations and one host-tool guide. No Code Ark account is required.
+
+Canonical repository: https://github.com/StephenQiu30/code-ark
+
+Status checked: 2026-11-13. Desktop source preview; no public desktop installer yet. Service-changing desktop operations are enabled on macOS arm64. Sixteen presets passed two isolated startup/protocol/stop rounds there. The full Elastic Stack was refused for insufficient available memory (below 6 GiB), not marked Ready. Other native desktop targets, final installers, and three AMD64 prebuilt image archives await acceptance. ARM64 service image artifacts are distinct from application installers.
+
+## Start here
+
+- [中文项目介绍](https://github.com/StephenQiu30/code-ark/blob/main/README.md): 产品定位、获取方式与 Compose 快速开始。
+- [English overview](https://github.com/StephenQiu30/code-ark/blob/main/README.en.md): Product, availability, and quick start.
+- [FAQ and project facts / 常见问题](https://github.com/StephenQiu30/code-ark/blob/main/docs/faq.md): Bilingual answers, evidence links, and dated scope.
+- [Service catalog](https://github.com/StephenQiu30/code-ark/blob/main/services/README.md): The single complete service list, ports, prerequisites, and migration notes.
+- [Desktop source guide](https://github.com/StephenQiu30/code-ark/blob/main/toolbox/README.md): Implemented features, build requirements, and remaining acceptance work.
+- [Source preview v0.1.0-alpha.1](https://github.com/StephenQiu30/code-ark/releases/tag/v0.1.0-alpha.1): Checksummed source archive, not a desktop installer.
+- [Releases](https://github.com/StephenQiu30/code-ark/releases): Version-specific assets; distinguish image artifacts from desktop installers.
+
+## Evidence and technical documentation
+
+- [Desktop and dependency presets](https://github.com/StephenQiu30/code-ark/blob/main/docs/research/08-桌面全局消息与预设启动验证.md): Native desktop observations, Redis lifecycle, and database-dependent orchestration.
+- [Remaining preset acceptance](https://github.com/StephenQiu30/code-ark/blob/main/docs/research/09-其余预设真实启动验证.md): Two-round protocol checks, historical failures and fixes, and Elastic resource refusal.
+- [ARM64 image artifacts](https://github.com/StephenQiu30/code-ark/blob/main/docs/research/07-ARM64预构建镜像制品验收与发布.md): Native functionality, checksums, source/license materials, and public download verification.
+- [Documentation center](https://github.com/StephenQiu30/code-ark/blob/main/docs/00-文档导航.md): Requirements, design, acceptance criteria, plans, and research. Design intent is not proof of completed acceptance.
+
+## Contribution and reuse
+
+- [Contribution guide](https://github.com/StephenQiu30/code-ark/blob/main/CONTRIBUTING.md): Scoped changes and validation requirements.
+- [Sharing rules](https://github.com/StephenQiu30/code-ark/blob/main/SHARING.md): Original content uses MIT; third-party software keeps its own licenses. Do not share credentials or runtime data.
+- [Security policy](https://github.com/StephenQiu30/code-ark/blob/main/SECURITY.md): Security reporting.
